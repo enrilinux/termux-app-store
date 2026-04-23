@@ -8,6 +8,9 @@ and this project adheres to semantic versioning.
 
 ## [Unreleased]
 
+---
+
+## [v0.2.6] - 2026-04-23
 ### Added
 - New menu `termux-build init` for auto create and build package
 - New file termux-build-init.sh in directory tools for auto create and build package
@@ -46,6 +49,8 @@ and this project adheres to semantic versioning.
 - Package `ani-cli` v4.11 - Updated metadata
 
 ### Update
+- Update core `termux-app-store` to textual new version 8.2.3
+- Update fixed bug CLI - ensure build package, fetch index fallback to index cache, load package from disk, load package, load all packages
 - Package `aura` v0.8.2 → v0.10.0
 - Package `fd` v10.3.0 → v10.4.2
 - Package `ani-cli` v4.10 → v4.11

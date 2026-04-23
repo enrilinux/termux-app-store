@@ -396,7 +396,7 @@ class TermuxAppStore(App):
     #body { layout: horizontal; height: 1fr; }
     #left { width: 35%; border: heavy #6272a4; padding: 1; }
     #right { width: 65%; border: heavy #6272a4; padding: 1; }
-    ListItem.-highlight { background: #44475a; color: #50fa7b; }
+    ListItem.--highlight { background: #44475a; color: #50fa7b; }
     ProgressBar { height: 1; }
     #footer { height: 1; content-align: center middle; color: #6272a4; }
     #log-scroll { height: 1fr; border: solid #6272a4; }
@@ -408,7 +408,7 @@ class TermuxAppStore(App):
     #status-bar { height: 1; content-align: left middle; color: #6272a4; padding-left: 1; }
     """
 
-    def on_mount(self): # pragma: no cover
+    async def on_mount(self): # pragma: no cover
         self.packages = []
         self.status_cache = {}
         self.search_query = ""
@@ -419,11 +419,11 @@ class TermuxAppStore(App):
 
         self.set_interval(0.1, self.consume_worker_queue)
 
-        self.load_packages(online=True)
+        await asyncio.to_thread(self.load_packages, True)
         self.refresh_list()
 
     def compose(self) -> ComposeResult: # pragma: no cover
-        yield Header(show_clock=True)
+        yield Header()
         yield Input(placeholder="Search package...", id="search")
 
         with Horizontal(id="body"):
@@ -468,7 +468,9 @@ class TermuxAppStore(App):
 
         if self.list_view.children:
             self.list_view.index = 0
-            self.show_preview(self.list_view.children[0])
+            first = self.list_view.query(PackageItem).first(PackageItem)
+            if first:
+                self.show_preview(first)
 
     def on_input_changed(self, message):
         self.search_query = message.value.lower().strip()
@@ -543,7 +545,7 @@ class TermuxAppStore(App):
             name = self.current_item.pkg["name"]
             def handle_confirm(confirmed: bool) -> None: # pragma: no cover
                 if confirmed:
-                    asyncio.get_event_loop().call_soon_threadsafe(
+                    asyncio.get_running_loop().call_soon_threadsafe(
                         lambda: self.worker_queue.put_nowait(("uninstall", name))
                     )
             self.push_screen(ConfirmUninstall(name), handle_confirm)

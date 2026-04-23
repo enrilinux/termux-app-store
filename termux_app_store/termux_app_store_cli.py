@@ -176,25 +176,6 @@ def resolve_app_root() -> Path:
     return pip_home
 
 
-def ensure_build_package_sh(app_root: Path) -> bool:
-    build_pkg = app_root / "build-package.sh"
-    if build_pkg.exists():
-        return True
-    url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/master/build-package.sh"
-    try:
-        print(f"{DIM}[*] Downloading build-package.sh...{R}")
-        req = urllib.request.Request(url, headers={"User-Agent": "termux-app-store-cli"})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            raw = resp.read()
-            if raw:
-                build_pkg.write_bytes(raw)
-                build_pkg.chmod(0o755)
-                print(f"{GREEN}[✔] build-package.sh downloaded.{R}")
-                return True
-    except Exception as e:
-        print(f"{RED}[✗] Failed to download build-package.sh: {e}{R}")
-    return False
-
 
 def ensure_build_package_sh(app_root: Path) -> bool:
     build_pkg = app_root / "build-package.sh"
@@ -232,6 +213,12 @@ def fetch_index() -> list:
                 pass
             return pkgs
     except Exception:
+        if INDEX_CACHE_FILE.exists():
+            try:
+                data = json.loads(INDEX_CACHE_FILE.read_text())
+                return data.get("packages", [])
+            except Exception:
+                pass
         return []
 
 
@@ -905,72 +892,7 @@ CMD_ALIASES = {
 }
 
 
-def run_cli():
-    args = sys.argv[1:]
-
-    if not args:
-        try:
-            from termux_app_store.termux_app_store import run_tui
-            run_tui()
-        except ImportError:
-            print(f"{RED}[!] TUI module not found.{R}")
-            cmd_help()
-        return
-
-    raw_cmd = args[0]
-    cmd = CMD_ALIASES.get(raw_cmd)
-
-    if cmd is None:
-        print(f"{RED}[!] Unknown command: '{raw_cmd}'{R}")
-        print(f"    Run {CYAN}termux-app-store help{R} to see available commands.")
-        sys.exit(1)
-
-    if cmd == "help":
-        cmd_help()
-        return
-
-    if cmd == "version":
-        cmd_version()
-        return
-
-    APP_ROOT     = resolve_app_root()
-    PACKAGES_DIR = APP_ROOT / "packages"
-
-    if cmd == "list":
-        cmd_list(PACKAGES_DIR)
-
-    elif cmd == "show":
-        if len(args) < 2:
-            print(f"{RED}[!] Usage: termux-app-store show <package>{R}")
-            sys.exit(1)
-        cmd_show(PACKAGES_DIR, args[1])
-
-    elif cmd == "install":
-        if len(args) < 2:
-            print(f"{RED}[!] Usage: termux-app-store install <package>{R}")
-            sys.exit(1)
-        cmd_install(APP_ROOT, PACKAGES_DIR, args[1])
-
-    elif cmd == "uninstall":
-        if len(args) < 2:
-            print(f"{RED}[!] Usage: termux-app-store uninstall <package>{R}")
-            sys.exit(1)
-        cmd_uninstall(args[1])
-
-    elif cmd == "update":
-        cmd_update(PACKAGES_DIR)
-
-    elif cmd == "upgrade":
-        target = args[1] if len(args) >= 2 else None
-        cmd_upgrade(APP_ROOT, PACKAGES_DIR, target)
-
-
-
-if __name__ == "__main__":
-    run_cli()
-
-
-INDEX_CACHE  = INDEX_CACHE_FILE
+INDEX_CACHE = INDEX_CACHE_FILE
 
 def _load_package_from_disk(pkg_dir: Path) -> dict:
     name = pkg_dir.name
@@ -1059,6 +981,71 @@ def load_all_packages(packages_dir: Path) -> list:
             continue
         pkgs.append(_load_package_from_disk(pkg_dir))
     return pkgs
+
+
+def run_cli():
+    args = sys.argv[1:]
+
+    if not args:
+        try:
+            from termux_app_store.termux_app_store import run_tui
+            run_tui()
+        except ImportError:
+            print(f"{RED}[!] TUI module not found.{R}")
+            cmd_help()
+        return
+
+    raw_cmd = args[0]
+    cmd = CMD_ALIASES.get(raw_cmd)
+
+    if cmd is None:
+        print(f"{RED}[!] Unknown command: '{raw_cmd}'{R}")
+        print(f"    Run {CYAN}termux-app-store help{R} to see available commands.")
+        sys.exit(1)
+
+    if cmd == "help":
+        cmd_help()
+        return
+
+    if cmd == "version":
+        cmd_version()
+        return
+
+    APP_ROOT     = resolve_app_root()
+    PACKAGES_DIR = APP_ROOT / "packages"
+
+    if cmd == "list":
+        cmd_list(PACKAGES_DIR)
+
+    elif cmd == "show":
+        if len(args) < 2:
+            print(f"{RED}[!] Usage: termux-app-store show <package>{R}")
+            sys.exit(1)
+        cmd_show(PACKAGES_DIR, args[1])
+
+    elif cmd == "install":
+        if len(args) < 2:
+            print(f"{RED}[!] Usage: termux-app-store install <package>{R}")
+            sys.exit(1)
+        cmd_install(APP_ROOT, PACKAGES_DIR, args[1])
+
+    elif cmd == "uninstall":
+        if len(args) < 2:
+            print(f"{RED}[!] Usage: termux-app-store uninstall <package>{R}")
+            sys.exit(1)
+        cmd_uninstall(args[1])
+
+    elif cmd == "update":
+        cmd_update(PACKAGES_DIR)
+
+    elif cmd == "upgrade":
+        target = args[1] if len(args) >= 2 else None
+        cmd_upgrade(APP_ROOT, PACKAGES_DIR, target)
+
+
+
+if __name__ == "__main__":
+    run_cli()
 
 # Open Contributor
 # https://github.com/djunekz/termux-app-store
