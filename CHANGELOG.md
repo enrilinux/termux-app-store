@@ -8,6 +8,9 @@ and this project adheres to semantic versioning.
 
 ## [Unreleased]
 
+### Added
+- Package `merlin` v1.0.0 - Analyst website vulnerabillity scanner
+
 ---
 
 ## [v0.2.6] - 2026-04-23
