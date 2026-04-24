@@ -621,7 +621,25 @@ cat <<BLOCK
 TERMUX_PKG_BUILD_IN_SRC=true
 
 termux_step_make_install() {
-    install -Dm755 "${main}" "\$TERMUX_PREFIX/bin/${pkg}"
+    local libdir="\$TERMUX_PREFIX/lib/${pkg}"
+
+    local _has_support=false
+    for _dir in core lib modules plugins data assets resources config; do
+        [[ -d "\$_dir" ]] && _has_support=true && break
+    done
+
+    if [[ "\$_has_support" == true ]]; then
+        mkdir -p "\$libdir"
+        cp -r . "\$libdir/"
+        chmod 0755 "\$libdir/${main}"
+
+        mkdir -p "\$TERMUX_PREFIX/bin"
+        printf '#!/data/data/com.termux/files/usr/bin/bash\nexec bash "%s" "\$@"\n' \
+            "\$libdir/${main}" > "\$TERMUX_PREFIX/bin/${pkg}"
+        chmod 0755 "\$TERMUX_PREFIX/bin/${pkg}"
+    else
+        install -Dm755 "${main}" "\$TERMUX_PREFIX/bin/${pkg}"
+    fi
 }
 BLOCK
     ;;
@@ -939,8 +957,21 @@ PYTHON_VERSION="3"
 if [[ "$INSTALL_METHOD" == "python-script" || "$INSTALL_METHOD" == "pip" ]]; then
     PYTHON_VERSION=$(detect_python_version "$SRC" "$MAIN_FILE")
     if [[ "$PYTHON_VERSION" == "2" ]]; then
-        warn "Python 2 syntax detected — will use ${W}python2${N} interpreter"
-        warn "Python 2 is EOL. Package may not work correctly on modern systems."
+        echo ""
+        echo -e "  ${R}┌─ Python 2 Not Supported ────────────────────────────────────┐${N}"
+        echo -e "  ${R}│${N}                                                             ${R}│${N}"
+        echo -e "  ${R}│${N}  ${W}This package requires Python 2, which is not accepted${N}      ${R}│${N}"
+        echo -e "  ${R}│${N}  ${W}in Termux App Store.${N}                                       ${R}│${N}"
+        echo -e "  ${R}│${N}                                                             ${R}│${N}"
+        echo -e "  ${R}│${N}  ${Y}Python 2 is End-of-Life and no longer supported.${N}           ${R}│${N}"
+        echo -e "  ${R}│${N}  ${Y}pip2 cannot install modern dependencies.${N}                   ${R}│${N}"
+        echo -e "  ${R}│${N}                                                             ${R}│${N}"
+        echo -e "  ${R}│${N}  ${C}Need help? Open an issue on GitHub:${N}                        ${R}│${N}"
+        echo -e "  ${R}│${N}  ${W}https://github.com/djunekz/termux-app-store/issues${N}         ${R}│${N}"
+        echo -e "  ${R}│${N}                                                             ${R}│${N}"
+        echo -e "  ${R}└─────────────────────────────────────────────────────────────┘${N}"
+        echo ""
+        exit 1
     fi
 fi
 
