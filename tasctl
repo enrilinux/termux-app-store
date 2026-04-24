@@ -65,17 +65,28 @@ get_installed_version() {
     [[ -n "$ver" ]] && echo "$ver" && return
   fi
 
+  local ver
+  ver=$(python3 -c "import importlib.metadata; print(importlib.metadata.version('termux-app-store'))" 2>/dev/null || true)
+  [[ -n "$ver" ]] && echo "$ver" && return
+
   echo "unknown"
 }
 
 get_install_mode() {
   if [[ -f "$SENTINEL" ]]; then
-    grep '^mode=' "$SENTINEL" 2>/dev/null | cut -d= -f2 || echo "unknown"
-  elif [[ -f "$INSTALL_DIR/termux_app_store/main.py" ]]; then
-    echo "source"
-  else
-    echo "unknown"
+    local mode
+    mode=$(grep '^mode=' "$SENTINEL" 2>/dev/null | cut -d= -f2 || echo "")
+    [[ -n "$mode" ]] && echo "$mode" && return
   fi
+  if python3 -c "import importlib.util; s=importlib.util.find_spec('termux_app_store'); exit(0 if s and 'site-packages' in (s.origin or '') else 1)" 2>/dev/null; then
+    echo "pip"
+    return
+  fi
+  if [[ -f "$INSTALL_DIR/termux_app_store/main.py" ]]; then
+    echo "source"
+    return
+  fi
+  echo "unknown"
 }
 
 is_installed() {
@@ -398,6 +409,34 @@ usage() {
 cmd_update() {
   banner
   header "Update"
+
+  local imode
+  imode=$(get_install_mode)
+
+  if [[ "$imode" == "pip" ]]; then
+    step "Pip mode detected — upgrading via pip..."
+    local old_ver new_ver
+    old_ver=$(get_installed_version)
+    python3 -m pip install --upgrade termux-app-store --break-system-packages \
+      || err "pip upgrade failed"
+    new_ver=$(python3 -c "import importlib.metadata; print(importlib.metadata.version('termux-app-store'))" 2>/dev/null || echo "unknown")
+
+    if [[ -f "$SENTINEL" ]]; then
+      sed -i "s/^version=.*/version=$new_ver/" "$SENTINEL"
+      sed -i "s/^mode=.*/mode=pip/" "$SENTINEL"
+    else
+      write_sentinel "$new_ver" "pip"
+    fi
+
+    if [[ -f "$SYMLINK" ]]; then
+      sed -i "s/export TERMUX_APP_STORE_VERSION=\"[^\"]*\"/export TERMUX_APP_STORE_VERSION=\"$new_ver\"/" "$SYMLINK"
+    fi
+
+    ok "termux-app-store upgraded: $old_ver → $new_ver"
+    printf "\n%s  ✔ termux-app-store v%s updated successfully!%s\n\n" "$GREEN$B" "$new_ver" "$R"
+    return
+  fi
+
   install_app_source "update"
 }
 
