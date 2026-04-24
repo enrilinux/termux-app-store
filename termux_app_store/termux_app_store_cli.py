@@ -707,8 +707,46 @@ def cmd_self_update(silent: bool = False) -> bool:
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
         if ret == 0:
+            try:
+                import importlib.metadata
+                new_ver = importlib.metadata.version("termux-app-store")
+            except Exception:
+                new_ver = None
+
+            if new_ver:
+                sentinel = INSTALL_DIR / ".installed"
+                if sentinel.exists():
+                    try:
+                        lines = sentinel.read_text().splitlines()
+                        new_lines = []
+                        for line in lines:
+                            if line.startswith("version="):
+                                new_lines.append(f"version={new_ver}")
+                            elif line.startswith("mode="):
+                                new_lines.append("mode=pip")
+                            else:
+                                new_lines.append(line)
+                        sentinel.write_text("\n".join(new_lines) + "\n")
+                    except Exception:
+                        pass
+
+                wrapper = Path(os.environ.get("PREFIX", "/data/data/com.termux/files/usr")) / "bin" / "termux-app-store"
+                if wrapper.exists():
+                    try:
+                        content = wrapper.read_text()
+                        import re as _re
+                        content = _re.sub(
+                            r'export TERMUX_APP_STORE_VERSION="[^"]*"',
+                            f'export TERMUX_APP_STORE_VERSION="{new_ver}"',
+                            content,
+                        )
+                        wrapper.write_text(content)
+                    except Exception:
+                        pass
+
             if not silent:
-                print(f"{GREEN}[✔] termux-app-store upgraded via pip.{R}")
+                ver_str = f" v{new_ver}" if new_ver else ""
+                print(f"{GREEN}[✔] termux-app-store upgraded via pip{ver_str}.{R}")
             return True
         else:
             if not silent:
