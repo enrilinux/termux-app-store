@@ -110,24 +110,50 @@ jobs:
       - name: Generate Packages index per architecture
         run: |
           cd gh-pages
-          FULL="/tmp/Packages_all"
-          dpkg-scanpackages pool/main /dev/null 2>/dev/null \
-            | sed 's|^Filename: pool/main/pool/main/|Filename: pool/main/|' \
-            > "$FULL"
           for arch in aarch64 arm x86_64 i686; do
             DIR="dists/termux/main/binary-${arch}"
             mkdir -p "$DIR"
-            awk -v a="$arch" '
-              /^$/ { if (k) printf "%s\n", b; b=""; k=0; next }
-              /^Architecture:/ { if ($2==a||$2=="all") k=1 }
-              { b=b $0 "\n" }
-              END { if (k&&b!="") printf "%s\n", b }
-            ' "$FULL" > "$DIR/Packages"
+            > "$DIR/Packages"
+
+            for deb in pool/main/*_${arch}.deb; do
+              [ -f "$deb" ] || continue
+
+              pkg_name=$(dpkg-deb -f "$deb" Package         2>/dev/null || true)
+              pkg_ver=$( dpkg-deb -f "$deb" Version         2>/dev/null || true)
+              pkg_arch=$(dpkg-deb -f "$deb" Architecture    2>/dev/null || true)
+              pkg_maint=$(dpkg-deb -f "$deb" Maintainer     2>/dev/null || true)
+              pkg_isize=$(dpkg-deb -f "$deb" Installed-Size 2>/dev/null || true)
+              pkg_dep=$(  dpkg-deb -f "$deb" Depends        2>/dev/null || true)
+              pkg_home=$( dpkg-deb -f "$deb" Homepage       2>/dev/null || true)
+              pkg_desc=$( dpkg-deb -f "$deb" Description    2>/dev/null || true)
+
+              file_size=$(wc -c < "$deb")
+              md5=$(md5sum    "$deb" | cut -d' ' -f1)
+              sha1=$(sha1sum  "$deb" | cut -d' ' -f1)
+              sha256=$(sha256sum "$deb" | cut -d' ' -f1)
+
+              {
+                echo "Package: $pkg_name"
+                echo "Version: $pkg_ver"
+                echo "Architecture: $pkg_arch"
+                echo "Maintainer: $pkg_maint"
+                echo "Installed-Size: $pkg_isize"
+                [ -n "$pkg_dep" ]  && echo "Depends: $pkg_dep"
+                [ -n "$pkg_home" ] && echo "Homepage: $pkg_home"
+                echo "Filename: $deb"
+                echo "Size: $file_size"
+                echo "MD5sum: $md5"
+                echo "SHA1: $sha1"
+                echo "SHA256: $sha256"
+                echo "Description: $pkg_desc"
+                echo ""
+              } >> "$DIR/Packages"
+            done
+
             rm -f "$DIR/Packages.gz"
             gzip -k "$DIR/Packages"
             echo "  [$arch] $(grep -c '^Package:' "$DIR/Packages") package(s)"
           done
-          rm -f "$FULL"
 
       - name: Generate Release file
         run: |
