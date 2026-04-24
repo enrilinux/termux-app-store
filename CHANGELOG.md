@@ -11,6 +11,13 @@ and this project adheres to semantic versioning.
 ### Added
 - Package `merlin` v1.0.0 - Analyst website vulnerabillity scanner
 
+### Changed
+- `tasctl` sync with pypi for update and wrapper
+- `termux_app_store_cli.py` sync tasctl and pypi
+
+### Update
+- `termux-build-init.sh` - Update and fixed scan repo, fixed generate build.sh
+
 ---
 
 ## [v0.2.6] - 2026-04-23
