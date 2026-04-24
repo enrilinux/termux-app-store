@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-04-24T02:54:21.602964+00:00",
-  "total": 50,
+  "generated_at": "2026-04-24T03:54:43.206551+00:00",
+  "total": 51,
   "packages": [
     {
       "package": "ani-cli",
@@ -484,6 +484,20 @@
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/iawia002/lux/releases/download/v${TERMUX_PKG_VERSION}/lux_${TERMUX_PKG_VERSION}_Linux_arm64.tar.gz",
       "sha256": "479b09290b8ddda43c994ec5685649eb4635f4bd24ff24e494eddaae473879d7",
+      "platform_independent": false
+    },
+    {
+      "package": "merlin",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "Analyst website vulnerabillity scanner",
+      "homepage": "https://github.com/djunekz/merlin",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/djunekz/merlin/archive/refs/tags/${TERMUX_PKG_VERSION}.tar.gz",
+      "sha256": "1b43688a1383cda25c03945e877390f530b9acee42b0a2fb34c42f7c9c2f50ee",
       "platform_independent": false
     },
     {
