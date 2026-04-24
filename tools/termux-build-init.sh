@@ -287,15 +287,26 @@ scan_python_imports() {
 scan_shell_deps() {
     local src="$1"
     local deps=()
-    local shfiles
-    mapfile -t shfiles < <(find "$src" -maxdepth 3 -name "*.sh" 2>/dev/null)
+    local shfiles=()
+
+    mapfile -t _sh < <(find "$src" -maxdepth 3 -name "*.sh" 2>/dev/null)
+    shfiles+=("${_sh[@]}")
+
+    while IFS= read -r _f; do
+        local _shebang
+        _shebang=$(head -n1 "$_f" 2>/dev/null || true)
+        echo "$_shebang" | grep -qE '^#!.*(bash|sh)\b' && shfiles+=("$_f")
+    done < <(find "$src" -maxdepth 3 -type f ! -name "*.*" 2>/dev/null)
+
     [[ ${#shfiles[@]} -eq 0 ]] && echo "" && return
+
     local cmds
     cmds=$(cat "${shfiles[@]}" 2>/dev/null \
         | sed -n \
             's/.*command -v  *\([a-zA-Z0-9_-]*\).*/\1/p;
              s/.*which  *\([a-zA-Z0-9_-]*\).*/\1/p;
-             s/.*require  *\([a-zA-Z0-9_-]*\).*/\1/p' \
+             s/.*require  *\([a-zA-Z0-9_-]*\).*/\1/p;
+             s/^[[:space:]]*\([a-zA-Z0-9_-]*\)[[:space:]].*/\1/p' \
         | grep -v '^$' | sort -u || true)
     for cmd in $cmds; do
         local mapped; mapped=$(map_shell_dep "$cmd")
@@ -313,6 +324,17 @@ map_shell_dep() {
         true|false|export|local|return) return ;;
     esac
     case "$cmd" in
+        iptables|ip6tables|ebtables|nftables) echo "warn:$cmd-requires-root-kernel-access-not-available-on-Termux" ;;
+        hostapd|hostapd_cli)                  echo "warn:$cmd-requires-WiFi-AP-mode-not-available-on-Termux" ;;
+        isc-dhcp-server|dhcpd|dnsmasq-dhcp)  echo "warn:$cmd-not-available-on-Termux" ;;
+        systemctl|service|initctl)            echo "warn:$cmd-requires-systemd-not-available-on-Termux" ;;
+        ifconfig|iwconfig|iwlist|iw)          echo "warn:$cmd-requires-root-network-access-not-available-on-Termux" ;;
+        airmon-ng|airodump-ng|aireplay-ng|\
+        aircrack-ng|airtun-ng)               echo "warn:$cmd-requires-monitor-mode-WiFi-not-available-on-Termux" ;;
+        rfkill|wpa_supplicant|wpa_cli)        echo "warn:$cmd-requires-root-WiFi-access-not-available-on-Termux" ;;
+        mount|umount|modprobe|insmod|rmmod)   echo "warn:$cmd-requires-root-kernel-access-not-available-on-Termux" ;;
+        apt|apt-get|dpkg-reconfigure|yum|\
+        pacman|dnf|zypper)                    echo "warn:$cmd-is-a-Linux-package-manager-use-pkg-on-Termux" ;;
         python3|python)  echo "pkg:python" ;;
         php)             echo "pkg:php" ;;
         ruby)            echo "pkg:ruby" ;;
@@ -377,7 +399,7 @@ map_perl_dep() {
         Net::Whois::IP|Net::Whois::Raw)
             echo "pkg:perl-net-whois-raw" ;;
         Net::Ping)
-            echo "pkg:perl" ;;   # bundled
+            echo "pkg:perl" ;;
         Term::ANSIColor|Term::ReadLine|Term::ReadKey)
             echo "pkg:perl-term-readkey" ;;
         Encode::*)
@@ -1072,6 +1094,31 @@ echo -e "${W}${N}  Depends: ${C}${DEPENDS_JOINED:-none}${N}"
 [[ -n "${DEPS_SHELL_WARNS:-}" ]] && echo -e "${R}  Incompatible: ${DEPS_SHELL_WARNS}${N}"
 echo -e "${W}════════════════════════════════════════════${N}"
 echo ""
+
+if [[ -n "${DEPS_SHELL_WARNS:-}" ]]; then
+    _CRITICAL_WARNS=$(echo "$DEPS_SHELL_WARNS" | tr ' ' '\n' | grep -E 'iptables|hostapd|dhcpd|systemctl|airmon|ifconfig|iwconfig|rfkill|modprobe' || true)
+    if [[ -n "$_CRITICAL_WARNS" ]]; then
+        echo -e "  ${R}┌─ Termux-Incompatible Tool Detected ──────────────────────┐${N}"
+        echo -e "  ${R}│${N}                                                          ${R}│${N}"
+        echo -e "  ${R}│${N}  ${W}This package requires system-level tools that are not${N}   ${R}│${N}"
+        echo -e "  ${R}│${N}  ${W}available on Termux/Android:${N}                            ${R}│${N}"
+        echo -e "  ${R}│${N}                                                          ${R}│${N}"
+        while IFS= read -r _w; do
+            [[ -z "$_w" ]] && continue
+            _tool=$(echo "$_w" | sed 's/-.*//')
+            printf "  ${R}│${N}   ${Y}✗  %-52s${R}│${N}\n" "$_tool"
+        done <<< "$(echo "$_CRITICAL_WARNS" | tr ' ' '\n')"
+        echo -e "  ${R}│${N}                                                          ${R}│${N}"
+        echo -e "  ${R}│${N}  ${C}This tool is designed for Linux desktop, not Android.${N}   ${R}│${N}"
+        echo -e "  ${R}│${N}                                                          ${R}│${N}"
+        echo -e "  ${R}│${N}  ${C}Need help? Open an issue on GitHub:${N}                     ${R}│${N}"
+        echo -e "  ${R}│${N}  ${W}https://github.com/djunekz/termux-app-store/issues${N}      ${R}│${N}"
+        echo -e "  ${R}│${N}                                                          ${R}│${N}"
+        echo -e "  ${R}└──────────────────────────────────────────────────────────┘${N}"
+        echo ""
+        exit 1
+    fi
+fi
 
 read -rp "  Continue? [Y/n]: " _CONT
 [[ "${_CONT:-Y}" =~ ^[Nn]$ ]] && exit 0
