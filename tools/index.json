@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-04-25T02:43:42.131695+00:00",
+  "generated_at": "2026-04-25T04:10:16.344416+00:00",
   "total": 51,
   "packages": [
     {
@@ -182,7 +182,7 @@
     },
     {
       "package": "cybertuz",
-      "version": "1.0.1",
+      "version": "1.0.2-1",
       "maintainer": "@termux-app-store",
       "description": "Comprehensive Educational Learning Platform for Termux",
       "homepage": "https://github.com/djunekz/cybertuz",
@@ -191,7 +191,7 @@
       "installed_size": "Unknown",
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/djunekz/cybertuz/archive/refs/tags/v${TERMUX_PKG_VERSION}.tar.gz",
-      "sha256": "de6f948ecfe97e875bdbabe2073671da29a8521de465ad6a577476749a9fef59",
+      "sha256": "9b678169bad675762dd4768cf4be6a08445fd5eb9008487a85b1a72af716e129",
       "platform_independent": true,
       "depends": [
         "nmap",
