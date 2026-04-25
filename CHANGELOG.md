@@ -10,6 +10,11 @@ and this project adheres to semantic versioning.
 
 ### Added
 - Package `merlin` v1.0.0 - Analyst website vulnerabillity scanner
+- Package `bing-ip2hosts` v1.0.5 - bingip2hosts is a Bing.com web scraper that discovers websites by IP address
+- Package `brutespray` v2.6.0 - Fast, multi-protocol credential brute-forcer. Parses Nmap, Nessus, and Nexpose output to automatically test default and custom credentials across 30+ protocols.
+- Package `commix` v4.1 - Automated All-in-One OS Command Injection Exploitation Tool
+- Package `xsstrike` v3.1.6 - Most advanced XSS scanner.
+- Package `zerodoor` v1.0.0 - A script written lazily for generating cross-platform  backdoors on the go :) 
 
 ### Changed
 - `tasctl` sync with pypi for update and wrapper
