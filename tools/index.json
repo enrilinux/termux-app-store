@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-04-25T06:54:38.607512+00:00",
-  "total": 56,
+  "generated_at": "2026-04-25T11:22:19.367488+00:00",
+  "total": 62,
   "packages": [
     {
       "package": "ani-cli",
@@ -231,6 +231,44 @@
       ]
     },
     {
+      "package": "crowbar",
+      "version": "4.2",
+      "maintainer": "@termux-app-store",
+      "description": "Crowbar is brute forcing tool that can be used during penetration tests. It is developed to support protocols that are not currently supported by thc-hydra and other popular brute forcing tools.",
+      "homepage": "https://github.com/galkan/crowbar",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/galkan/crowbar/archive/refs/tags/v4.2.tar.gz",
+      "sha256": "b65cd4c39e50a4311d075f9c219b2ebb7ba06a48f8e4e5cb0082d48412bcb23d",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
+      "package": "cupp",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "cupp — auto-packaged by termux-build-init",
+      "homepage": "https://github.com/Mebus/cupp",
+      "license": "UNKNOWN",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/Mebus/cupp/archive/refs/heads/master.tar.gz",
+      "sha256": "a3fe015604f5b4f6824a45b7127056c27f2b37e78ad2e2fbca019708818317c7",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
       "package": "cybertuz",
       "version": "1.0.2-1",
       "maintainer": "@termux-app-store",
@@ -249,6 +287,80 @@
         "whois",
         "curl",
         "dnsutils"
+      ]
+    },
+    {
+      "package": "djangohunter",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "djangohunter — auto-packaged by termux-build-init",
+      "homepage": "https://github.com/6IX7ine/djangohunter",
+      "license": "UNKNOWN",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/6IX7ine/djangohunter/archive/refs/heads/master.tar.gz",
+      "sha256": "6642cfc85c4e1820c768f85c3f94501d619dc96373b065771a6ef62c3cdeca14",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
+      "package": "dnsrecon",
+      "version": "1.6.0",
+      "maintainer": "@termux-app-store",
+      "description": "DNS Enumeration Script",
+      "homepage": "https://github.com/darkoperator/dnsrecon",
+      "license": "GPL-2.0",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/darkoperator/dnsrecon/archive/refs/tags/1.6.0.tar.gz",
+      "sha256": "21b83c22e4dcf684b623c824a678c371d803952d99d4758c9b1c45bce409eb3d",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
+      "package": "doona",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "Network based protocol fuzzer",
+      "homepage": "https://github.com/wireghoul/doona",
+      "license": "UNKNOWN",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/wireghoul/doona/archive/refs/heads/master.tar.gz",
+      "sha256": "7802a60981a80a53a1598e61943b564ecc937c4550a713fc354d02e8cec924e8",
+      "platform_independent": false,
+      "depends": [
+        "perl"
+      ]
+    },
+    {
+      "package": "dumpzilla",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "dumpzilla packaging for Kali Linux",
+      "homepage": "https://gitlab.com/groups/kalilinux/packages",
+      "license": "UNKNOWN",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://gitlab.com/kalilinux/packages/dumpzilla/-/archive/kali/master/dumpzilla-kali/master.tar.gz",
+      "sha256": "53df946af387842561db5ca2bea7816a8e0870f7399fcaef4299411a04931b99",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
       ]
     },
     {
