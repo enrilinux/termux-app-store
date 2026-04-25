@@ -28,7 +28,8 @@ cat <<'EOF'
 
 ══════════════════════════════════════════════════════════════════════
         Termux Build Init  -  Auto Create and Build package
-              github.com/djunekz/termux-app-store
+                github.com/djunekz/termux-app-store
+         Supports: GitHub · GitLab · Codeberg · Direct URL
 ══════════════════════════════════════════════════════════════════════
 EOF
 }
@@ -860,6 +861,177 @@ json_field() {
     echo "$json" | sed -n "s/.*\"${field}\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -n1
 }
 
+
+gitlab_api() {
+    local url="$1"
+    local result
+    result=$(curl -sf \
+        -H "Accept: application/json" \
+        ${GITLAB_TOKEN:+-H "PRIVATE-TOKEN: $GITLAB_TOKEN"} \
+        "$url" 2>/dev/null) || true
+
+    case "$result" in
+        *rate\ limit*|*error*Retry*)
+            warn "GitLab API rate limited — set GITLAB_TOKEN env var for higher limits"
+            echo "" ;;
+        *)
+            echo "$result" ;;
+    esac
+}
+
+forge_fetch_metadata() {
+    local repo_url="$1"
+
+    if [[ "$repo_url" == *"github.com"* ]]; then
+        step "Fetching GitHub metadata"
+
+        local api_base
+        api_base=$(echo "$repo_url" \
+            | sed 's#https://github.com/#https://api.github.com/repos/#' \
+            | sed 's#\.git$##')
+
+        local data
+        data=$(github_api "$api_base")
+
+        if [[ -n "$data" ]]; then
+            DESCRIPTION=$(json_field "$data" "description")
+            [[ -z "$DESCRIPTION" || "$DESCRIPTION" == "null" ]] && \
+                DESCRIPTION="$PKG_NAME — auto-packaged by termux-build-init"
+            LICENSE=$(json_field "$data" "spdx_id");   LICENSE="${LICENSE:-UNKNOWN}"
+            LANGUAGE=$(json_field "$data" "language");  LANGUAGE="${LANGUAGE:-Unknown}"
+            HOMEPAGE=$(json_field "$data" "homepage");  HOMEPAGE="${HOMEPAGE:-$repo_url}"
+            [[ -z "$HOMEPAGE" || "$HOMEPAGE" == "null" ]] && HOMEPAGE="$repo_url"
+            ok "Repo: ${W}${DESCRIPTION}${N}"
+        fi
+
+        local release tag
+        release=$(github_api "$api_base/releases/latest")
+        tag=$(json_field "$release" "tag_name") || true
+
+        if [[ -n "$tag" ]]; then
+            VERSION="${tag#v}"
+            SRCURL="$repo_url/archive/refs/tags/$tag.tar.gz"
+            ok "Source: release ${W}${tag}${N}"
+        else
+            local default_branch
+            default_branch=$(json_field "$data" "default_branch")
+
+            if [[ -z "$default_branch" || "$default_branch" == "null" ]]; then
+                warn "Could not detect default branch — probing common names..."
+                for _b in master main trunk dev; do
+                    if curl -sf --head "$repo_url/archive/refs/heads/$_b.tar.gz" \
+                            -o /dev/null 2>/dev/null; then
+                        default_branch="$_b"; break
+                    fi
+                done
+                [[ -z "$default_branch" ]] && default_branch="main"
+            fi
+
+            VERSION="1.0.0"
+            SRCURL="$repo_url/archive/refs/heads/$default_branch.tar.gz"
+            warn "No release found — using branch ${W}${default_branch}${N}"
+        fi
+
+    elif [[ "$repo_url" == *"gitlab.com"* || "$repo_url" == *"gitlab."* ]]; then
+        step "Fetching GitLab metadata"
+
+        local gl_host gl_path gl_path_encoded api_base
+        gl_host=$(echo "$repo_url" | sed 's#https://\([^/]*\)/.*#\1#')
+        gl_path=$(echo "$repo_url" | sed "s#https://${gl_host}/##" | sed 's#\.git$##')
+        gl_path_encoded=$(echo "$gl_path" | sed 's#/#%2F#g')
+        api_base="https://${gl_host}/api/v4/projects/${gl_path_encoded}"
+
+        local data
+        data=$(gitlab_api "$api_base")
+
+        if [[ -n "$data" ]]; then
+            DESCRIPTION=$(json_field "$data" "description")
+            [[ -z "$DESCRIPTION" || "$DESCRIPTION" == "null" ]] && \
+                DESCRIPTION="$PKG_NAME — auto-packaged by termux-build-init"
+            # GitLab doesn't put spdx_id at top level; try license.key
+            local lic
+            lic=$(echo "$data" | sed -n 's/.*"license"[^}]*"key"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+            LICENSE="${lic:-UNKNOWN}"
+            LANGUAGE="Unknown"
+            local web_url
+            web_url=$(json_field "$data" "web_url")
+            HOMEPAGE="${web_url:-$repo_url}"
+            ok "Repo: ${W}${DESCRIPTION}${N}"
+        fi
+
+        local releases tag
+        releases=$(gitlab_api "$api_base/releases?per_page=1")
+        tag=$(json_field "$releases" "tag_name") || true
+
+        if [[ -n "$tag" ]]; then
+            VERSION="${tag#v}"
+            SRCURL="$repo_url/-/archive/$tag/${PKG_NAME}-${tag}.tar.gz"
+            ok "Source: release ${W}${tag}${N}"
+        else
+            local default_branch
+            default_branch=$(json_field "$data" "default_branch")
+            [[ -z "$default_branch" || "$default_branch" == "null" ]] && \
+                default_branch="main"
+
+            local probe_ok=false
+            for _b in "$default_branch" master main trunk dev; do
+                _probe="$repo_url/-/archive/${_b}/${PKG_NAME}-${_b}.tar.gz"
+                if curl -sf --head "$_probe" -o /dev/null 2>/dev/null; then
+                    default_branch="$_b"; probe_ok=true; break
+                fi
+            done
+
+            VERSION="1.0.0"
+            SRCURL="$repo_url/-/archive/${default_branch}/${PKG_NAME}-${default_branch}.tar.gz"
+            warn "No release found — using branch ${W}${default_branch}${N}"
+        fi
+
+    elif [[ "$repo_url" == *"codeberg.org"* ]]; then
+        step "Fetching Codeberg metadata"
+
+        local cb_path api_base
+        cb_path=$(echo "$repo_url" | sed 's#https://codeberg.org/##' | sed 's#\.git$##')
+        api_base="https://codeberg.org/api/v1/repos/${cb_path}"
+
+        local data
+        data=$(curl -sf "$api_base" 2>/dev/null) || true
+
+        if [[ -n "$data" ]]; then
+            DESCRIPTION=$(json_field "$data" "description")
+            [[ -z "$DESCRIPTION" || "$DESCRIPTION" == "null" ]] && \
+                DESCRIPTION="$PKG_NAME — auto-packaged by termux-build-init"
+            LICENSE="UNKNOWN"
+            LANGUAGE="Unknown"
+            HOMEPAGE="$repo_url"
+            ok "Repo: ${W}${DESCRIPTION}${N}"
+        fi
+
+        local releases tag
+        releases=$(curl -sf "$api_base/releases?limit=1" 2>/dev/null) || true
+        tag=$(json_field "$releases" "tag_name") || true
+
+        if [[ -n "$tag" ]]; then
+            VERSION="${tag#v}"
+            SRCURL="$repo_url/archive/$tag.tar.gz"
+            ok "Source: release ${W}${tag}${N}"
+        else
+            local default_branch
+            default_branch=$(json_field "$data" "default_branch")
+            [[ -z "$default_branch" || "$default_branch" == "null" ]] && \
+                default_branch="main"
+            VERSION="1.0.0"
+            SRCURL="$repo_url/archive/branch/$default_branch.tar.gz"
+            warn "No release found — using branch ${W}${default_branch}${N}"
+        fi
+
+    else
+        warn "Unknown forge — treating as direct download URL"
+        SRCURL="$repo_url"
+        VERSION="1.0.0"
+        HOMEPAGE="$repo_url"
+    fi
+}
+
 banner
 
 REPO_URL="${1:-}"
@@ -867,7 +1039,7 @@ REPO_URL="${1:-}"
 step "Input"
 
 if [[ -z "$REPO_URL" ]]; then
-    read -rp "  GitHub repo URL (or package name): " REPO_URL
+    read -rp "  Repo URL (GitHub/GitLab/Codeberg or direct URL): " REPO_URL
 fi
 
 PKG_NAME=$(sanitize_pkgname "$(basename "$REPO_URL")")
@@ -887,52 +1059,9 @@ INSTALL_METHOD="unknown"
 DEPENDS_RAW=""
 MAIN_FILE=""
 
-if [[ "$REPO_URL" == *"github.com"* ]]; then
-    step "Fetching GitHub metadata"
+forge_fetch_metadata "$REPO_URL"
 
-    API_BASE=$(echo "$REPO_URL" \
-        | sed 's#https://github.com/#https://api.github.com/repos/#' \
-        | sed 's#\.git$##')
-
-    DATA=$(github_api "$API_BASE")
-
-    if [[ -n "$DATA" ]]; then
-        DESCRIPTION=$(json_field "$DATA" "description")
-        [[ -z "$DESCRIPTION" || "$DESCRIPTION" == "null" ]] && DESCRIPTION="$PKG_NAME — auto-packaged by termux-build-init"
-        LICENSE=$(json_field "$DATA" "spdx_id"); LICENSE="${LICENSE:-UNKNOWN}"
-        LANGUAGE=$(json_field "$DATA" "language"); LANGUAGE="${LANGUAGE:-Unknown}"
-        HOMEPAGE=$(json_field "$DATA" "homepage"); HOMEPAGE="${HOMEPAGE:-$REPO_URL}"
-        [[ -z "$HOMEPAGE" || "$HOMEPAGE" == "null" ]] && HOMEPAGE="$REPO_URL"
-        ok "Repo: ${W}${DESCRIPTION}${N}"
-    fi
-
-    RELEASE=$(github_api "$API_BASE/releases/latest")
-    TAG=$(json_field "$RELEASE" "tag_name") || true
-
-    if [[ -n "$TAG" ]]; then
-        VERSION="${TAG#v}"
-        SRCURL="$REPO_URL/archive/refs/tags/$TAG.tar.gz"
-        ok "Source: release ${W}${TAG}${N}"
-    else
-        DEFAULT_BRANCH=$(json_field "$DATA" "default_branch")
-
-        if [[ -z "$DEFAULT_BRANCH" || "$DEFAULT_BRANCH" == "null" ]]; then
-            warn "Could not detect default branch from API — probing common branch names..."
-            for _branch in master main trunk dev; do
-                _probe_url="$REPO_URL/archive/refs/heads/$_branch.tar.gz"
-                if curl -sf --head "$_probe_url" -o /dev/null 2>/dev/null; then
-                    DEFAULT_BRANCH="$_branch"
-                    break
-                fi
-            done
-            [[ -z "$DEFAULT_BRANCH" ]] && DEFAULT_BRANCH="main"
-        fi
-
-        VERSION="1.0.0"
-        SRCURL="$REPO_URL/archive/refs/heads/$DEFAULT_BRANCH.tar.gz"
-        warn "No release found — using branch ${W}${DEFAULT_BRANCH}${N}"
-    fi
-fi
+[[ -z "$SRCURL" ]] && fail "Tidak bisa menentukan source URL dari: $REPO_URL\n  Pastikan URL valid (GitHub/GitLab/Codeberg) atau masukkan URL tar.gz langsung."
 
 step "Downloading & analyzing source"
 info "URL: $SRCURL"
