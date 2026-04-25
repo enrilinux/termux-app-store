@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-04-25T04:10:16.344416+00:00",
-  "total": 51,
+  "generated_at": "2026-04-25T06:54:38.607512+00:00",
+  "total": 56,
   "packages": [
     {
       "package": "ani-cli",
@@ -107,6 +107,20 @@
       ]
     },
     {
+      "package": "bing-ip2hosts",
+      "version": "1.0.5",
+      "maintainer": "@termux-app-store",
+      "description": "bingip2hosts is a Bing.com web scraper that discovers websites by IP address",
+      "homepage": "https://github.com/urbanadventurer/bing-ip2hosts",
+      "license": "GPL-3.0",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/urbanadventurer/bing-ip2hosts/archive/refs/tags/v1.0.5.tar.gz",
+      "sha256": "0a198af8d7876d7adb9c0517025bd6443d13399a188615a078cf3e45e120f19e",
+      "platform_independent": false
+    },
+    {
       "package": "bower",
       "version": "1.8.12",
       "maintainer": "@termux-app-store",
@@ -121,6 +135,23 @@
       "platform_independent": false,
       "depends": [
         "nodejs"
+      ]
+    },
+    {
+      "package": "brutespray",
+      "version": "2.6.0",
+      "maintainer": "@termux-app-store",
+      "description": "Fast, multi-protocol credential brute-forcer. Parses Nmap, Nessus, and Nexpose output to automatically test default and custom credentials across 30+ protocols.",
+      "homepage": "https://pkg.go.dev/github.com/x90skysn3k/brutespray/v2",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/x90skysn3k/brutespray/archive/refs/tags/v2.6.0.tar.gz",
+      "sha256": "cae09d60d49b46d56892caf1bab3ff56d135e9dedd110db8907ac98522327e4e",
+      "platform_independent": false,
+      "depends": [
+        "golang"
       ]
     },
     {
@@ -173,6 +204,25 @@
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/Dionach/CMSmap/archive/refs/heads/master.tar.gz",
       "sha256": "da902ef29ca2c464a100b51b596bfd31066a68a825fc2522d24f415aed5413c2",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
+      "package": "commix",
+      "version": "4.1",
+      "maintainer": "@termux-app-store",
+      "description": "Automated All-in-One OS Command Injection Exploitation Tool",
+      "homepage": "https://commixproject.com",
+      "license": "NOASSERTION",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/commixproject/commix/archive/refs/tags/v4.1.tar.gz",
+      "sha256": "d71e6a98231c2eb434eb9cc1b835523ad5618578309e2f835c40d767f2af79de",
       "platform_independent": false,
       "depends": [
         "python",
@@ -816,6 +866,44 @@
       "srcurl": "https://github.com/djunekz/webshake/releases/download/v${TERMUX_PKG_VERSION}/webshake-${TERMUX_PKG_VERSION}.tar.gz",
       "sha256": "4312838c7d201f1540923dfbeeeb21d8af4ae9896a2ce18357208805a859cbe8",
       "platform_independent": false
+    },
+    {
+      "package": "xsstrike",
+      "version": "3.1.6",
+      "maintainer": "@termux-app-store",
+      "description": "Most advanced XSS scanner.",
+      "homepage": "https://github.com/s0md3v/XSStrike",
+      "license": "GPL-3.0",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/s0md3v/XSStrike/archive/refs/tags/3.1.6.tar.gz",
+      "sha256": "d8c6c2f4dbcee5836d552cc193cad4b6dfa6c9a9471680d5d2f2b3d278b021f2",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
+      "package": "zerodoor",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "A script written lazily for generating cross-platform  backdoors on the go :)",
+      "homepage": "https://github.com/Souhardya/Zerodoor",
+      "license": "NOASSERTION",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/Souhardya/Zerodoor/archive/refs/heads/master.tar.gz",
+      "sha256": "494be3ff04d5be6d285755c0e9b9382a7da3eb7721da259d40128ce8f2a5a6c2",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
     },
     {
       "package": "zora",
