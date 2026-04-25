@@ -15,6 +15,12 @@ and this project adheres to semantic versioning.
 - Package `commix` v4.1 - Automated All-in-One OS Command Injection Exploitation Tool
 - Package `xsstrike` v3.1.6 - Most advanced XSS scanner.
 - Package `zerodoor` v1.0.0 - A script written lazily for generating cross-platform  backdoors on the go :) 
+- Package `crowbar` v4.2 - Crowbar is brute forcing tool that can be used during penetration tests. It is developed to support protocols that are not currently supported by thc-hydra and other popular brute forcing tools. 
+- Package `cupp` v1.0.0 - cupp — auto-packaged by termux-build-init
+- Package `djangohunter` v1.0.0 - djangohunter — auto-packaged by termux-build-init
+- Package `dnsrecon` v1.6.0 - DNS Enumeration Script
+- Package `doona` v1.0.0 - Network based protocol fuzzer
+- Package `dumpzilla` v1.0.0 - dumpzilla packaging for Kali Linux
 
 ### Changed
 - `tasctl` sync with pypi for update and wrapper
