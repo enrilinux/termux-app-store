@@ -17,6 +17,7 @@ and this project adheres to semantic versioning.
 
 ### Update
 - `termux-build-init.sh` - Update and fixed scan repo, fixed generate build.sh
+- Package `cybertuz` v1.0.1 → v1.0.2-1
 
 ---
 
