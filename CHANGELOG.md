@@ -21,6 +21,7 @@ and this project adheres to semantic versioning.
 - Package `dnsrecon` v1.6.0 - DNS Enumeration Script
 - Package `doona` v1.0.0 - Network based protocol fuzzer
 - Package `dumpzilla` v1.0.0 - dumpzilla packaging for Kali Linux
+- Package `termux-tui` v1.0.0 - A futuristic Jarvis-style terminal dashboard for Termux
 
 ### Changed
 - `tasctl` sync with pypi for update and wrapper
