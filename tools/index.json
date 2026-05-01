@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-01T07:34:47.661229+00:00",
-  "total": 62,
+  "generated_at": "2026-05-01T13:03:01.515977+00:00",
+  "total": 63,
   "packages": [
     {
       "package": "ani-cli",
@@ -871,6 +871,25 @@
       "platform_independent": false,
       "depends": [
         "git",
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
+      "package": "termux-tui",
+      "version": "1.0.0",
+      "maintainer": "@opsonusdh",
+      "description": "A futuristic Jarvis-style terminal dashboard for Termux",
+      "homepage": "https://github.com/opsonusdh/Termux-TUI",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/opsonusdh/Termux-TUI/archive/refs/heads/main.tar.gz",
+      "sha256": "d7507b50168653d1d6013903e513e296e7a322455ee321a11a749b8d34506833",
+      "platform_independent": false,
+      "depends": [
         "python",
         "python-pip",
         "python-setuptools"
