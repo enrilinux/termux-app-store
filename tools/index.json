@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-02T09:21:28.191553+00:00",
+  "generated_at": "2026-05-02T09:25:21.795340+00:00",
   "total": 63,
   "packages": [
     {
@@ -878,7 +878,7 @@
     },
     {
       "package": "termux-tui",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "maintainer": "@opsonusdh",
       "description": "A futuristic Jarvis-style terminal dashboard for Termux",
       "homepage": "https://github.com/opsonusdh/Termux-TUI",
@@ -887,7 +887,7 @@
       "installed_size": "Unknown",
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/opsonusdh/Termux-TUI/archive/refs/heads/main.tar.gz",
-      "sha256": "d7507b50168653d1d6013903e513e296e7a322455ee321a11a749b8d34506833",
+      "sha256": "19829d0d340ba125320a3d99fb261e06d8bcba7477b2c2db91ae4876ffe1db21",
       "platform_independent": false,
       "depends": [
         "python",
