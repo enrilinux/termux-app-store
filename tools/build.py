@@ -8,6 +8,7 @@ Scan semua packages/ dan parse build.sh untuk extract metadata
 import os
 import re
 import json
+import sys
 import hashlib
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -191,4 +192,4 @@ def main():
 
 
 if __name__ == "__main__":  # pragma: no cover
-    exit(main())  # pragma: no cover
+    sys.exit(main())  # pragma: no cover
