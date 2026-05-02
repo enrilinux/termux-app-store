@@ -33,6 +33,7 @@ and this project adheres to semantic versioning.
 - Package `tdoc` v1.0.6 → v2.0.0
 - Package `termux-sync` v0.1.0 → v1.1.0
 - Package `ani-cli` v4.11 → v4.13
+- Package `termux-tui` v1.0.0 → v1.0.1
 
 ---
 
