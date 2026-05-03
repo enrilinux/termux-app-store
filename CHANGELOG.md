@@ -26,6 +26,7 @@ and this project adheres to semantic versioning.
 ### Changed
 - `tasctl` sync with pypi for update and wrapper
 - `termux_app_store_cli.py` sync tasctl and pypi
+- Package `termux-tui` v1.0.2 - Updated metadata
 
 ### Update
 - `termux-build-init.sh` - Update and fixed scan repo, fixed generate build.sh
