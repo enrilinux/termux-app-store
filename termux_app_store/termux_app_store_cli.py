@@ -310,9 +310,17 @@ def get_installed_version(name: str):
         ).strip()
         if not out:
             return None
-        status_part, _, version_part = out.partition("\t")
-        if "installed" in status_part:
-            return version_part.strip() or None
+        for line in out.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split("\t")
+            if len(parts) < 2:
+                continue
+            status_part = parts[0].strip()
+            version_part = parts[1].strip()
+            if "ok installed" in status_part and version_part:
+                return version_part
     except Exception:
         pass
     return None
