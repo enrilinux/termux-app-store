@@ -24,6 +24,9 @@ and this project adheres to semantic versioning.
 - Package `termux-tui` v1.0.0 - A futuristic Jarvis-style terminal dashboard for Termux
 - Package `aichat` v0.30.0 - All-in-one LLM CLI tool featuring Shell Assistant, Chat-REPL, RAG, AI Tools & Agents, with access to OpenAI, Claude, Gemini, Ollama, Groq, and more.
 - Package `ttyper` v1.6.0 - Terminal-based typing test.
+- Package `dalfox` v2.12.0 - 🌙🦊 Dalfox is a powerful open-source XSS scanner and utility focused on automation.
+- Package `orchat` v1.4.6 - A powerful, feature-rich command-line interface for interacting with AI models through OpenRouter.
+- Package `tere` v1.6.0 - Terminal file explorer
 
 ### Changed
 - `tasctl` sync with pypi for update and wrapper
