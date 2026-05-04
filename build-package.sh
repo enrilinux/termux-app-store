@@ -639,8 +639,8 @@ if declare -f termux_step_make > /dev/null 2>&1; then
   export TERMUX_PREFIX="$PREFIX"
   export TERMUX_PKG_SRCDIR="$SRC_ROOT"
   export PATH="$PREFIX/bin:$PATH"
-  if [[ "${TERMUX_PKG_BUILD_IN_SRC:-false}" == "true" ]]; then
-    cd "$TERMUX_PKG_SRCDIR"
+  if [[ -d "$SRC_ROOT" ]]; then
+    cd "$SRC_ROOT"
   fi
 
   _MAKE_LOG=$(mktemp)
@@ -1007,7 +1007,6 @@ elif declare -f termux_step_make_install > /dev/null 2>&1; then
   _STAGED_COUNT=$(find "$WORK_DIR/pkg$PREFIX" -type f 2>/dev/null | grep -v "DEBIAN" | wc -l)
   if [[ "$_STAGED_COUNT" -eq 0 ]]; then
     _warn "Staging found no files — attempting emergency capture from PREFIX"
-    # Binary in bin/
     if [[ -f "$PREFIX/bin/$PACKAGE" ]]; then
       install -Dm755 "$PREFIX/bin/$PACKAGE" "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
       _detail "Emergency bin:" "$PREFIX/bin/$PACKAGE"

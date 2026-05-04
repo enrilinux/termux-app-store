@@ -160,15 +160,36 @@ map_python_dep() {
         psutil)         echo "pip:psutil" ;;
         pexpect)        echo "pip:pexpect" ;;
         ptyprocess)     echo "pip:ptyprocess" ;;
-        yaml|ruamel)    echo "pip:yaml" ;;
-        six)            echo "pip:six" ;;
-        attr|attrs)     echo "pip:attrs" ;;
-        certifi)        echo "pip:certifi" ;;
+        asyncio|bisect|heapq|array|queue|abc|io|typing_extensions) return ;;
+        tomllib|toml) return ;;
+
+        yaml|ruamel)              echo "pip:PyYAML" ;;
+        cv2)                      echo "pip:opencv-python" ;;
+        PIL|Pillow)               echo "pip:Pillow" ;;
+        sklearn)                  echo "pip:scikit-learn" ;;
+        skimage)                  echo "pip:scikit-image" ;;
+        bs4|beautifulsoup4)       echo "pip:beautifulsoup4" ;;
+        dotenv)                   echo "pip:python-dotenv" ;;
+        dateutil)                 echo "pip:python-dateutil" ;;
+        jwt)                      echo "pip:PyJWT" ;;
+        nacl)                     echo "pip:pynacl" ;;
+        pyzmq|zmq)                echo "pip:pyzmq" ;;
+        attr|attrs)               echo "pip:attrs" ;;
         charset_normalizer|chardet) echo "pip:chardet" ;;
+        flask_restful)            echo "pip:flask-restful" ;;
+        xdg_base_dirs|xdg)        echo "pip:xdg-base-dirs" ;;
+        click_default_group)      echo "pip:click-default-group" ;;
+        sqlmodel)                 echo "pip:sqlmodel" ;;
+        tiktoken)                 echo "pip:tiktoken" ;;
+        humanize)                 echo "pip:humanize" ;;
+        textual)                  echo "pip:textual" ;;
+
+        six)            echo "pip:six" ;;
+        certifi)        echo "pip:certifi" ;;
         idna)           echo "pip:idna" ;;
         urllib3)        echo "pip:urllib3" ;;
+        requests)       echo "pip:requests" ;;
         aiohttp)        echo "pip:aiohttp" ;;
-        pyzmq|zmq)      echo "pip:pyzmq" ;;
         click)          echo "pip:click" ;;
         rich)           echo "pip:rich" ;;
         colorama)       echo "pip:colorama" ;;
@@ -176,8 +197,18 @@ map_python_dep() {
         bcrypt)         echo "pip:bcrypt" ;;
         flask)          echo "pip:flask" ;;
         sqlalchemy)     echo "pip:sqlalchemy" ;;
-        toml|tomllib)   echo "pip:toml" ;;
-        dotenv)         echo "pip:dotenv" ;;
+        pydantic)       echo "pip:pydantic" ;;
+        lxml)           echo "pip:lxml" ;;
+        numpy)          echo "pip:numpy" ;;
+        pandas)         echo "pip:pandas" ;;
+        scipy)          echo "pip:scipy" ;;
+        matplotlib)     echo "pip:matplotlib" ;;
+        cryptography)   echo "pip:cryptography" ;;
+        paramiko)       echo "pip:paramiko" ;;
+        scapy)          echo "pip:scapy" ;;
+        psutil)         echo "pip:psutil" ;;
+        pexpect)        echo "pip:pexpect" ;;
+        ptyprocess)     echo "pip:ptyprocess" ;;
         pyfiglet)       echo "pip:pyfiglet" ;;
         tqdm)           echo "pip:tqdm" ;;
         termcolor)      echo "pip:termcolor" ;;
@@ -190,9 +221,6 @@ map_python_dep() {
         docopt)         echo "pip:docopt" ;;
         cachetools)     echo "pip:cachetools" ;;
         pytz)           echo "pip:pytz" ;;
-        dateutil)       echo "pip:python-dateutil" ;;
-        jwt)            echo "pip:PyJWT" ;;
-        nacl)           echo "pip:pynacl" ;;
         httpx)          echo "pip:httpx" ;;
         websockets)     echo "pip:websockets" ;;
         pynput)         echo "pip:pynput" ;;
@@ -202,7 +230,6 @@ map_python_dep() {
         uvicorn)        echo "pip:uvicorn" ;;
         fastapi)        echo "pip:fastapi" ;;
         django)         echo "pip:django" ;;
-        flask_restful)  echo "pip:flask-restful" ;;
         pyperclip)      echo "pip:pyperclip" ;;
         netifaces)      echo "pip:netifaces" ;;
         netaddr)        echo "pip:netaddr" ;;
@@ -490,8 +517,8 @@ detect_method() {
     elif [[ -f "$src/package.json" ]];    then echo "npm"
     elif [[ -f "$src/CMakeLists.txt" ]];  then echo "cmake"
     elif [[ -f "$src/configure" || -f "$src/configure.ac" ]]; then echo "autotools"
-    elif [[ -f "$src/Makefile" || -f "$src/makefile" ]]; then echo "make"
     elif [[ -f "$src/setup.py" || -f "$src/pyproject.toml" ]]; then echo "pip"
+    elif [[ -f "$src/Makefile" || -f "$src/makefile" ]]; then echo "make"
     elif ls "$src"/*.py &>/dev/null 2>&1; then echo "python-script"
     elif ls "$src"/*.pl &>/dev/null 2>&1; then echo "perl"
     elif ls "$src"/*.rb &>/dev/null 2>&1; then echo "ruby"
@@ -565,7 +592,11 @@ make_install_block() {
     local _pip_cmd="pip"
     [[ "$python_ver" == "2" ]] && _pip_cmd="pip2"
     if [[ -n "$pip_extra" ]]; then
-        pip_extra_cmd="    ${_pip_cmd} install --quiet $pip_extra --break-system-packages 2>/dev/null || true"
+        local _dep_lines=""
+        for _dep in $pip_extra; do
+            _dep_lines+="    ${_pip_cmd} install --quiet ${_dep} --break-system-packages 2>/dev/null || echo \"[ WARN ] pip install ${_dep} failed — may be missing at runtime\"\n"
+        done
+        pip_extra_cmd=$(printf '%b' "$_dep_lines")
     fi
 
     local installer_cmd=""
@@ -589,7 +620,9 @@ termux_step_make_install() {
     pip install --quiet setuptools wheel --break-system-packages 2>/dev/null || true
 ${pip_extra_cmd}
     local libdir="\$TERMUX_PREFIX/lib/${pkg}"
-    pip install . --prefix="\$TERMUX_PREFIX" --no-deps --break-system-packages 2>/dev/null \\
+    # Install with deps first (reads pyproject.toml/setup.py dependencies automatically)
+    pip install . --prefix="\$TERMUX_PREFIX" --break-system-packages 2>/dev/null \\
+        || pip install . --prefix="\$TERMUX_PREFIX" --no-build-isolation --break-system-packages 2>/dev/null \\
         || pip install . --prefix="\$TERMUX_PREFIX" --no-deps --no-build-isolation --break-system-packages || {
             echo "pip failed — falling back to manual install"
             mkdir -p "\$libdir"
@@ -690,10 +723,27 @@ BLOCK
 cat <<BLOCK
 
 termux_step_make() {
+    if [[ ! -f Makefile && ! -f makefile ]]; then
+        echo "[ WARN ] No Makefile found in \$(pwd) — skipping make step"
+        return 0
+    fi
     make -j"\$(nproc)" PREFIX="\$TERMUX_PREFIX"
 }
 
 termux_step_make_install() {
+    if [[ ! -f Makefile && ! -f makefile ]]; then
+        echo "[ WARN ] No Makefile found — trying pip fallback..."
+        if [[ -f pyproject.toml || -f setup.py ]]; then
+            pip install --quiet setuptools wheel --break-system-packages 2>/dev/null || true
+            pip install . --prefix="\$TERMUX_PREFIX" --no-deps --break-system-packages 2>/dev/null \
+                || pip install . --prefix="\$TERMUX_PREFIX" --no-deps --no-build-isolation --break-system-packages \
+                || { echo "pip install also failed"; return 1; }
+        else
+            echo "[ FAIL ] No Makefile and no pyproject.toml/setup.py found"
+            return 1
+        fi
+        return 0
+    fi
     make install PREFIX="\$TERMUX_PREFIX"
 }
 BLOCK
@@ -948,7 +998,6 @@ forge_fetch_metadata() {
             DESCRIPTION=$(json_field "$data" "description")
             [[ -z "$DESCRIPTION" || "$DESCRIPTION" == "null" ]] && \
                 DESCRIPTION="$PKG_NAME — auto-packaged by termux-build-init"
-            # GitLab doesn't put spdx_id at top level; try license.key
             local lic
             lic=$(echo "$data" | sed -n 's/.*"license"[^}]*"key"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
             LICENSE="${lic:-UNKNOWN}"
