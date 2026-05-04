@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-04T08:21:04.506671+00:00",
-  "total": 65,
+  "generated_at": "2026-05-04T11:58:26.226042+00:00",
+  "total": 68,
   "packages": [
     {
       "package": "aichat",
@@ -309,6 +309,23 @@
         "whois",
         "curl",
         "dnsutils"
+      ]
+    },
+    {
+      "package": "dalfox",
+      "version": "2.12.0",
+      "maintainer": "@termux-app-store",
+      "description": "🌙🦊 Dalfox is a powerful open-source XSS scanner and utility focused on automation.",
+      "homepage": "https://dalfox.hahwul.com",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/hahwul/dalfox/archive/refs/tags/v2.12.0.tar.gz",
+      "sha256": "b87848b17cac23352d674e63fee554ae6b976a53fe3e62822512232030430cd5",
+      "platform_independent": false,
+      "depends": [
+        "golang"
       ]
     },
     {
@@ -705,6 +722,25 @@
       ]
     },
     {
+      "package": "orchat",
+      "version": "1.4.6",
+      "maintainer": "@termux-app-store",
+      "description": "A powerful, feature-rich command-line interface for interacting with AI models through OpenRouter.",
+      "homepage": "https://github.com/oop7/OrChat",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/oop7/OrChat/archive/refs/tags/v1.4.6.tar.gz",
+      "sha256": "fbe070754e2d66c3f724e496241975f0cd4e209c7c590cca395c38cabd3b65ae",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
       "package": "parsero",
       "version": "1.0.0",
       "maintainer": "@termux-app-store",
@@ -843,6 +879,23 @@
         "git",
         "gnupg",
         "termux-tools"
+      ]
+    },
+    {
+      "package": "tere",
+      "version": "1.6.0",
+      "maintainer": "@termux-app-store",
+      "description": "Terminal file explorer",
+      "homepage": "https://github.com/mgunyho/tere",
+      "license": "EUPL-1.2",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/mgunyho/tere/archive/refs/tags/v1.6.0.tar.gz",
+      "sha256": "7db94216b94abd42f48105c90e0e777593aaf867472615eb94dc2f77bb6a3cfb",
+      "platform_independent": false,
+      "depends": [
+        "rust"
       ]
     },
     {
