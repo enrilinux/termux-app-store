@@ -22,6 +22,23 @@ BG_GREEN="\033[42m"
 BG_RED="\033[41m"
 BLACK="\033[30m"
 
+_cleanup_on_interrupt() {
+  printf "\r%*s\r" "$(tput cols 2>/dev/null || echo 60)" ""
+  echo ""
+  printf "  ${BYELLOW}╭─ Interrupted${R}\n"
+  printf "  ${BYELLOW}│${R}\n"
+  printf "  ${BYELLOW}│${R}  Build was cancelled by user (Ctrl+C)\n"
+  printf "  ${BYELLOW}│${R}\n"
+  jobs -p | xargs -r kill 2>/dev/null || true
+  [[ -n "${_MAKE_LOG:-}"    ]] && rm -f "$_MAKE_LOG"
+  [[ -n "${_INSTALL_LOG:-}" ]] && rm -f "$_INSTALL_LOG"
+  [[ -n "${_PKG_LOG:-}"     ]] && rm -f "$_PKG_LOG"
+  printf "  ${BYELLOW}╰─ Exited cleanly.${R}\n"
+  echo ""
+  exit 130
+}
+trap '_cleanup_on_interrupt' INT TERM
+
 _width() {
   local w; w=$(tput cols 2>/dev/null)
   [[ "$w" =~ ^[0-9]+$ ]] && echo "$w" || echo 60
@@ -648,16 +665,28 @@ if declare -f termux_step_make > /dev/null 2>&1; then
 
   _spin_chars='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
   _spin_i=0
+  _MAKE_START=$(date +%s)
   ( export PATH="$PREFIX/bin:$PATH"; termux_step_make ) > "$_MAKE_LOG" 2>&1 &
   _MAKE_PID=$!
   while kill -0 "$_MAKE_PID" 2>/dev/null; do
     _sc="${_spin_chars:$(( _spin_i % ${#_spin_chars} )):1}"
-    printf "\r  ${BCYAN}[  %s  ]${R}  Building..." "$_sc"
-    sleep 0.1
+    _elapsed=$(( $(date +%s) - _MAKE_START ))
+    _elapsed_fmt=$(printf "%dm%02ds" $(( _elapsed / 60 )) $(( _elapsed % 60 )))
+    _last_line=$(tail -n1 "$_MAKE_LOG" 2>/dev/null | tr -d '\r\n' \
+      | sed 's/\x1b\[[0-9;]*m//g' | cut -c1-45)
+    if [[ -n "$_last_line" ]]; then
+      printf "\r  ${BCYAN}[  %s  ]${R}  ${GRAY}[%s]${R}  %s%-10s" \
+        "$_sc" "$_elapsed_fmt" "$_last_line" " "
+    else
+      printf "\r  ${BCYAN}[  %s  ]${R}  ${GRAY}[%s]${R}  Building...%-10s" \
+        "$_sc" "$_elapsed_fmt" " "
+    fi
+    sleep 0.2
     (( _spin_i++ )) || true
   done
   wait "$_MAKE_PID" || _MAKE_EXIT=$?
   printf "\r%*s\r" "$(tput cols)" ""
+  _MAKE_ELAPSED=$(( $(date +%s) - _MAKE_START ))
 
   _MAKE_OUTPUT=$(cat "$_MAKE_LOG")
   rm -f "$_MAKE_LOG"
@@ -677,7 +706,7 @@ if declare -f termux_step_make > /dev/null 2>&1; then
   fi
 
   cd "$ROOT_DIR"
-  _ok "Build completed"
+  _ok "Build completed  ($(printf "%dm%02ds" $(( _MAKE_ELAPSED / 60 )) $(( _MAKE_ELAPSED % 60 ))))"
 fi
 
 _section "Installing Files (DESTDIR)"
