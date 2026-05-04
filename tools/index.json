@@ -1,9 +1,26 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-04T03:31:36.258930+00:00",
-  "total": 63,
+  "generated_at": "2026-05-04T08:21:04.506671+00:00",
+  "total": 65,
   "packages": [
+    {
+      "package": "aichat",
+      "version": "0.30.0",
+      "maintainer": "@termux-app-store",
+      "description": "All-in-one LLM CLI tool featuring Shell Assistant, Chat-REPL, RAG, AI Tools & Agents, with access to OpenAI, Claude, Gemini, Ollama, Groq, and more.",
+      "homepage": "https://github.com/sigoden/aichat",
+      "license": "Apache-2.0",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/sigoden/aichat/archive/refs/tags/v0.30.0.tar.gz",
+      "sha256": "e194cc89afc213a6e3169738221cae641c347421c4f2aacd5d6f4f7cc6edb387",
+      "platform_independent": false,
+      "depends": [
+        "rust"
+      ]
+    },
     {
       "package": "ani-cli",
       "version": "4.13",
@@ -924,6 +941,23 @@
       "platform_independent": false,
       "depends": [
         "golang"
+      ]
+    },
+    {
+      "package": "ttyper",
+      "version": "1.6.0",
+      "maintainer": "@termux-app-store",
+      "description": "Terminal-based typing test.",
+      "homepage": "https://github.com/max-niederman/ttyper",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/max-niederman/ttyper/archive/refs/tags/v1.6.0.tar.gz",
+      "sha256": "f7e4ff2f803483b17f35aa0c02977326a0546a95f5b465b4dd34ff17e45b4021",
+      "platform_independent": false,
+      "depends": [
+        "rust"
       ]
     },
     {
