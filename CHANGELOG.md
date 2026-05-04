@@ -27,6 +27,7 @@ and this project adheres to semantic versioning.
 - Package `dalfox` v2.12.0 - 🌙🦊 Dalfox is a powerful open-source XSS scanner and utility focused on automation.
 - Package `orchat` v1.4.6 - A powerful, feature-rich command-line interface for interacting with AI models through OpenRouter.
 - Package `tere` v1.6.0 - Terminal file explorer
+- Package `ssrfmap` v1.0.0 - Automatic SSRF fuzzer and exploitation tool
 
 ### Changed
 - `tasctl` sync with pypi for update and wrapper
