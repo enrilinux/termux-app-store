@@ -9,7 +9,7 @@ import urllib.request
 from pathlib import Path
 
 try:
-    from textual.app import App, ComposeResult
+    from textual.app import App, ComposeResult, SystemCommand
     from textual.widgets import (
         Header,
         Input,
@@ -389,17 +389,259 @@ class ConfirmUninstall(_ModalScreen):
             self.dismiss(True)
 
 
+
+class AboutScreen(_ModalScreen):
+
+    DEFAULT_CSS = """
+    AboutScreen {
+        align: center middle;
+    }
+    #about-dialog {
+        width: 70;
+        height: auto;
+        border: heavy #6272a4;
+        background: #282a36;
+        padding: 2 4;
+    }
+    #about-title {
+        text-align: center;
+        color: #50fa7b;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    #about-body {
+        color: #f8f8f2;
+        margin-bottom: 2;
+    }
+    #about-disclaimer {
+        color: #ffb86c;
+        text-style: italic;
+        margin-bottom: 2;
+    }
+    #about-close-row {
+        align: center middle;
+        height: auto;
+    }
+    """
+
+    def compose(self) -> ComposeResult:  # pragma: no cover
+        import importlib.metadata as _meta
+        import sys as _sys
+        from pathlib import Path as _Path
+
+        app_version = "unknown"
+        try:
+            init_candidates = [
+                _Path(__file__).resolve().parent / "__init__.py",
+                _Path(__file__).resolve().parent.parent / "__init__.py",
+            ]
+            for _p in init_candidates:
+                if _p.exists():
+                    for _line in _p.read_text(errors="ignore").splitlines():
+                        if _line.strip().startswith("__version__"):
+                            app_version = _line.split("=", 1)[1].strip().strip("\"' ")
+                            break
+                if app_version != "unknown":
+                    break
+        except Exception:
+            pass
+
+        try:
+            textual_ver = _meta.version("textual")
+        except Exception:
+            textual_ver = "unknown"
+
+        py_ver = _sys.version.split()[0]
+
+        with Vertical(id="about-dialog"):
+            yield Static("📦  Termux App Store", id="about-title")
+            yield Static(
+                f"[b]Version[/b]       : {app_version}\n"
+                f"[b]Official Repo[/b] : github.com/djunekz/termux-app-store\n"
+                f"[b]Developer[/b]     : Djunekz\n"
+                f"[b]License[/b]       : MIT\n"
+                f"\n"
+                f"[b]Built with[/b]    : Textual v{textual_ver}\n"
+                f"[b]Runtime[/b]       : Python {py_ver} on Termux (Android)\n"
+                f"\n"
+                "Termux App Store is a community-driven package manager\n"
+                "for Termux — providing easy installation of tools and apps\n"
+                "not available in the official Termux repository.",
+                id="about-body",
+            )
+            yield Static(
+                "⚠ [b]DISCLAIMER![/b]\n"
+                "If this app was NOT obtained from\n"
+                "[b]https://github.com/djunekz/termux-app-store[/b]\n"
+                "it is NOT the original version and may contain\n"
+                "modified or malicious code. Use at your own risk.",
+                id="about-disclaimer",
+            )
+            with Horizontal(id="about-close-row"):
+                yield Button("Close", id="about-close")
+
+    def on_button_pressed(self, event) -> None:  # pragma: no cover
+        if event.button.id == "about-close":
+            self.dismiss()
+
+
+class ContactScreen(_ModalScreen):
+
+    DEFAULT_CSS = """
+    ContactScreen {
+        align: center middle;
+    }
+    #contact-dialog {
+        width: 70;
+        height: auto;
+        max-height: 90vh;
+        border: heavy #8be9fd;
+        background: #282a36;
+        padding: 1 3 2 3;
+        overflow-y: auto;
+    }
+    #contact-title {
+        text-align: center;
+        color: #8be9fd;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    .contact-section {
+        color: #50fa7b;
+        text-style: bold;
+        margin-top: 1;
+    }
+    .contact-row {
+        color: #f8f8f2;
+        padding-left: 1;
+    }
+    .contact-spacer {
+        height: 0;
+    }
+    #contact-disclaimer {
+        color: #ffb86c;
+        margin-top: 1;
+        padding-left: 1;
+    }
+    #contact-close-row {
+        align: center middle;
+        height: auto;
+        margin-top: 2;
+    }
+    #btn-open-issue {
+        margin-right: 2;
+        background: #6272a4;
+        color: #f8f8f2;
+    }
+    #btn-open-issue:hover { background: #7b88b8; }
+    #btn-close-contact {
+        background: #44475a;
+        color: #f8f8f2;
+    }
+    #btn-close-contact:hover { background: #6272a4; }
+    """
+
+    def compose(self) -> ComposeResult:  # pragma: no cover
+        with Vertical(id="contact-dialog"):
+            yield Static(" Contact & Support", id="contact-title")
+
+            yield Static("[b]Official Repo[/b]      : github.com/djunekz/termux-app-store", classes="contact-row")
+            yield Static("[b]Official Developer[/b] : Djunekz", classes="contact-row")
+            yield Static("[b]License[/b]            : MIT", classes="contact-row")
+            yield Static("[b]Website[/b]            : djunekz.github.io/termux-app-store", classes="contact-row")
+
+            yield Static("", classes="contact-spacer")
+            yield Static("[b]GitHub Issues[/b]", classes="contact-section")
+            yield Static(
+                "  Report bugs or request features:\n"
+                "  github.com/djunekz/termux-app-store/issues",
+                classes="contact-row",
+            )
+
+            yield Static("", classes="contact-spacer")
+            yield Static("[b]GitHub Discussions[/b]", classes="contact-section")
+            yield Static(
+                "  Community help & general questions:\n"
+                "  github.com/djunekz/termux-app-store/discussions",
+                classes="contact-row",
+            )
+
+            yield Static("", classes="contact-spacer")
+            yield Static("[b]Email[/b]", classes="contact-section")
+            yield Static("  gab288.gab288@passinbox.com", classes="contact-row")
+
+            yield Static("", classes="contact-spacer")
+            yield Static(
+                "⚠ [b]DISCLAIMER![/b]\n"
+                "  Only content from\n"
+                "  [b]github.com/djunekz/termux-app-store[/b]\n"
+                "  is considered official.\n"
+                "  Redistribution from other sources is [b]NOT original[/b]\n"
+                "  and may have been tampered with.",
+                id="contact-disclaimer",
+            )
+            with Horizontal(id="contact-close-row"):
+                yield Button("Open GitHub Issues", id="btn-open-issue")
+                yield Button("Close", id="btn-close-contact")
+
+    def on_button_pressed(self, event) -> None:  # pragma: no cover
+        if event.button.id == "btn-open-issue":
+            try:
+                import subprocess as _sp
+                _sp.Popen(
+                    ["termux-open-url",
+                     "https://github.com/djunekz/termux-app-store/issues"],
+                    stdout=_sp.DEVNULL, stderr=_sp.DEVNULL,
+                )
+            except Exception:
+                pass
+            self.dismiss()
+        elif event.button.id == "btn-close-contact":
+            self.dismiss()
+
+
 class TermuxAppStore(App):
 
+    BINDINGS = [
+        ("ctrl+r", "refresh", "Refresh packages"),
+        ("ctrl+i", "install_selected", "Install selected"),
+        ("ctrl+q", "quit", "Quit"),
+    ]
+
     CSS = """
-    Screen { background: #282a36; color: #f8f8f2; }
-    #body { layout: horizontal; height: 1fr; }
-    #left { width: 35%; border: heavy #6272a4; padding: 1; }
-    #right { width: 65%; border: heavy #6272a4; padding: 1; }
+    Screen {
+        background: #282a36;
+        color: #f8f8f2;
+        layout: vertical;
+    }
+    #body {
+        layout: horizontal;
+        height: 1fr;
+        width: 100%;
+    }
+    #left {
+        width: 35%;
+        border: heavy #6272a4;
+        padding: 0 1 1 1;
+        layout: vertical;
+    }
+    #search {
+        height: 3;
+        margin-bottom: 1;
+    }
+    #pkg-list {
+        height: 1fr;
+    }
+    #right {
+        width: 65%;
+        border: heavy #6272a4;
+        padding: 1;
+        layout: vertical;
+    }
     ListItem.--highlight { background: #44475a; color: #50fa7b; }
-    ProgressBar { height: 1; }
+    ProgressBar { height: 1; margin-top: 1; }
     #footer { height: 1; content-align: center middle; color: #6272a4; }
-    #log-scroll { height: 1fr; border: solid #6272a4; }
+    #log-scroll { height: 1fr; border: solid #6272a4; margin-top: 1; }
     #btn-row { height: auto; margin-top: 1; }
     #install { margin-right: 1; }
     #uninstall { background: #ff5555; color: #f8f8f2; display: none; }
@@ -419,20 +661,34 @@ class TermuxAppStore(App):
 
         self.set_interval(0.1, self.consume_worker_queue)
 
-        await asyncio.to_thread(self.load_packages, True)
+        self.load_packages(online=False)
         self.refresh_list()
+
+        self.run_worker(self._fetch_online_worker(), exclusive=False)
+
+    async def _fetch_online_worker(self): # pragma: no cover
+        try:
+            raw = await asyncio.to_thread(fetch_index_from_github)
+            if raw:
+                self.packages = [normalize_pkg(p) for p in raw]
+                self.status_cache.clear()
+                self.refresh_list()
+        except Exception:
+            pass
 
     def compose(self) -> ComposeResult: # pragma: no cover
         yield Header()
-        yield Input(placeholder="Search package...", id="search")
 
         with Horizontal(id="body"):
             with Vertical(id="left"):
-                self.list_view = ListView()
+                self.search_input = Input(placeholder="Search package...", id="search")
+                yield self.search_input
+
+                self.list_view = ListView(id="pkg-list")
                 yield self.list_view
 
             with Vertical(id="right"):
-                self.info = Static("Select a package")
+                self.info = Static("Select a package", id="info")
                 yield self.info
 
                 with VerticalScroll(id="log-scroll") as self.log_container:
@@ -664,6 +920,118 @@ class TermuxAppStore(App):
             self.log_buffer = self.log_buffer[-500:]
         self.log_view.update("\n".join(self.log_buffer))
         self.log_container.scroll_end(animate=False)
+
+    def action_refresh(self):  # pragma: no cover
+        self.status_bar.update("🔄 Refreshing package list...")
+        self.run_worker(self._fetch_online_worker(), exclusive=False)
+
+    def action_focus_search(self):  # pragma: no cover
+        self.query_one("#search", Input).focus()
+
+    def action_about(self):  # pragma: no cover
+        self.push_screen(AboutScreen())
+
+    def action_contact(self):  # pragma: no cover
+        self.push_screen(ContactScreen())
+
+    def action_install_selected(self):  # pragma: no cover
+        if self.current_item and not self.installing:
+            self.worker_queue.put_nowait(("install", self.current_item.pkg["name"]))
+
+    def action_clear_log(self):  # pragma: no cover
+        self.log_buffer.clear()
+        self.log_view.update("")
+        self.status_bar.update("Log cleared.")
+
+    def action_copy_pkg_name(self):  # pragma: no cover
+        if self.current_item:
+            name = self.current_item.pkg["name"]
+            try:
+                subprocess.run(["termux-clipboard-set", name],
+                               capture_output=True, timeout=3)
+                self.status_bar.update(f"Copied: {name}")
+            except Exception:
+                self.status_bar.update(f"Package name: {name}  (clipboard unavailable)")
+
+    def action_open_homepage(self):  # pragma: no cover
+        if self.current_item:
+            pkg = self.current_item.pkg
+            url = pkg.get("url") or f"https://github.com/search?q={pkg['name']}"
+            try:
+                subprocess.Popen(["termux-open-url", url],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                self.status_bar.update(f"Opening: {url}")
+            except Exception:
+                self.status_bar.update(f"URL: {url}")
+
+    def action_show_installed(self):  # pragma: no cover
+        self.search_query = "__installed__"
+        self.list_view.clear()
+        for pkg in self.packages:
+            installed = get_installed_version(pkg["name"])
+            if installed is not None:
+                self.list_view.append(PackageItem(pkg))
+        self.status_bar.update("Showing installed packages only. Press Ctrl+F to reset.")
+
+    def action_update_all(self):  # pragma: no cover
+        updates = []
+        for pkg in self.packages:
+            installed = get_installed_version(pkg["name"])
+            if installed and _ver_tuple(installed) < _ver_tuple(pkg["version"]):
+                updates.append(pkg["name"])
+        if not updates:
+            self.status_bar.update("✔ All packages are up to date.")
+            return
+        self.status_bar.update(f"Queuing {len(updates)} update(s)...")
+        for name in updates:
+            self.worker_queue.put_nowait(("install", name))
+
+    def get_system_commands(self, screen):  # pragma: no cover
+        yield SystemCommand(
+            "Refresh packages",
+            "Fetch the latest package list from GitHub",
+            self.action_refresh,
+        )
+        yield SystemCommand(
+            "Contact Support",
+            "GitHub Issues, Discussions, email, and official disclaimer",
+            self.action_contact,
+        )
+        yield SystemCommand(
+            "Install selected package",
+            "Install or update the currently highlighted package",
+            self.action_install_selected,
+        )
+        yield SystemCommand(
+            "Show installed packages",
+            "Filter list to only packages already installed",
+            self.action_show_installed,
+        )
+        yield SystemCommand(
+            "Update all packages",
+            "Queue an update for every package that has a newer version",
+            self.action_update_all,
+        )
+        yield SystemCommand(
+            "About",
+            "App version, Textual info, and disclaimer",
+            self.action_about,
+        )
+        yield SystemCommand(
+            "Open homepage",
+            "Open the selected package's GitHub page in browser",
+            self.action_open_homepage,
+        )
+        yield SystemCommand(
+            "Clear log",
+            "Clear the install/uninstall log output",
+            self.action_clear_log,
+        )
+        yield SystemCommand(
+            "Quit",
+            "Exit Termux App Store",
+            self.action_quit,
+        )
 
 def run_tui():
     get_app_root()
