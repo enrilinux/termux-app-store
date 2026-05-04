@@ -22,6 +22,8 @@ and this project adheres to semantic versioning.
 - Package `doona` v1.0.0 - Network based protocol fuzzer
 - Package `dumpzilla` v1.0.0 - dumpzilla packaging for Kali Linux
 - Package `termux-tui` v1.0.0 - A futuristic Jarvis-style terminal dashboard for Termux
+- Package `aichat` v0.30.0 - All-in-one LLM CLI tool featuring Shell Assistant, Chat-REPL, RAG, AI Tools & Agents, with access to OpenAI, Claude, Gemini, Ollama, Groq, and more.
+- Package `ttyper` v1.6.0 - Terminal-based typing test.
 
 ### Changed
 - `tasctl` sync with pypi for update and wrapper
