@@ -11,9 +11,12 @@ TERMUX_PKG_BUILD_IN_SRC=true
 
 termux_step_make_install() {
     pip install --quiet setuptools wheel --break-system-packages 2>/dev/null || true
-    pip install --quiet errno setuptools --break-system-packages 2>/dev/null || true
+    pip install --quiet errno --break-system-packages 2>/dev/null || echo "[ WARN ] pip install errno failed — may be missing at runtime"
+    pip install --quiet setuptools --break-system-packages 2>/dev/null || echo "[ WARN ] pip install setuptools failed — may be missing at runtime"
     local libdir="$TERMUX_PREFIX/lib/commix"
-    pip install . --prefix="$TERMUX_PREFIX" --no-deps --break-system-packages 2>/dev/null \
+    # Install with deps first (reads pyproject.toml/setup.py dependencies automatically)
+    pip install . --prefix="$TERMUX_PREFIX" --break-system-packages 2>/dev/null \
+        || pip install . --prefix="$TERMUX_PREFIX" --no-build-isolation --break-system-packages 2>/dev/null \
         || pip install . --prefix="$TERMUX_PREFIX" --no-deps --no-build-isolation --break-system-packages || {
             echo "pip failed — falling back to manual install"
             mkdir -p "$libdir"
