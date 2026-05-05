@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-05T06:31:06.706327+00:00",
-  "total": 69,
+  "generated_at": "2026-05-05T15:10:06.976183+00:00",
+  "total": 72,
   "packages": [
     {
       "package": "aichat",
@@ -143,6 +143,23 @@
       "platform_independent": false
     },
     {
+      "package": "bit",
+      "version": "1.1.2",
+      "maintainer": "@termux-app-store",
+      "description": "Bit is a modern Git CLI",
+      "homepage": "https://github.com/chriswalz/bit",
+      "license": "Apache-2.0",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/chriswalz/bit/archive/refs/tags/v1.1.2.tar.gz",
+      "sha256": "563ae6b0fa279cb8ea8f66b4b455c7cb74a9e65a0edbe694505b2c8fc719b2ff",
+      "platform_independent": false,
+      "depends": [
+        "golang"
+      ]
+    },
+    {
       "package": "bower",
       "version": "1.8.12",
       "maintainer": "@termux-app-store",
@@ -157,6 +174,23 @@
       "platform_independent": false,
       "depends": [
         "nodejs"
+      ]
+    },
+    {
+      "package": "broot",
+      "version": "1.56.2",
+      "maintainer": "@termux-app-store",
+      "description": "A new way to see and navigate directory trees : https://dystroy.org/broot",
+      "homepage": "https://github.com/Canop/broot",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/Canop/broot/archive/refs/tags/v1.56.2.tar.gz",
+      "sha256": "3e7be4252c76565f6d71b34bd07d26e1444b9ac2e1c8271c724f6e866fe75565",
+      "platform_independent": false,
+      "depends": [
+        "rust"
       ]
     },
     {
@@ -400,6 +434,23 @@
         "python",
         "python-pip",
         "python-setuptools"
+      ]
+    },
+    {
+      "package": "dust",
+      "version": "1.2.4",
+      "maintainer": "@termux-app-store",
+      "description": "A more intuitive version of du in rust",
+      "homepage": "https://github.com/bootandy/dust",
+      "license": "Apache-2.0",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/bootandy/dust/archive/refs/tags/v1.2.4.tar.gz",
+      "sha256": "2f6768534bd01727234e67f1dd3754c9547aa18c715f6ee52094e881ebac50e3",
+      "platform_independent": false,
+      "depends": [
+        "rust"
       ]
     },
     {
