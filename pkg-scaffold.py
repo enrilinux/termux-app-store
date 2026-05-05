@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Termux App Store -- Package Scaffold Wizard
+# Semi-Auto create build.sh
 # github.com/djunekz/termux-app-store
 
 import os
@@ -514,6 +515,51 @@ DEPENDS_FOR_METHOD = {
     "cmake":         "libandroid-support",
 }
 
+_METHOD_SIGNALS = [
+    ("Cargo.toml",      "cargo"),
+    ("go.mod",          "go"),
+    ("package.json",    "npm"),
+    ("pyproject.toml",  "pip"),
+    ("setup.py",        "pip"),
+    ("setup.cfg",       "pip"),
+    ("CMakeLists.txt",  "cmake"),
+    ("Makefile",        "make"),
+    ("makefile",        "make"),
+    ("GNUmakefile",     "make"),
+    ("Gemfile",         "ruby"),
+    ("*.gemspec",       "ruby"),
+]
+
+def detect_method_from_github(repo_url, default_branch="main"):
+    m = re.match(r"https://github\.com/([^/]+)/([^/\s]+?)(?:\.git)?$", repo_url)
+    if not m:
+        return None, None
+    owner, repo = m.group(1), m.group(2)
+
+    tree_body = _http_get(
+        f"https://api.github.com/repos/{owner}/{repo}/git/trees/{default_branch}",
+    )
+    if not tree_body:
+        return None, None
+    try:
+        tree = json.loads(tree_body)
+    except Exception:
+        return None, None
+
+    filenames = {item["path"] for item in tree.get("tree", [])}
+
+    for sig, method in _METHOD_SIGNALS:
+        if sig.startswith("*"):
+            ext = sig[1:]
+            if any(f.endswith(ext) for f in filenames):
+                return method, sig
+        else:
+            if sig in filenames:
+                return method, sig
+
+    return None, None
+
+
 def build_sh_content(data):
     pkg        = data["name"]
     method     = data["method"]
@@ -689,15 +735,43 @@ def main():
 
     subsection("Step 4  --  Build Method")
 
+    _detected_method = None
+    _detected_signal = None
+    _default_branch  = None
+    if github_url and meta:
+        _default_branch = "main"
+        _raw = _http_get(
+            f"https://api.github.com/repos/{'/'.join(re.search(r'github.com/(.+)', github_url).group(1).rstrip('/').split('/')[:2])}"
+        )
+        if _raw:
+            try:
+                _default_branch = json.loads(_raw).get("default_branch", "main")
+            except Exception:
+                pass
+
+        log("Auto-detecting build method from repo file tree...")
+        _detected_method, _detected_signal = detect_method_from_github(github_url, _default_branch)
+        if _detected_method:
+            ok(f"Detected: {BCYN}{_detected_method}{R}  {DIM}(found {_detected_signal}){R}")
+            blank()
+
+    _default_idx = 0
+    if _detected_method:
+        for i, (k, _) in enumerate(BUILD_METHODS):
+            if k == _detected_method:
+                _default_idx = i
+                break
+
     method = ask_choice(
         "How should this package be built / installed?",
         BUILD_METHODS,
-        default_idx=0,
+        default_idx=_default_idx,
     )
     blank()
 
     entrypoint = ""
-    if method in ("python-script", "shell", "perl", "lua", "php"):
+    _needs_entrypoint = method in ("python-script", "shell", "perl", "lua", "php")
+    if _needs_entrypoint:
         subsection("Step 5  --  Entrypoint File")
         blank()
         ext_map = {
@@ -714,6 +788,9 @@ def main():
         )
     else:
         entrypoint = f"{pkg_name}"
+        if method in ("cargo", "go", "npm", "cmake", "make", "pip"):
+            print(f"  {DIM}  Step 5 skipped — entrypoint not needed for {BCYN}{method}{DIM} builds.{R}")
+            blank()
 
     subsection("Step 6  --  Additional Dependencies (optional)")
     blank()
@@ -819,6 +896,14 @@ def main():
     callout("TIP",
             "Run './termux-build lint <name>' to validate your build.sh before submitting a PR.",
             "tip")
+    if method == "python-script":
+        callout("WARNING",
+                f"Make sure \'{entrypoint}\' actually exists in the repo root. "
+                "If the build fails, the entrypoint may be wrong or the repo uses "
+                "a different build system (e.g. \'cargo\' for Rust, \'pip\' for Python packages).",
+                "warning")
+        blank()
+
     blank()
 
 
