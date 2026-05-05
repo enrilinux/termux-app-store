@@ -24,15 +24,40 @@ and this project adheres to semantic versioning.
 - Package `termux-tui` v1.0.0 - A futuristic Jarvis-style terminal dashboard for Termux
 - Package `aichat` v0.30.0 - All-in-one LLM CLI tool featuring Shell Assistant, Chat-REPL, RAG, AI Tools & Agents, with access to OpenAI, Claude, Gemini, Ollama, Groq, and more.
 - Package `ttyper` v1.6.0 - Terminal-based typing test.
-- Package `dalfox` v2.12.0 - 🌙🦊 Dalfox is a powerful open-source XSS scanner and utility focused on automation.
+- Package `dalfox` v2.12.0 - Dalfox is a powerful open-source XSS scanner and utility focused on automation.
 - Package `orchat` v1.4.6 - A powerful, feature-rich command-line interface for interacting with AI models through OpenRouter.
 - Package `tere` v1.6.0 - Terminal file explorer
 - Package `ssrfmap` v1.0.0 - Automatic SSRF fuzzer and exploitation tool
+- TUI Command Palette (`Ctrl+P`) — added About and Contact Support menus
+- TUI About menu — displays app version (read from `__version__` in `__init__.py`), Textual version, Python version, and original disclaimer
+- TUI Contact Support menu — displays GitHub Issues, GitHub Discussions, Email, Official Repository, and disclaimer, with buttons to open browser directly
+- TUI keyboard shortcuts: `Ctrl+R` refresh packages, `Ctrl+I` install selected, `Ctrl+Q` quit
+
+### Fixed
+- `termux-build-init.sh` — `detect_method()` wrong priority: `Makefile` was checked before `pyproject.toml`, causing Python repos that also have a `Makefile` (e.g. `parllama`) to be detected as `make` method and fail with `No makefile found`
+- `termux-build-init.sh` — `map_python_dep()` had many incorrect pip package names and stdlib modules slipping through: `yaml` → `PyYAML`, `click_default_group` → `click-default-group`, `xdg_base_dirs` → `xdg-base-dirs`, `dotenv` → `python-dotenv`; `asyncio`, `bisect`, `toml` should be filtered as stdlib
+- `termux-build-init.sh` — `pip install .` used `--no-deps` so dependencies declared in `pyproject.toml` were not installed, causing `ModuleNotFoundError` at runtime (e.g. `elia`: `click_default_group` not installed)
+- `termux-build-init.sh` — `pip_extra_cmd` installed all dependencies in one batch with `|| true`, so if one package name was wrong the entire batch failed silently
+- `build-package.sh` — `termux_step_make()` only ran `cd` to source when `TERMUX_PKG_BUILD_IN_SRC=true`; now always `cd "$SRC_ROOT"` before running make
+- `termux_app_store.py` — `Input` search bar was placed outside `#body`, so on maximize only the search bar appeared and the left/right panels were not visible
+- `termux_app_store.py` — `on_mount` used `await asyncio.to_thread(self.load_packages, True)` which blocked the initial render, causing the UI to appear blank on startup while waiting for GitHub fetch to complete
+- `termux_app_store.py` — `ContactScreen` crashed with `MarkupError` because the `[link=https://...]` tag is not supported by Rich markup; URLs containing `://` were parsed incorrectly
+- `termux_app_store_cli.py` — display CLI new interface
 
 ### Changed
 - `tasctl` sync with pypi for update and wrapper
 - `termux_app_store_cli.py` sync tasctl and pypi
 - Package `termux-tui` v1.0.2 - Updated metadata
+- `termux-build-init.sh` — `pip install .` now tries with full deps first, falls back to `--no-build-isolation`, then finally `--no-deps` as last resort
+- `termux-build-init.sh` — each pip dependency is now installed individually with a warning per failed package instead of silent batch failure
+- `termux-build-init.sh` — `make` block now has a guard: if no `Makefile` is found in the working directory, automatically falls back to pip if `pyproject.toml` exists
+- `termux-build-init.sh` — added new mappings in `map_python_dep()`: `xdg_base_dirs`, `click_default_group`, `sqlmodel`, `tiktoken`, `humanize`, `textual`, `cv2`, `PIL`, `sklearn`, `skimage`, `nacl`, `pyzmq`, `attr`, `flask_restful`, and more
+- `termux_app_store.py` — `Input` search moved inside `#left` panel so maximize works correctly
+- `termux_app_store.py` — CSS fixed: `Screen` gets `layout: vertical`, `#left` and `#right` get proper `height: 1fr`
+- `termux_app_store.py` — `on_mount` now renders immediately from local cache, then fetches GitHub index in background via `run_worker` without freezing the UI
+- `termux_app_store.py` — Command Palette replaced from Textual default menus (Maximize, Keys, Screenshot, Theme) with: Refresh packages, Install selected, Show installed, Update all, Open homepage, Clear log, About, Contact Support
+- `termux_app_store.py` — contact email corrected: `gab288.gab288@gmail.com` → `gab288.gab288@passinbox.com`
+- `termux_app_store.py` — `ContactScreen` added Discussions button to open GitHub Discussions directly in browser
 
 ### Update
 - `termux-build-init.sh` - Update and fixed scan repo, fixed generate build.sh
@@ -64,7 +89,7 @@ and this project adheres to semantic versioning.
 - Package `ip-tracker` v1.0.0 - Track anyones IP just opening a link!
 - Package `ipgeolocation` v2.0.4 - Retrieve IP Geolocation information
 - Package `lazymux` v1.0.0 - termux tool installer
-- Package `termux-ai` v1.0.0 - Interactive AI tool for Termux with 10+ providers and 50+ image models ✨
+- Package `termux-ai` v1.0.0 - Interactive AI tool for Termux with 10+ providers and 50+ image models
 - Package `userfinder` v1.0.0 - userfinder — auto-packaged by termux-build-init
 - Package `termux-sync` v0.1.0 - OpenSource Backup and restore your entire Termux environment across devices.
 - Package `lalin` v1.0.0 - this script automatically install any package for pentest with uptodate tools , and lazy command for run the tools like lazynmap , install another and update to new #actually for lazy people hahaha #and Lalin is remake the lazykali with fixed bugs , added new features and uptodate tools . Its compatible with the latest release of Kali (Rolling)

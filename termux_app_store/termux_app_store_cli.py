@@ -183,17 +183,17 @@ def ensure_build_package_sh(app_root: Path) -> bool:
         return True
     url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/master/build-package.sh"
     try:
-        print(f"{DIM}[*] Downloading build-package.sh...{R}")
+        print(f"  {DIM}Downloading build-package.sh...{R}")
         req = urllib.request.Request(url, headers={"User-Agent": "termux-app-store-cli"})
         with urllib.request.urlopen(req, timeout=15) as resp:
             raw = resp.read()
             if raw:
                 build_pkg.write_bytes(raw)
                 build_pkg.chmod(0o755)
-                print(f"{GREEN}[✔] build-package.sh downloaded.{R}")
+                print(f"  {GREEN}✔  build-package.sh ready.{R}")
                 return True
     except Exception as e:
-        print(f"{RED}[✗] Failed to download build-package.sh: {e}{R}")
+        print(f"  {RED}✗  Failed to download build-package.sh: {e}{R}")
     return False
 
 
@@ -394,29 +394,29 @@ def cleanup_package_files(name: str) -> int:
 
 
 def cmd_list(packages_dir: Path):
-    print(f"\n{DIM}[*] Loading package list...{R}")
+    print(f"\n  {DIM}Fetching package index...{R}")
     pkgs = load_all_packages(packages_dir)
     if not pkgs:
-        print(f"{YELLOW}[!] No packages found.{R}")
+        print(f"\n  {YELLOW}  No packages found.{R}\n")
         return
 
-    print(f"\n{B}{CYAN}{'PACKAGE':<22} {'VERSION':<12} STATUS{R}")
-    print(f"{DIM}{'─'*55}{R}")
+    W = 24
+    print(f"\n  {B}{CYAN}{'PACKAGE':<{W}} {'VERSION':<12} STATUS{R}")
+    print(f"  {DIM}{'─'*62}{R}")
 
     for p in pkgs:
         _, label = get_status(p["name"], p["version"])
-        print(f"{B}{p['name']:<22}{R} {CYAN}{p['version']:<12}{R} {label}")
+        print(f"  {B}{p['name']:<{W}}{R} {CYAN}{p['version']:<12}{R} {label}")
 
-    print(f"\n{DIM}Total: {len(pkgs)} package(s){R}\n")
-
+    print(f"\n  {DIM}{'─'*62}{R}")
+    print(f"  {DIM}{len(pkgs)} package(s) total{R}\n")
 
 def cmd_show(packages_dir: Path, name: str):
     pkgs = load_all_packages(packages_dir)
     p = next((x for x in pkgs if x["name"] == name), None)
 
     if not p:
-        print(f"{RED}[!] Package '{name}' not found.{R}")
-        print(f"    Run {CYAN}termux-app-store list{R} to see available packages.")
+        print(f"\n  {RED}✗  Package '{name}' not found.{R}\n  {DIM}Run: {CYAN}termux-app-store list{R}")
         sys.exit(1)
 
     _, label = get_status(p["name"], p["version"])
@@ -426,20 +426,18 @@ def cmd_show(packages_dir: Path, name: str):
     else:
         deps_str = deps if deps and deps != "-" else "-"
 
-    print(f"""
-{B}{CYAN}{'━'*42}{R}
-{B}  {p['name']}{R}   {label}
-{B}{CYAN}{'━'*42}{R}
-
-  {B}Description :{R} {p['desc']}
-  {B}Version     :{R} {CYAN}{p['version']}{R}
-  {B}Maintainer  :{R} {p['maintainer']}
-  {B}License     :{R} {p.get('license', '-')}
-  {B}Homepage    :{R} {p.get('homepage', '-')}
-  {B}Dependencies:{R} {YELLOW}{deps_str}{R}
-
-{B}{CYAN}{'━'*42}{R}
-""")
+    W = 46
+    print(f"\n  {B}{CYAN}{'━'*W}{R}")
+    print(f"  {B}  {p['name']}{R}")
+    print(f"  {DIM}  {label}{R}")
+    print(f"  {B}{CYAN}{'━'*W}{R}\n")
+    print(f"  {B}Description{R}   {p['desc']}")
+    print(f"  {B}Version    {R}   {CYAN}{p['version']}{R}")
+    print(f"  {B}Maintainer {R}   {p['maintainer']}")
+    print(f"  {B}License    {R}   {p.get('license', '-')}")
+    print(f"  {B}Homepage   {R}   {DIM}{p.get('homepage', '-')}{R}")
+    print(f"  {B}Depends    {R}   {YELLOW}{deps_str}{R}")
+    print(f"\n  {B}{CYAN}{'━'*W}{R}\n")
 
 
 def ensure_package_files(packages_dir: Path, name: str, force_update: bool = False) -> bool:
@@ -470,17 +468,18 @@ def cmd_install(app_root: Path, packages_dir: Path, name: str, silent: bool = Fa
     p = next((x for x in pkgs if x["name"] == name), None)
 
     if not p:
-        print(f"{RED}[!] Package '{name}' not found.{R}")
-        print(f"    Run {CYAN}termux-app-store list{R} to see available packages.")
+        print(f"\n  {RED}✗  Package '{name}' not found.{R}\n  {DIM}Run: {CYAN}termux-app-store list{R}")
         sys.exit(1)
 
     status, _ = get_status(name, p["version"])
 
     if status == "INSTALLED" and not silent:
-        print(f"{GREEN}[✔] '{name}' is already up-to-date ({p['version']}).{R}")
+        print(f"  {GREEN}✔  '{name}' is already up-to-date  {DIM}v{p['version']}{R}")
         return True
 
-    print(f"\n{B}[*] Installing {CYAN}{name}{R}{B} v{p['version']}...{R}\n")
+    print(f"\n  {DIM}{'─'*46}{R}")
+    print(f"  {B}  Installing {CYAN}{name}{R}{B}  {DIM}v{p['version']}{R}")
+    print(f"  {DIM}{'─'*46}{R}\n")
 
     if not ensure_package_files(packages_dir, name, force_update=force_update):
         print(f"{RED}[✗] Failed to download build files for '{name}'.{R}")
@@ -505,10 +504,10 @@ def cmd_install(app_root: Path, packages_dir: Path, name: str, silent: bool = Fa
 
     if proc.returncode == 0:
         hold_package(name)
-        print(f"\n{GREEN}{B}[✔] '{name}' installed successfully!{R}\n")
+        print(f"\n  {GREEN}{B}✔  '{name}' installed successfully!{R}\n")
         return True
     else:
-        print(f"\n{RED}[✗] Install failed (exit code {proc.returncode}).{R}\n")
+        print(f"\n  {RED}✗  Install failed  {DIM}(exit {proc.returncode}){R}\n")
         return False
 
 
@@ -518,7 +517,9 @@ def cmd_uninstall(name: str):
         print(f"{YELLOW}[!] '{name}' is not installed.{R}")
         return
 
-    print(f"\n{B}[*] Uninstalling {CYAN}{name}{R}{B}...{R}\n")
+    print(f"\n  {DIM}{'─'*46}{R}")
+    print(f"  {B}  Uninstalling {CYAN}{name}{R}")
+    print(f"  {DIM}{'─'*46}{R}\n")
 
     prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
     cleanup_paths = [
@@ -527,7 +528,7 @@ def cmd_uninstall(name: str):
         Path(prefix) / "share" / name,
     ]
 
-    print(f"{DIM}[*] Pre-cleaning cache files...{R}")
+    print(f"  {DIM}Cleaning cache files...{R}")
     for base_path in cleanup_paths:
         if base_path.exists():
             for root, dirs, files in os.walk(base_path, topdown=False):
@@ -555,7 +556,7 @@ def cmd_uninstall(name: str):
         removed_count = cleanup_package_files(name)
         if removed_count > 0:
             print(f"{GREEN}[✔] Cleaned up {removed_count} leftover director{'y' if removed_count == 1 else 'ies'}.{R}")
-        print(f"\n{GREEN}{B}[✔] '{name}' uninstalled successfully!{R}\n")
+        print(f"\n  {GREEN}{B}✔  '{name}' uninstalled successfully!{R}\n")
     else:
         hold_package(name)
         print(f"\n{RED}[✗] Uninstall failed.{R}\n")
@@ -565,12 +566,12 @@ def cmd_uninstall(name: str):
 def cmd_update(packages_dir: Path):
     print(f"\n{DIM}[*] Checking for app file index updates...{R}")
 
-    print(f"{DIM}[*] Checking update system core master...{R}")
+    print(f"  {DIM}Checking core files...{R}")
     cmd_self_update(silent=False)
 
     raw = fetch_index()
     if raw:
-        print(f"{GREEN}[✔] Files index updated — {len(raw)} packages.{R}\n")
+        print(f"  {GREEN}✔  Index updated  {DIM}({len(raw)} packages){R}\n")
         pkgs = [normalize_pkg(p) for p in raw]
 
         if packages_dir.exists():
@@ -587,11 +588,11 @@ def cmd_update(packages_dir: Path):
             if removed_local:
                 print(f"{DIM}[*] Removed {len(removed_local)} obsolete local package(s): {', '.join(removed_local)}{R}\n")
     else:
-        print(f"{YELLOW}[!] Could not reach GitHub. Using cached index.{R}\n")
+        print(f"  {YELLOW}  Offline — using cached index.{R}\n")
         pkgs = get_packages(packages_dir, online=False)
 
     if not pkgs:
-        print(f"{YELLOW}[!] No packages found.{R}")
+        print(f"\n  {YELLOW}  No packages found.{R}\n")
         return
 
     outdated = []
@@ -606,24 +607,24 @@ def cmd_update(packages_dir: Path):
             inst = get_installed_version(p["name"])
             outdated.append((p["name"], inst, p["version"]))
 
-    print(f"{B}{CYAN}{'PACKAGE':<22} {'INSTALLED':<14} LATEST{R}")
-    print(f"{DIM}{'─'*55}{R}")
+    print(f"\n  {B}{CYAN}{'PACKAGE':<24} {'INSTALLED':<14} LATEST{R}")
+    print(f"  {DIM}{'─'*60}{R}")
 
     if not outdated:
-        print(f"{GREEN}  All {installed_count} installed package(s) are up-to-date! ✔{R}")
+        print(f"  {GREEN}✔  All {installed_count} installed package(s) are up-to-date!{R}")
     else:
         for name, inst, latest in outdated:
             print(
-                f"{B}{name:<22}{R} "
+                f"  {B}{name:<24}{R} "
                 f"{DIM}{inst:<14}{R} "
-                f"{GREEN}{latest:<12}{R}  {YELLOW}↑ update available{R}"
+                f"{GREEN}{latest:<12}{R}  {YELLOW}↑{R}"
             )
         print(
-            f"\n{YELLOW}[!] {len(outdated)} update(s) available.{R} "
-            f"Run {CYAN}termux-app-store upgrade{R} to apply."
+            f"\n  {YELLOW}{len(outdated)} update(s) available.{R}  "
+            f"{DIM}Run: {CYAN}termux-app-store upgrade{R}"
         )
 
-    print(f"\n{DIM}Checked: {installed_count} installed package(s){R}\n")
+    print(f"\n  {DIM}Checked {installed_count} installed package(s){R}\n")
 
 
 def cmd_upgrade(app_root: Path, packages_dir: Path, target=None):
@@ -632,7 +633,7 @@ def cmd_upgrade(app_root: Path, packages_dir: Path, target=None):
     if target:
         p = next((x for x in pkgs if x["name"] == target), None)
         if not p:
-            print(f"{RED}[!] Package '{target}' not found.{R}")
+            print(f"\n  {RED}✗  Package '{target}' not found.{R}")
             sys.exit(1)
         status, _ = get_status(target, p["version"])
         if status == "NOT INSTALLED":
@@ -640,7 +641,7 @@ def cmd_upgrade(app_root: Path, packages_dir: Path, target=None):
             print(f"    Use {CYAN}termux-app-store install {target}{R} instead.")
             return
         if status == "INSTALLED":
-            print(f"{GREEN}[✔] '{target}' is already up-to-date ({p['version']}).{R}")
+            print(f"  {GREEN}✔  '{target}' is already up-to-date  {DIM}v{p['version']}{R}")
             return
         cmd_install(app_root, packages_dir, target, silent=True, force_update=True)
         return
@@ -652,13 +653,15 @@ def cmd_upgrade(app_root: Path, packages_dir: Path, target=None):
             to_upgrade.append(p)
 
     if not to_upgrade:
-        print(f"\n{GREEN}[✔] All installed packages are already up-to-date!{R}\n")
+        print(f"\n  {GREEN}✔  All installed packages are up-to-date!{R}\n")
         return
 
-    print(f"\n{B}{YELLOW}[*] {len(to_upgrade)} package(s) will be upgraded:{R}")
+    print(f"\n  {DIM}{'─'*46}{R}")
+    print(f"  {B}{YELLOW}  {len(to_upgrade)} package(s) to upgrade{R}")
+    print(f"  {DIM}{'─'*46}{R}\n")
     for p in to_upgrade:
         inst = get_installed_version(p["name"])
-        print(f"    {CYAN}{p['name']:<22}{R} {DIM}{inst}{R} → {GREEN}{p['version']}{R}")
+        print(f"  {CYAN}{p['name']:<24}{R} {DIM}{inst}{R} → {GREEN}{p['version']}{R}")
     print()
 
     ok = 0
@@ -670,10 +673,11 @@ def cmd_upgrade(app_root: Path, packages_dir: Path, target=None):
         else:
             fail += 1
 
-    print(f"\n{B}Upgrade summary:{R} {GREEN}{ok} succeeded{R}", end="")
+    print(f"\n  {DIM}{'─'*46}{R}")
+    print(f"  {B}  Upgrade summary{R}   {GREEN}{ok} succeeded{R}", end="")
     if fail:
         print(f"  {RED}{fail} failed{R}", end="")
-    print("\n")
+    print(f"\n  {DIM}{'─'*46}{R}\n")
 
 
 def _fetch_remote_content(url: str):
@@ -857,36 +861,38 @@ def cmd_version():
                 except Exception:
                     pass
 
-    print(f"\n{B}[*] Checking version termux-app-store...{R}")
-    print(f"{B}[*] Checking installed version...{R}")
-    print(f"{B}[*] Fetching latest version...{R}")
+    print(f"\n  {DIM}Fetching version info...{R}")
     remote_tag = fetch_latest_tag()
     remote_ver = remote_tag.lstrip("v") if remote_tag else None
 
-    print(f"\n  {B}Termux App Store{R}")
-    print(f"  {B}Official :{R} {CYAN}https://github.com/{GITHUB_REPO}{R}")
+    W = 46
+    print(f"\n  {B}{CYAN}{'━'*W}{R}")
+    print(f"  {B}   Termux App Store{R}")
+    print(f"  {CYAN}{DIM}   https://github.com/{GITHUB_REPO}{R}")
+    print(f"  {B}{CYAN}{'━'*W}{R}\n")
 
     if local_ver:
-        print(f"  {B}Installed:{R} {GREEN}{B}v{local_ver}{R}")
+        print(f"  {B}  Installed {R}  {GREEN}{B}v{local_ver}{R}")
     else:
-        print(f"  {B}Installed:{R} {YELLOW}unknown{R}")
+        print(f"  {B}  Installed {R}  {YELLOW}unknown{R}")
 
     if remote_ver:
-        print(f"  {B}Latest   :{R} {GREEN}{B}v{remote_ver}{R}")
+        print(f"  {B}  Latest    {R}  {GREEN}{B}v{remote_ver}{R}")
         if local_ver and _ver_tuple(remote_ver) > _ver_tuple(local_ver):
-            print(f"\n  {YELLOW}{B}  New version available: v{remote_ver}{R}")
-            print(f"  {DIM}Run: {CYAN}termux-app-store update{R}")
+            print(f"\n  {YELLOW}  ↑  New version available: v{remote_ver}{R}")
+            print(f"  {DIM}     Run: {CYAN}termux-app-store update{R}")
         else:
-            print(f"\n  {GREEN}{B}✔  This is the latest version{R}")
+            print(f"\n  {GREEN}  ✔  You are on the latest version{R}")
     else:
-        print(f"  {B}Latest   :{R} {YELLOW}(Could not fetch — check internet){R}")
+        print(f"  {B}  Latest    {R}  {YELLOW}unavailable  {DIM}(check internet){R}")
         if local_ver:
-            print(f"\n  {DIM}Cannot determine if update is available{R}")
+            print(f"\n  {DIM}  Cannot determine if update is available{R}")
 
-    print()
+    print(f"\n  {B}{CYAN}{'━'*W}{R}\n")
 
 
 def cmd_help():
+    W = 46
     print(f"""
 {B}{CYAN}Termux App Store  {DIM}Official Developer @djunekz{R}
 
@@ -917,7 +923,6 @@ def cmd_help():
   {DIM}termux-app-store -l{R}
   {DIM}termux-app-store -v{R}
 """)
-
 
 CMD_ALIASES = {
     "list":      "list",
