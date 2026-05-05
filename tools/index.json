@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-05T15:10:06.976183+00:00",
-  "total": 72,
+  "generated_at": "2026-05-05T16:08:01.873164+00:00",
+  "total": 76,
   "packages": [
     {
       "package": "aichat",
@@ -222,6 +222,25 @@
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/D4Vinci/Clickjacking-Tester/archive/refs/heads/master.tar.gz",
       "sha256": "21c128c44d965ee337c8f946c07144de3a2a8d14320364015312870abe2267d3",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
+      "package": "cloudflair",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "🔎 Find origin servers of websites behind CloudFlare by using Internet-wide scan data from Censys.",
+      "homepage": "https://blog.christophetd.fr/bypassing-cloudflare-using-internet-wide-scan-data/",
+      "license": "UNKNOWN",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/christophetd/CloudFlair/archive/refs/heads/master.tar.gz",
+      "sha256": "7d25c983530e7d91fd78504966625aa021083c75d81362893961fc76abf46893",
       "platform_independent": false,
       "depends": [
         "python",
@@ -572,6 +591,25 @@
       "platform_independent": false
     },
     {
+      "package": "holehe",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "holehe allows you to check if the mail is used on different sites like twitter, instagram and will retrieve information on sites with the forgotten password function.",
+      "homepage": "https://github.com/megadose/holehe",
+      "license": "GPL-3.0",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/megadose/holehe/archive/refs/heads/master.tar.gz",
+      "sha256": "08327f53626ac6bc83a99f10ea0dfe9f0d2953d7c8c8d0fc2e170000670775b8",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
       "package": "ht-wps-breaker",
       "version": "1.0.0",
       "maintainer": "@termux-app-store",
@@ -803,6 +841,25 @@
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/behindthefirewalls/Parsero/archive/refs/heads/master.tar.gz",
       "sha256": "bc34afddf5b902ae8fb64c5e3ab2007f651a0b9fe42d1169fabacfc7c750ed44",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
+      "package": "photon",
+      "version": "1.3.0",
+      "maintainer": "@termux-app-store",
+      "description": "Incredibly fast crawler designed for OSINT.",
+      "homepage": "https://github.com/s0md3v/Photon",
+      "license": "GPL-3.0",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/s0md3v/Photon/archive/refs/tags/v1.3.0.tar.gz",
+      "sha256": "99a8bc0f52b46a37acd8e0877ea4231ea7b3d9f8b603c90c6641837117d7666f",
       "platform_independent": false,
       "depends": [
         "python",
@@ -1159,6 +1216,25 @@
       "srcurl": "https://github.com/djunekz/webshake/releases/download/v${TERMUX_PKG_VERSION}/webshake-${TERMUX_PKG_VERSION}.tar.gz",
       "sha256": "4312838c7d201f1540923dfbeeeb21d8af4ae9896a2ce18357208805a859cbe8",
       "platform_independent": false
+    },
+    {
+      "package": "xeuledoc",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "Fetch information about a public Google document.",
+      "homepage": "https://malfrats.industries/",
+      "license": "GPL-3.0",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/Malfrats/xeuledoc/archive/refs/heads/master.tar.gz",
+      "sha256": "c78abd48c03a7103806f54f90716f6337f7af3b90b7ca68dd10d85e3ce53bec4",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
     },
     {
       "package": "xsstrike",
