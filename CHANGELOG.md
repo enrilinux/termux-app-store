@@ -49,6 +49,9 @@ and this project adheres to semantic versioning.
 - `termux-build-init.sh` — `map_python_dep()` had many incorrect pip package names and stdlib modules slipping through: `yaml` → `PyYAML`, `click_default_group` → `click-default-group`, `xdg_base_dirs` → `xdg-base-dirs`, `dotenv` → `python-dotenv`; `asyncio`, `bisect`, `toml` should be filtered as stdlib
 - `termux-build-init.sh` — `pip install .` used `--no-deps` so dependencies declared in `pyproject.toml` were not installed, causing `ModuleNotFoundError` at runtime (e.g. `elia`: `click_default_group` not installed)
 - `termux-build-init.sh` — `pip_extra_cmd` installed all dependencies in one batch with `|| true`, so if one package name was wrong the entire batch failed silently
+- `build-package.sh` — auto-detect mode: ELF binary check now runs **before** `cp`, preventing `Permission denied` errors when zip contains compiled executables
+- `build-package.sh` — auto-detect mode: ELF binaries are now installed directly to `bin/` using `install -m755` instead of `cp -r` of the entire repo
+- `build-package.sh` — auto-detect mode: non-ELF files retain `cp -r` to `lib/` with a file-by-file fallback in case any individual file fails to copy
 - `build-package.sh` — `termux_step_make()` only ran `cd` to source when `TERMUX_PKG_BUILD_IN_SRC=true`; now always `cd "$SRC_ROOT"` before running make
 - `termux_app_store.py` — `Input` search bar was placed outside `#body`, so on maximize only the search bar appeared and the left/right panels were not visible
 - `termux_app_store.py` — `on_mount` used `await asyncio.to_thread(self.load_packages, True)` which blocked the initial render, causing the UI to appear blank on startup while waiting for GitHub fetch to complete
