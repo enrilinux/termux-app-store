@@ -1151,14 +1151,6 @@ else
   if [[ -n "$MAIN_FILE" ]]; then
     BASENAME="$(basename "$MAIN_FILE")"
 
-    mkdir -p "$WORK_DIR/pkg/$PREFIX/lib/$PACKAGE"
-    cp -r "$SRC_ROOT"/. "$WORK_DIR/pkg/$PREFIX/lib/$PACKAGE/"
-    _detail "Staged:"  "$PREFIX/lib/$PACKAGE/ (full repo)"
-
-    MAIN_REL="${MAIN_FILE#$SRC_ROOT/}"
-
-    chmod +x "$WORK_DIR/pkg/$PREFIX/lib/$PACKAGE/$MAIN_REL"
-
     _file_magic=$(file -b "$MAIN_FILE" 2>/dev/null || echo "unknown")
     _is_elf=0
     if echo "$_file_magic" | grep -qi "ELF.*executable"; then
@@ -1167,13 +1159,26 @@ else
 
     if [[ $_is_elf -eq 1 ]]; then
       mkdir -p "$WORK_DIR/pkg/$PREFIX/bin"
-      ln -sf "$PREFIX/lib/$PACKAGE/$MAIN_REL" "$WORK_DIR/pkg/$PREFIX/bin/$PACKAGE"
+      install -m755 "$MAIN_FILE" "$WORK_DIR/pkg/$PREFIX/bin/$PACKAGE"
 
       _ok "Main file detected"
       _detail "File:"    "$MAIN_FILE"
       _detail "Type:"    "ELF binary"
-      _detail "Symlink:" "$PREFIX/bin/$PACKAGE → lib/$PACKAGE/$MAIN_REL"
+      _detail "Install:" "$PREFIX/bin/$PACKAGE"
     else
+      mkdir -p "$WORK_DIR/pkg/$PREFIX/lib/$PACKAGE"
+      cp -r "$SRC_ROOT"/. "$WORK_DIR/pkg/$PREFIX/lib/$PACKAGE/" 2>/dev/null || {
+        find "$SRC_ROOT" -maxdepth 3 -type f | while read -r _f; do
+          _rel="${_f#$SRC_ROOT/}"
+          _dst="$WORK_DIR/pkg/$PREFIX/lib/$PACKAGE/$_rel"
+          mkdir -p "$(dirname "$_dst")"
+          cp "$_f" "$_dst" 2>/dev/null || true
+        done
+      }
+      _detail "Staged:" "$PREFIX/lib/$PACKAGE/ (full repo)"
+      MAIN_REL="${MAIN_FILE#$SRC_ROOT/}"
+      chmod +x "$WORK_DIR/pkg/$PREFIX/lib/$PACKAGE/$MAIN_REL" 2>/dev/null || true
+
       FIRST_LINE="$(head -n1 "$MAIN_FILE" 2>/dev/null || true)"
       if [[ "$FIRST_LINE" =~ ^#! ]]; then
         INTERPRETER=$(echo "$FIRST_LINE" | sed 's|^#!||' | awk '{print $1}')
