@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-05T02:57:20.961488+00:00",
+  "generated_at": "2026-05-05T06:31:06.706327+00:00",
   "total": 69,
   "packages": [
     {
@@ -976,7 +976,7 @@
       "installed_size": "Unknown",
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/opsonusdh/Termux-TUI/archive/refs/heads/main.tar.gz",
-      "sha256": "ee86fc7cbb47e6e9e03fa428f0b0fcac11c4195226618473e4eae53a935f3ec4",
+      "sha256": "65ecca102bbe8def1f090d9f3a79a68738be4c03dbaa011db4c8682f2c85cc30",
       "platform_independent": false,
       "depends": [
         "python",
