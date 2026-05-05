@@ -41,6 +41,10 @@ and this project adheres to semantic versioning.
 - Package `xeuledoc` v1.0.0 - Fetch information about a public Google document.
 
 ### Fixed
+- `termux-build-init.sh` — when `INSTALL_METHOD=unknown`, tool now detects if the repo is a build-scripts/patch collection (contains `scripts/`, `patches/`, or `cmake/` directories with no runnable file in root) and sets `_BUILD_SCRIPTS_ONLY=true`
+- `termux-build-init.sh` — when `INSTALL_METHOD=unknown` and repo is build-scripts only, a red warning box is shown: *"This repo is not a standalone tool — packaging will produce a .deb with no usable command"*; prompt defaults to **N** (abort)
+- `termux-build-init.sh` — when `INSTALL_METHOD=unknown` but repo is not build-scripts only, a yellow warning box is shown: *"Could not detect build system — edit build.sh manually before test build"*; prompt also defaults to **N**
+- `termux-build-init.sh` — test build is automatically skipped when `INSTALL_METHOD=unknown`; user is shown a message to edit `build.sh` first before running `bash build-package.sh <name>`
 - `termux-build-init.sh` — `detect_method()` wrong priority: `Makefile` was checked before `pyproject.toml`, causing Python repos that also have a `Makefile` (e.g. `parllama`) to be detected as `make` method and fail with `No makefile found`
 - `termux-build-init.sh` — `map_python_dep()` had many incorrect pip package names and stdlib modules slipping through: `yaml` → `PyYAML`, `click_default_group` → `click-default-group`, `xdg_base_dirs` → `xdg-base-dirs`, `dotenv` → `python-dotenv`; `asyncio`, `bisect`, `toml` should be filtered as stdlib
 - `termux-build-init.sh` — `pip install .` used `--no-deps` so dependencies declared in `pyproject.toml` were not installed, causing `ModuleNotFoundError` at runtime (e.g. `elia`: `click_default_group` not installed)
