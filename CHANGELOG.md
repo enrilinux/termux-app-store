@@ -32,6 +32,9 @@ and this project adheres to semantic versioning.
 - TUI About menu — displays app version (read from `__version__` in `__init__.py`), Textual version, Python version, and original disclaimer
 - TUI Contact Support menu — displays GitHub Issues, GitHub Discussions, Email, Official Repository, and disclaimer, with buttons to open browser directly
 - TUI keyboard shortcuts: `Ctrl+R` refresh packages, `Ctrl+I` install selected, `Ctrl+Q` quit
+- Package `bit` v1.1.2 - Bit is a modern Git CLI
+- Package `broot` v1.56.2 - A new way to see and navigate directory trees : https://dystroy.org/broot
+- Package `dust` v1.2.4 - A more intuitive version of du in rust
 
 ### Fixed
 - `termux-build-init.sh` — `detect_method()` wrong priority: `Makefile` was checked before `pyproject.toml`, causing Python repos that also have a `Makefile` (e.g. `parllama`) to be detected as `make` method and fail with `No makefile found`
