@@ -620,7 +620,6 @@ termux_step_make_install() {
     pip install --quiet setuptools wheel --break-system-packages 2>/dev/null || true
 ${pip_extra_cmd}
     local libdir="\$TERMUX_PREFIX/lib/${pkg}"
-    # Install with deps first (reads pyproject.toml/setup.py dependencies automatically)
     pip install . --prefix="\$TERMUX_PREFIX" --break-system-packages 2>/dev/null \\
         || pip install . --prefix="\$TERMUX_PREFIX" --no-build-isolation --break-system-packages 2>/dev/null \\
         || pip install . --prefix="\$TERMUX_PREFIX" --no-deps --no-build-isolation --break-system-packages || {
@@ -1153,6 +1152,24 @@ else
     info "Installer    : none detected"
 fi
 
+_BUILD_SCRIPTS_ONLY=false
+if [[ "$INSTALL_METHOD" == "unknown" ]]; then
+    _ROOT_FILES=$(ls "$SRC" 2>/dev/null | grep -vE '^(LICENSE|README|\.git|\.github|Makefile|CMakeLists)' | head -20)
+    _HAS_SCRIPTS_DIR=false
+    _HAS_PATCHES_DIR=false
+    _HAS_NO_BINARY=true
+    [[ -d "$SRC/scripts" ]]  && _HAS_SCRIPTS_DIR=true
+    [[ -d "$SRC/patches" ]]  && _HAS_PATCHES_DIR=true
+    [[ -d "$SRC/cmake" ]]    && _HAS_PATCHES_DIR=true
+    # Cek apakah ada file runnable
+    _RUNNABLE=$(find "$SRC" -maxdepth 1 -type f \( -name "*.py" -o -name "*.sh" -o -name "*.js" -o -name "*.rb" \) 2>/dev/null | head -1)
+    [[ -n "$_RUNNABLE" ]] && _HAS_NO_BINARY=false
+
+    if [[ "$_HAS_SCRIPTS_DIR" == true || "$_HAS_PATCHES_DIR" == true ]] && [[ "$_HAS_NO_BINARY" == true ]]; then
+        _BUILD_SCRIPTS_ONLY=true
+    fi
+fi
+
 PYTHON_VERSION="3"
 if [[ "$INSTALL_METHOD" == "python-script" || "$INSTALL_METHOD" == "pip" ]]; then
     PYTHON_VERSION=$(detect_python_version "$SRC" "$MAIN_FILE")
@@ -1298,6 +1315,41 @@ if [[ -n "${DEPS_SHELL_WARNS:-}" ]]; then
     fi
 fi
 
+if [[ "$INSTALL_METHOD" == "unknown" ]]; then
+    echo ""
+    if [[ "$_BUILD_SCRIPTS_ONLY" == true ]]; then
+        echo -e "  ${R}┌─ Repo Is Not a Standalone Tool ──────────────────────────┐${N}"
+        echo -e "  ${R}│${N}                                                          ${R}│${N}"
+        echo -e "  ${R}│${N}  ${W}This repository appears to be a build-scripts or${N}       ${R}│${N}"
+        echo -e "  ${R}│${N}  ${W}patch collection, not a runnable application.${N}          ${R}│${N}"
+        echo -e "  ${R}│${N}                                                          ${R}│${N}"
+        echo -e "  ${R}│${N}  ${Y}Found:  scripts/  patches/  or cmake/ without any${N}      ${R}│${N}"
+        echo -e "  ${R}│${N}  ${Y}runnable entrypoint (.py .sh .js .rb) in root.${N}         ${R}│${N}"
+        echo -e "  ${R}│${N}                                                          ${R}│${N}"
+        echo -e "  ${R}│${N}  ${C}Packaging this repo will produce a .deb that installs${N}  ${R}│${N}"
+        echo -e "  ${R}│${N}  ${C}files but no usable command.${N}                           ${R}│${N}"
+        echo -e "  ${R}│${N}                                                          ${R}│${N}"
+        echo -e "  ${R}└──────────────────────────────────────────────────────────┘${N}"
+        echo ""
+        read -rp "  Lanjutkan anyway dan edit build.sh manual? [y/N]: " _CONT_UNK
+        [[ ! "${_CONT_UNK:-N}" =~ ^[Yy]$ ]] && { echo -e "  ${C}Aborted.${N}"; echo ""; exit 0; }
+    else
+        echo -e "  ${Y}┌─ Unknown Build System ───────────────────────────────────┐${N}"
+        echo -e "  ${Y}│${N}                                                          ${Y}│${N}"
+        echo -e "  ${Y}│${N}  ${W}Could not auto-detect how to build this package.${N}       ${Y}│${N}"
+        echo -e "  ${Y}│${N}                                                          ${Y}│${N}"
+        echo -e "  ${Y}│${N}  ${C}A placeholder build.sh will be created.${N}                ${Y}│${N}"
+        echo -e "  ${Y}│${N}  ${C}You must edit termux_step_make_install() manually${N}       ${Y}│${N}"
+        echo -e "  ${Y}│${N}  ${C}before running a test build.${N}                           ${Y}│${N}"
+        echo -e "  ${Y}│${N}                                                          ${Y}│${N}"
+        echo -e "  ${Y}└──────────────────────────────────────────────────────────┘${N}"
+        echo ""
+        read -rp "  Continue and edit build.sh manually? [y/N]: " _CONT_UNK
+        [[ ! "${_CONT_UNK:-N}" =~ ^[Yy]$ ]] && { echo -e "  ${C}Aborted.${N}"; echo ""; exit 0; }
+    fi
+    echo ""
+fi
+
 read -rp "  Continue? [Y/n]: " _CONT
 [[ "${_CONT:-Y}" =~ ^[Nn]$ ]] && exit 0
 
@@ -1326,11 +1378,18 @@ cat "$PKG_DIR/build.sh"
 echo -e "${C}------------------------${N}"
 
 if [[ -f "$BUILD_SCRIPT" ]]; then
-    echo ""
-    read -rp "  Run test build now? [y/N]: " _TEST
-    if [[ "${_TEST:-N}" =~ ^[Yy]$ ]]; then
-        step "Test Build"
-        bash "$BUILD_SCRIPT" "$PKG_NAME" || warn "Build finished with errors (see above)"
+    if [[ "$INSTALL_METHOD" == "unknown" ]]; then
+        echo ""
+        echo -e "  ${Y}  Test build skipped — edit build.sh first, then run:${N}"
+        echo -e "  ${C}  bash build-package.sh ${PKG_NAME}${N}"
+        echo ""
+    else
+        echo ""
+        read -rp "  Run test build now? [y/N]: " _TEST
+        if [[ "${_TEST:-N}" =~ ^[Yy]$ ]]; then
+            step "Test Build"
+            bash "$BUILD_SCRIPT" "$PKG_NAME" || warn "Build finished with errors (see above)"
+        fi
     fi
 else
     warn "build-package.sh not found — skipping test build"
