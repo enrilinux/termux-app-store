@@ -35,6 +35,10 @@ and this project adheres to semantic versioning.
 - Package `bit` v1.1.2 - Bit is a modern Git CLI
 - Package `broot` v1.56.2 - A new way to see and navigate directory trees : https://dystroy.org/broot
 - Package `dust` v1.2.4 - A more intuitive version of du in rust
+- Package `cloudflair` v1.0.0 - 🔎 Find origin servers of websites behind CloudFlare by using Internet-wide scan data from Censys.
+- Package `holehe` v1.0.0 - holehe allows you to check if the mail is used on different sites like twitter, instagram and will retrieve information on sites with the forgotten password function.
+- Package `photon` v1.3.0 - Incredibly fast crawler designed for OSINT.
+- Package `xeuledoc` v1.0.0 - Fetch information about a public Google document.
 
 ### Fixed
 - `termux-build-init.sh` — `detect_method()` wrong priority: `Makefile` was checked before `pyproject.toml`, causing Python repos that also have a `Makefile` (e.g. `parllama`) to be detected as `make` method and fail with `No makefile found`
