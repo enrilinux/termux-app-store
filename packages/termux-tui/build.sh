@@ -4,7 +4,7 @@ TERMUX_PKG_LICENSE="MIT"
 TERMUX_PKG_MAINTAINER="@opsonusdh"
 TERMUX_PKG_VERSION=1.0.2
 TERMUX_PKG_SRCURL=https://github.com/opsonusdh/Termux-TUI/archive/refs/heads/main.tar.gz
-TERMUX_PKG_SHA256=ee86fc7cbb47e6e9e03fa428f0b0fcac11c4195226618473e4eae53a935f3ec4
+TERMUX_PKG_SHA256=65ecca102bbe8def1f090d9f3a79a68738be4c03dbaa011db4c8682f2c85cc30
 
 TERMUX_PKG_DEPENDS="python, python-pip, python-setuptools"
 TERMUX_PKG_BUILD_IN_SRC=true
