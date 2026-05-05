@@ -45,6 +45,11 @@ and this project adheres to semantic versioning.
 - `termux_app_store_cli.py` — display CLI new interface
 
 ### Changed
+- `pkg-scaffold.py` — auto-detect build method from repo file tree via GitHub API before Step 4 (checks for `Cargo.toml`, `go.mod`, `package.json`, `pyproject.toml`, `setup.py`, `CMakeLists.txt`, `Makefile`, `Gemfile`, etc.)
+- `pkg-scaffold.py` — auto-detected method is pre-selected as default in the build method menu, user just presses Enter to confirm
+- `pkg-scaffold.py` — default branch is fetched dynamically from GitHub API (`default_branch` field), so repos using `master`, `main`, or any custom branch are handled correctly; `"main"` is only used as fallback when offline
+- `pkg-scaffold.py` — Step 5 (entrypoint) is automatically skipped for methods that don't need it (`cargo`, `go`, `npm`, `cmake`, `make`, `pip`), with a short message explaining the skip
+- `pkg-scaffold.py` — warning displayed in Next Steps when `python-script` method is selected, reminding user to verify the entrypoint file exists and suggesting the correct method if build fails
 - `build-termux-repo.yml` — nav bar: fixed horizontal overflow on mobile; `nav-inner` now uses `width:100%; box-sizing:border-box; overflow:hidden`
 - `build-termux-repo.yml` — nav tabs now use `flex:1; min-width:0; overflow-x:auto` so tabs scroll horizontally instead of clipping the viewport
 - `build-termux-repo.yml` — active nav tab now has a blue background highlight with top border radius for visual clarity
