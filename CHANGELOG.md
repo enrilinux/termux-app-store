@@ -45,6 +45,27 @@ and this project adheres to semantic versioning.
 - `termux_app_store_cli.py` — display CLI new interface
 
 ### Changed
+- `build-termux-repo.yml` — nav bar: fixed horizontal overflow on mobile; `nav-inner` now uses `width:100%; box-sizing:border-box; overflow:hidden`
+- `build-termux-repo.yml` — nav tabs now use `flex:1; min-width:0; overflow-x:auto` so tabs scroll horizontally instead of clipping the viewport
+- `build-termux-repo.yml` — active nav tab now has a blue background highlight with top border radius for visual clarity
+- `build-termux-repo.yml` — `.wrap` container now has `overflow-x:hidden` to prevent code blocks and cards from leaking outside the page on mobile
+- `build-termux-repo.yml` — `.install-option` cards now have `overflow:hidden; box-sizing:border-box` to stay within screen bounds
+- `build-termux-repo.yml` — `.step-body` now uses `min-width:0; overflow:hidden` to prevent flex children from overflowing on the Contribute page
+- `build-termux-repo.yml` — Contribute page restructured: Fork & Clone and Create Branch steps moved above Automatic/Manual sections as shared prerequisites
+- `build-termux-repo.yml` — Contribute page: "Automatic" and "Manual" section labels no longer use emoji icons
+- `build-termux-repo.yml` — Contribute page: `./termux-build template` command no longer requires `<your-tool-name>` argument
+- `build-termux-repo.yml` — Contribute page: `git push origin master` corrected to `git push origin <your-branch>`
+- `build-termux-repo.yml` — Contribute page: removed `# Fork via GitHub UI, then:` comment from code block
+- `build-termux-repo.yml` — Contribute page: `git checkout -b <your-branch>` added as a dedicated step after clone
+- `termux_app_store_cli.py` — redesigned CLI output: all messages indented 2 spaces for cleaner alignment
+- `termux_app_store_cli.py` — replaced `[*]`, `[✔]`, `[✗]`, `[!]` prefix tags with clean `✔` `✗` `↑` symbols
+- `termux_app_store_cli.py` — `cmd_install` and `cmd_uninstall` now display a `─` bordered header section
+- `termux_app_store_cli.py` — `cmd_version` redesigned with `━` box border showing installed and latest versions
+- `termux_app_store_cli.py` — `cmd_show` redesigned with `━` box border for package details
+- `termux_app_store_cli.py` — `cmd_help` restructured into a bordered box with grouped command sections
+- `termux_app_store_cli.py` — `cmd_list` footer changed from inline total to a separate line with `─` separator
+- `termux_app_store_cli.py` — `cmd_upgrade` list and summary now use bordered sections with `─` separators
+- `termux_app_store_cli.py` — all status/progress messages shortened and made consistent across commands
 - `tasctl` sync with pypi for update and wrapper
 - `termux_app_store_cli.py` sync tasctl and pypi
 - Package `termux-tui` v1.0.2 - Updated metadata
