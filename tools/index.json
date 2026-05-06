@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-06T03:28:32.690535+00:00",
-  "total": 76,
+  "generated_at": "2026-05-06T14:10:21.234876+00:00",
+  "total": 78,
   "packages": [
     {
       "package": "aichat",
@@ -1084,7 +1084,7 @@
       "installed_size": "Unknown",
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/opsonusdh/Termux-TUI/archive/refs/heads/main.tar.gz",
-      "sha256": "65ecca102bbe8def1f090d9f3a79a68738be4c03dbaa011db4c8682f2c85cc30",
+      "sha256": "2aa946dffb6b777b944928106e169ee7752c2aab302952dbff75672cc1973d61",
       "platform_independent": false,
       "depends": [
         "python",
@@ -1204,6 +1204,23 @@
       "platform_independent": false
     },
     {
+      "package": "viu",
+      "version": "1.6.1",
+      "maintainer": "@termux-app-store",
+      "description": "Terminal image viewer with native support for iTerm and Kitty",
+      "homepage": "https://github.com/atanunq/viu",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/atanunq/viu/archive/refs/tags/v1.6.1.tar.gz",
+      "sha256": "639c1fe14aee5e34b635de041ac77177e2959cf26072d8ef69c444b15c8273bd",
+      "platform_independent": false,
+      "depends": [
+        "rust"
+      ]
+    },
+    {
       "package": "webshake",
       "version": "1.0.2",
       "maintainer": "Djunekz",
@@ -1253,6 +1270,32 @@
         "python",
         "python-pip",
         "python-setuptools"
+      ]
+    },
+    {
+      "package": "ytfzf",
+      "version": "2.6.2",
+      "maintainer": "@termux-app-store",
+      "description": "A posix script to find and watch youtube videos from the terminal. (Without API)",
+      "homepage": "https://github.com/pystardust/ytfzf",
+      "license": "GPL-3.0",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/pystardust/ytfzf/archive/refs/tags/v2.6.2.tar.gz",
+      "sha256": "73280e4ef4f490400a42bf582b713803c523587b0b30269859eaa6f2693ec9b1",
+      "platform_independent": false,
+      "depends": [
+        "imlib2",
+        "jack",
+        "jack2",
+        "libcaca",
+        "libid3tag",
+        "libsixel",
+        "libuchardet",
+        "luajit",
+        "mpv",
+        "openal-soft"
       ]
     },
     {
