@@ -5,13 +5,14 @@
 <br/>
 
 <H1>
-  <a href="https://djunekz.github.io/termux-app-store/">Termux App Store</a>
+  <a href="https://djunekz.github.io/termux-app-store/">Termux App Store — TUI & CLI Package Manager for Termux</a>
 </H1>
 
-**The first offline-first, source-based TUI package manager built natively for Termux.**
+**The first offline-first, source-based TUI package manager built natively for Termux on Android.**
 
 [![CI](https://github.com/djunekz/termux-app-store/actions/workflows/build.yml/badge.svg)](https://github.com/djunekz/termux-app-store/actions)
-[![Codecov](https://codecov.io/github/djunekz/termux-app-store/branch/master/graph/badge.svg?token=357W4EP8G0)](https://codecov.io/github/djunekz/termux-app-store)<br>
+[![Codecov](https://codecov.io/github/djunekz/termux-app-store/branch/master/graph/badge.svg?token=357W4EP8G0)](https://codecov.io/github/djunekz/termux-app-store)
+[![PyPI](https://img.shields.io/pypi/v/termux-app-store?style=flat&logo=pypi&color=3fb950&label=pypi)](https://pypi.org/project/termux-app-store/)<br>
 ![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Fdjunekz%2Ftermux-app-store%2Ftags&query=%24%5B0%5D.name&style=flat&logo=github&color=3fb950&label=release)
 [![Downloads](https://img.shields.io/github/downloads/djunekz/termux-app-store/total?style=flat&logo=github&color=3fb950&logoColor=white)](https://github.com/djunekz/termux-app-store)
 [![License](https://img.shields.io/badge/License-MIT-3fb950?style=flat&logo=opensourceinitiative&logoColor=white)](LICENSE)
@@ -25,7 +26,9 @@
 [![PRs](https://img.shields.io/github/issues-pr/djunekz/termux-app-store?style=flat&logo=git&logoColor=white&color=3fb950)](https://github.com/djunekz/termux-app-store/pulls)
 [![Community Ready](https://img.shields.io/badge/Community-Ready-3fb950?style=flat&logo=github)](https://github.com/djunekz/termux-app-store)
 
-> **Offline-first &nbsp;•&nbsp; Source-based &nbsp;•&nbsp; Binary-safe &nbsp;•&nbsp; Termux-native**
+> **Offline-first &nbsp;•&nbsp; Source-based &nbsp;•&nbsp; Binary-safe &nbsp;•&nbsp; Termux-native &nbsp;•&nbsp; Android Terminal**
+
+> Install and manage Termux packages from source with a beautiful TUI or CLI — no root, no account, no telemetry.
 
 </div>
 
@@ -33,7 +36,9 @@
 
 # What is Termux App Store?
 
-**Termux App Store** is a **TUI (Terminal User Interface)** built with Python ([Textual](https://github.com/Textualize/textual)) and CLI that lets Termux users **browse, build, and manage tools/apps** directly on Android — no account, no telemetry, no cloud dependency.
+**Termux App Store** (`termux-app-store`) is a **TUI (Terminal User Interface)** and **CLI package manager** built with Python ([Textual](https://github.com/Textualize/textual)) that lets Termux users on Android **browse, build, install, and manage tools/packages** directly on-device — no account, no telemetry, no cloud dependency, no root required.
+
+It works as an **alternative package manager for Termux**, letting you install community tools from source using verified `build.sh` scripts — similar in spirit to the AUR (Arch User Repository) but designed specifically for Termux on Android.
 
 > [!IMPORTANT]
 > Termux App Store is **not a centralized binary repository** and **not a hidden auto-installer**.
@@ -101,6 +106,8 @@
 ---
 
 # Quick Install and Uninstall
+
+> Available on **[PyPI](https://pypi.org/project/termux-app-store/)** — searchable via `pip search` and indexed by PyPI, making it easier to discover.
 
 ### Option 1 (Recommended)
 ```bash
@@ -457,10 +464,16 @@ If Termux App Store has been useful to you:
 
 ---
 
+## Related Projects & Keywords
+
+> This project is independently developed and is **not affiliated with** the official [Termux](https://github.com/termux/termux-app) project.
+
+**Search terms:** termux app store · termux package manager · termux tui · termux cli · termux tools · android terminal package manager · termux custom packages · termux source build · termux alternative · termux community packages · termux offline installer · termux-app-store djunekz · install packages termux android
+
+---
+
 <div align="center">
 
 **© Termux App Store — Built for everyone, by the community.**
-
-*termux · termux app store · termux package manager · termux tui · android terminal tools · termux tools · termux packages · termux cli*
 
 </div>
