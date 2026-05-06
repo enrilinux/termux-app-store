@@ -39,6 +39,8 @@ and this project adheres to semantic versioning.
 - Package `holehe` v1.0.0 - holehe allows you to check if the mail is used on different sites like twitter, instagram and will retrieve information on sites with the forgotten password function.
 - Package `photon` v1.3.0 - Incredibly fast crawler designed for OSINT.
 - Package `xeuledoc` v1.0.0 - Fetch information about a public Google document.
+- Package `viu` v1.6.1 - Terminal image viewer with native support for iTerm and Kitty
+- Package `ytfzf` v2.6.2 - A posix script to find and watch youtube videos from the terminal. (Without API)
 
 ### Fixed
 - `termux-build-init.sh` — when `INSTALL_METHOD=unknown`, tool now detects if the repo is a build-scripts/patch collection (contains `scripts/`, `patches/`, or `cmake/` directories with no runnable file in root) and sets `_BUILD_SCRIPTS_ONLY=true`
