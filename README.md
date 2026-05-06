@@ -10,6 +10,8 @@
 
 **The first offline-first, source-based TUI package manager built natively for Termux on Android.**
 
+> Read in: 🇮🇩 **[Bahasa Indonesia](README.id.md)** &nbsp;|&nbsp; 🇹🇭 **[ภาษาไทย](README.th.md)** &nbsp;|&nbsp; 🇯🇵 **[日本語](README.jp.md)** &nbsp;|&nbsp; 🇨🇳 **[中文](README.ch.md)** &nbsp;|&nbsp; 🇻🇳 **[Tiếng Việt](README.vi.md)**
+
 [![CI](https://github.com/djunekz/termux-app-store/actions/workflows/build.yml/badge.svg)](https://github.com/djunekz/termux-app-store/actions)
 [![Codecov](https://codecov.io/github/djunekz/termux-app-store/branch/master/graph/badge.svg?token=357W4EP8G0)](https://codecov.io/github/djunekz/termux-app-store)
 [![PyPI](https://img.shields.io/pypi/v/termux-app-store?style=flat&logo=pypi&color=3fb950&label=pypi)](https://pypi.org/project/termux-app-store/)<br>
@@ -39,6 +41,11 @@
 **Termux App Store** (`termux-app-store`) is a **TUI (Terminal User Interface)** and **CLI package manager** built with Python ([Textual](https://github.com/Textualize/textual)) that lets Termux users on Android **browse, build, install, and manage tools/packages** directly on-device — no account, no telemetry, no cloud dependency, no root required.
 
 It works as an **alternative package manager for Termux**, letting you install community tools from source using verified `build.sh` scripts — similar in spirit to the AUR (Arch User Repository) but designed specifically for Termux on Android.
+
+> **How is this different from `termux-packages` or TUR (Termux User Repository)?**
+> - `termux-packages` is the official Termux repo — maintained by the core team, requires PR approval, and only accepts widely-used tools.
+> - TUR (Termux User Repository) is a curated extension, still requires contributor review.
+> - **Termux App Store** is fully community-driven: anyone can submit a `build.sh`, all builds run locally on your device, and there is no centralized approval gate. Think of it as a personal + community package layer on top of Termux.
 
 > [!IMPORTANT]
 > Termux App Store is **not a centralized binary repository** and **not a hidden auto-installer**.
@@ -234,6 +241,8 @@ No account, no tracking, no telemetry — fully offline.
 
 # Adding a Package
 
+Want to create your own Termux package and distribute it? Every package in Termux App Store is defined by a single `build.sh` file — similar to how PKGBUILD works in Arch Linux or formula works in Homebrew, but adapted for Termux on Android.
+
 Every package **must** have a `build.sh` file:
 
 ```
@@ -363,16 +372,17 @@ termux-app-store/
 
 ---
 
-# Upload Your Tool to Termux App Store
+# How to Distribute Your Package to the Termux Community
 
-Want to share your tool with the Termux community?
+Want to share your tool with the Termux community? Distributing a package to Termux App Store means anyone running Termux on Android can install it with one command — no server needed, no binary hosting required.
 
-**Benefits of uploading:**
-- Your tool becomes available to all Termux users
+**Why distribute here instead of a standalone repo?**
+- Users can discover your tool via the TUI browser without knowing your GitHub URL
 - Updates only require changing `version` and `sha256` in `build.sh`
 - Your tool appears in the TUI with automatic status badges
+- No approval gate — submit a PR and the community can use it immediately
 
-**How to upload:**
+**How to distribute / upload your package:**
 
 ```bash
 # 1. Fork this repo
@@ -468,7 +478,7 @@ If Termux App Store has been useful to you:
 
 > This project is independently developed and is **not affiliated with** the official [Termux](https://github.com/termux/termux-app) project.
 
-**Search terms:** termux app store · termux package manager · termux tui · termux cli · termux tools · android terminal package manager · termux custom packages · termux source build · termux alternative · termux community packages · termux offline installer · termux-app-store djunekz · install packages termux android
+**Search terms:** termux app store · termux package manager · termux tui · termux cli · termux tools · android terminal package manager · termux custom packages · termux source build · termux alternative · termux community packages · termux offline installer · termux-app-store djunekz · install packages termux android · alternative to termux-packages · alternative to TUR termux · how to distribute package termux · termux community repo · termux build from source android · create termux package · custom repo termux
 
 ---
 
