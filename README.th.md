@@ -30,7 +30,7 @@
 
 > ติดตั้งและจัดการแพ็กเกจ Termux จาก source code — ไม่ต้องรูท ไม่ต้องสมัครสมาชิก ไม่มี telemetry
 
-> อ่านด้วยภาษา: 🇬🇧 **[English](README.md)** &nbsp;|&nbsp; 🇮🇩 **[Indonesia](README.id.md)** &nbsp;|&nbsp; 🇯🇵 **[日本語](README.jp.md)** &nbsp;|&nbsp; 🇨🇳 **[中文](README.ch.md)** &nbsp;|&nbsp; 🇻🇳 **[Tiếng Việt](README.vi.md)**
+> อ่านด้วยภาษา: 🇬🇧 **[English](README.md)** &nbsp;|&nbsp; 🇮🇩 **[Indonesia](README.id.md)** &nbsp;|&nbsp; 🇯🇵 **[日本語](README.jp.md)** &nbsp;|&nbsp; 🇨🇳 **[中文](README.ch.md)** &nbsp;|&nbsp; 🇻🇳 **[Tiếng Việt](README.vi.md)** &nbsp;|&nbsp; 🇮🇳 **[हिन्दी](README.in.md)**
 
 </div>
 
