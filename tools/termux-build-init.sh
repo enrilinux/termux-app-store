@@ -1297,6 +1297,7 @@ else
 fi
 
 echo ""
+_sl=$(printf '%.0s─' $(seq 1 44))
 echo -e "${W}════════════════════════════════════════════${N}"
 echo -e "${W}  Smart Detection Result                    ${N}"
 echo -e "${W}════════════════════════════════════════════${N}"
@@ -1308,8 +1309,8 @@ printf "${W}${N}  %-12s : %-28s ${W}${N}\n" "License"    "$LICENSE"
 printf "${W}${N}  %-12s : %-28s ${W}${N}\n" "Entrypoint" "$MAIN_FILE"
 printf "${W}${N}  %-12s : %-28s ${W}${N}\n" "Installer"  "${INSTALLER_SCRIPT:-none}"
 printf "${BCYAN}${_sl}${R}\n"
-printf "     ${GRAY}%-14s${R} ${DIM}%s${R}\n" "Depends:" "${DEPENDS_JOINED:-none}"
-[[ -n "${DEPS_SHELL_WARNS:-}" ]] && printf "     ${GRAY}%-14s${R} ${BRED}%s${R}\n" "Incompatible:" "${DEPS_SHELL_WARNS}"
+printf "  ${GRAY}%-14s${R} ${DIM}%s${R}\n" "Depends      :" "${DEPENDS_JOINED:-none}"
+[[ -n "${DEPS_SHELL_WARNS:-}" ]] && printf " ${GRAY}%-14s${R} ${BRED}%s${R}\n" "Incompatible:" "${DEPS_SHELL_WARNS}"
 printf "${BCYAN}${_sl}${R}\n"
 echo ""
 
@@ -1396,9 +1397,9 @@ chmod +x "$PKG_DIR/build.sh"
 ok "Saved: ${W}${PKG_DIR}/build.sh${N}"
 
 echo ""
-echo -e "${C}--- build.sh preview ---${N}"
+echo -e "${Y}--- build.sh preview ---${G}"
 cat "$PKG_DIR/build.sh"
-echo -e "${C}------------------------${N}"
+echo -e "${Y}------------------------${N}"
 
 if [[ -f "$BUILD_SCRIPT" ]]; then
     if [[ "$INSTALL_METHOD" == "unknown" ]]; then

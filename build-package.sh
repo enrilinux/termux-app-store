@@ -75,14 +75,14 @@ _section() {
   printf "${BYELLOW}— %s —${R}\n" "$1"
 }
 
-_ok()       { printf "${BGREEN}[${GREEN}✓${BGREEN}]${R}  %s\n"           "$*"; }
-_info()     { printf "${BGREEN}[${BCYAN}INFO${BGREEN}]${R}  %s\n"            "$*"; }
-_warn()     { printf "${BGREEN}[${BYELLOW}!${BGREEN}]${R}  %s\n"          "$*"; }
-_skip()     { printf "${BGREEN}[${GRAY}-${BGREEN}]${R}  %s${R}\n"             "$*"; }
+_ok()       { printf "${BGREEN}[${GREEN}✓${BGREEN}]${R}  %s\n"      "$*"; }
+_info()     { printf "${BGREEN}[${BCYAN}INFO${BGREEN}]${R}  %s\n"       "$*"; }
+_warn()     { printf "${BGREEN}[${BYELLOW}!${BGREEN}]${R}  %s\n"     "$*"; }
+_skip()     { printf "${BGREEN}[${GRAY}-${BGREEN}]${R}  %s${R}\n"        "$*"; }
 _step()     { printf "${BGREEN}[${BCYAN}>${BGREEN}]${R}  ${BOLD}%s${R}\n" "$*"; }
-_progress() { printf "${BGREEN}[${YELLOW}*${BGREEN}]${R}  %s\n"           "$*"; }
-_fatal()    { printf "\n ${BG_RED}${BLACK}${BOLD} FATAL ${R}  ${BRED}${BOLD}%s${R}\n\n" "$*"; }
-_detail()   { printf "     ${GRAY}%-14s${R} ${DIM}%s${R}\n" "$1" "$2"; }
+_progress() { printf "${BGREEN}[${YELLOW}*${BGREEN}]${R}  %s\n"      "$*"; }
+_fatal()    { printf "\n ${BG_RED}${BLACK}${BOLD} FATAL ${R} ${BRED}${BOLD}%s${R}\n\n" "$*"; }
+_detail()   { printf "${GRAY}%-14s${R} ${DIM}%s${R}\n" "$1" "$2"; }
 _badge()    { printf "${GRAY}%-12s${R} ${BOLD}${WHITE}%s${R}\n" "$1" "$2"; }
 
 PACKAGE="${1:-}"
@@ -459,7 +459,7 @@ if [[ -n "${TERMUX_PKG_SRCURL:-}" ]]; then
   while kill -0 "$_CURL_PID" 2>/dev/null; do
     _sc="${_spin_chars:$(( _spin_i % ${#_spin_chars} )):1}"
     _SIZE=$(du -sh "$SRC_FILE" 2>/dev/null | awk '{print $1}' || echo "...")
-    printf "\r  ${BCYAN}[  %s  ]${R}  Downloading... ${GRAY}%s${R}%-10s" "$_sc" "$_SIZE" " "
+    printf "\r ${BGREEN}[${BCYAN} %s ${BGREEN}]${R} Downloading... ${GRAY}%s${R}%-10s" "$_sc" "$_SIZE" " "
     sleep 0.2
     (( _spin_i++ )) || true
   done
