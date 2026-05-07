@@ -571,42 +571,142 @@ detect_method() {
 detect_entrypoint() {
     local src="$1"
     local pkg="$2"
-
+    local method="${3:-}"
     local f
-    f=$(grep -rl '__main__' "$src"/*.py 2>/dev/null | head -n1 || true)
-    [[ -n "$f" ]] && { basename "$f"; return; }
-    [[ -f "$src/$pkg.py" ]] && { echo "$pkg.py"; return; }
-    f=$(ls "$src"/*.py 2>/dev/null | grep -vi 'setup\|conf\|config\|test' | head -n1 || true)
-    [[ -n "$f" ]] && { basename "$f"; return; }
 
-    [[ -f "$src/$pkg.pl" ]] && { echo "$pkg.pl"; return; }
-    f=$(ls "$src"/*.pl 2>/dev/null | grep -vi 'install\|setup\|update\|config\|test\|helper' | head -n1 || true)
-    [[ -n "$f" ]] && { basename "$f"; return; }
+    if [[ "$method" == "python-script" || "$method" == "pip" ]]; then
+        [[ -f "$src/$pkg.py" ]] && { echo "$pkg.py"; return; }
+        f=$(grep -rl '__main__' "$src"/*.py 2>/dev/null \
+            | grep -vi 'setup\|test\|conf' | head -n1 || true)
+        [[ -n "$f" ]] && { basename "$f"; return; }
+        f=$(grep -rl 'argparse\|optparse\|click\.command\|sys\.argv' "$src"/*.py 2>/dev/null \
+            | grep -vi 'setup\|test\|conf' | head -n1 || true)
+        [[ -n "$f" ]] && { basename "$f"; return; }
+        f=$(ls "$src"/*.py 2>/dev/null \
+            | grep -viE 'setup|conf|config|test|helper|util|__init__' | head -n1 || true)
+        [[ -n "$f" ]] && { basename "$f"; return; }
+    fi
 
-    [[ -f "$src/$pkg.sh" ]] && { echo "$pkg.sh"; return; }
-    f=$(ls "$src"/*.sh 2>/dev/null | grep -vi 'setup\|install\|config\|test' | head -n1 || true)
-    [[ -n "$f" ]] && { basename "$f"; return; }
+    if [[ "$method" == "perl" ]]; then
+        [[ -f "$src/$pkg.pl" ]] && { echo "$pkg.pl"; return; }
+        f=$(ls "$src"/*.pl 2>/dev/null \
+            | grep -viE 'install|setup|update|config|test|helper' | head -n1 || true)
+        [[ -n "$f" ]] && { basename "$f"; return; }
+    fi
 
-    [[ -f "$src/$pkg.php" ]] && { echo "$pkg.php"; return; }
-    f=$(ls "$src"/*.php 2>/dev/null | grep -vi 'config\|conf\|var\|function\|helper\|class\|Dockerfile' | head -n1 || true)
-    [[ -n "$f" ]] && { basename "$f"; return; }
+    if [[ "$method" == "shell" ]]; then
+        [[ -f "$src/$pkg"    ]] && { echo "$pkg";    return; }
+        [[ -f "$src/$pkg.sh" ]] && { echo "$pkg.sh"; return; }
+        f=$(ls "$src"/*.sh 2>/dev/null \
+            | grep -viE 'setup|install|config|test|uninstall|update' | head -n1 || true)
+        [[ -n "$f" ]] && { basename "$f"; return; }
+    fi
 
-    [[ -f "$src/$pkg.go" ]] && { echo "$pkg.go"; return; }
-    f=$(ls "$src"/*.go 2>/dev/null | grep -vi '_test\|setup\|config' | head -n1 || true)
-    [[ -n "$f" ]] && { basename "$f"; return; }
+    if [[ "$method" == "php" ]]; then
+        [[ -f "$src/$pkg.php" ]] && { echo "$pkg.php"; return; }
+        f=$(ls "$src"/*.php 2>/dev/null \
+            | grep -viE 'config|conf|var|function|helper|class|Dockerfile' | head -n1 || true)
+        [[ -n "$f" ]] && { basename "$f"; return; }
+    fi
 
-    if [[ -f "$src/$pkg" ]]; then
+    if [[ "$method" == "go" ]]; then
         echo "$pkg"; return
     fi
+
+    if [[ "$method" == "cargo" ]]; then
+        local _cargo_name
+        _cargo_name=$(grep -m1 '^name' "$src/Cargo.toml" 2>/dev/null \
+            | sed 's/.*=.*"\(.*\)".*/\1/' || true)
+        echo "${_cargo_name:-$pkg}"; return
+    fi
+
+    if [[ "$method" == "make" || "$method" == "autotools" || "$method" == "cmake" ]]; then
+        if [[ -f "$src/Makefile" || -f "$src/makefile" ]]; then
+            local _mk="${src}/Makefile"
+            [[ -f "$src/makefile" ]] && _mk="$src/makefile"
+
+            if grep -qE "^${pkg}[[:space:]]*:[^:=]" "$_mk" 2>/dev/null || \
+               grep -qE "^${pkg}[[:space:]]*:[[:space:]]*$" "$_mk" 2>/dev/null; then
+                echo "$pkg"; return
+            fi
+
+            local _first_target
+            _first_target=$(grep -E '^[a-zA-Z0-9_][a-zA-Z0-9_-]*[[:space:]]*:[^:=]' "$_mk" 2>/dev/null \
+                | grep -viE '^(all|clean|install|uninstall|test|check|dist|distclean|maintainer|PHONY|\.PHONY|docs|doc)' \
+                | grep -v '^%' \
+                | grep -vE '^[A-Z_][A-Z0-9_]*[[:space:]]*:' \
+                | grep -vE '^(CC|CXX|LD|AR|AS|NM|STRIP|RANLIB|CFLAGS|CXXFLAGS|LDFLAGS|LIBS|PREFIX|DESTDIR|INSTALL|MAKE|SHELL|PATH|PKG_CONFIG|INCLUDE|SOURCES|OBJECTS|OBJS|OBJ|SRC|BIN|LIB)[[:space:]]*:' \
+                | head -n1 | sed 's/[[:space:]]*:.*//' || true)
+
+            if [[ -z "$_first_target" ]]; then
+                _first_target=$(grep -E '^[a-zA-Z0-9_][a-zA-Z0-9_-]*[[:space:]]*:[[:space:]]*$' "$_mk" 2>/dev/null \
+                    | grep -viE '^(all|clean|install|uninstall|test|check|dist|distclean|PHONY)' \
+                    | head -n1 | sed 's/[[:space:]]*:.*//' || true)
+            fi
+
+            [[ -n "$_first_target" ]] && { echo "$_first_target"; return; }
+        fi
+
+        if [[ -f "$src/CMakeLists.txt" ]]; then
+            local _cmake_bin
+            _cmake_bin=$(grep -m1 'add_executable' "$src/CMakeLists.txt" 2>/dev/null \
+                | sed 's/.*add_executable[[:space:]]*([[:space:]]*\([^ )]*\).*/\1/' || true)
+            [[ -n "$_cmake_bin" ]] && { echo "$_cmake_bin"; return; }
+        fi
+
+        if [[ -f "$src/configure.ac" || -f "$src/configure.in" ]]; then
+            local _ac_name
+            _ac_name=$(grep -m1 'AC_INIT' "${src}/configure.ac" "${src}/configure.in" 2>/dev/null \
+                | sed 's/.*AC_INIT[[:space:]]*(\[\?\([^],)]*\).*/\1/' | tr -d ' \t' || true)
+            [[ -n "$_ac_name" ]] && { sanitize_pkgname "$_ac_name"; return; }
+        fi
+
+        if [[ -f "$src/$pkg.c" ]]; then
+            echo "$pkg"; return
+        fi
+
+        local _main_c
+        _main_c=$(grep -rl 'int main\s*(' "$src"/*.c 2>/dev/null \
+            | grep -viE 'test|helper|util|example|sample|bench' | head -n1 || true)
+        [[ -n "$_main_c" ]] && { basename "${_main_c%.c}"; return; }
+
+        echo "$pkg"; return
+    fi
+
+    if [[ "$method" == "npm" ]]; then
+        local _bin
+        _bin=$(python3 -c "import json,sys; d=json.load(open('$src/package.json')); \
+            b=d.get('bin',{}); \
+            print(list(b.keys())[0] if isinstance(b,dict) and b else d.get('main',''))" \
+            2>/dev/null || true)
+        [[ -n "$_bin" ]] && { echo "$_bin"; return; }
+        echo "$pkg"; return
+    fi
+
+    if [[ "$method" == "ruby" ]]; then
+        f=$(ls "$src"/*.rb 2>/dev/null \
+            | grep -viE 'spec|test|helper|config|gemspec' | head -n1 || true)
+        [[ -n "$f" ]] && { basename "$f"; return; }
+        echo "$pkg"; return
+    fi
+
+    if [[ "$method" == "lua" ]]; then
+        [[ -f "$src/$pkg.lua" ]] && { echo "$pkg.lua"; return; }
+        f=$(ls "$src"/*.lua 2>/dev/null | grep -viE 'test|spec|config' | head -n1 || true)
+        [[ -n "$f" ]] && { basename "$f"; return; }
+    fi
+
     f=$(find "$src" -maxdepth 1 -type f ! -name "*.*" 2>/dev/null \
         | while IFS= read -r _ef; do
-            grep -qU $'\x00' "\$_ef" 2>/dev/null && continue
-            _shebang=$(head -n1 "$_ef" 2>/dev/null || true)
-            echo "$_shebang" | grep -qE '^#!.*(bash|sh|python|perl|ruby)\b' && echo "$_ef"
-          done | head -n1 || true)
+            grep -qU $'\x00' "$_ef" 2>/dev/null && continue
+            _sh=$(head -n1 "$_ef" 2>/dev/null || true)
+            echo "$_sh" | grep -qE '^#!.*(bash|sh|python|perl|ruby)\b' && echo "$_ef"
+          done \
+        | grep -viE 'Makefile|configure|install|setup|uninstall|update|test' \
+        | head -n1 || true)
     [[ -n "$f" ]] && { basename "$f"; return; }
 
-    ls "$src" | grep -v '\.md$\|\.txt$\|LICENSE\|README\|\.rd$' | head -n1
+    echo "$pkg"
 }
 
 make_install_block() {
@@ -1175,7 +1275,7 @@ step "Auto-detection"
 INSTALL_METHOD=$(detect_method "$SRC")
 ok "Build method : ${W}${INSTALL_METHOD}${N}"
 
-MAIN_FILE=$(detect_entrypoint "$SRC" "$PKG_NAME")
+MAIN_FILE=$(detect_entrypoint "$SRC" "$PKG_NAME" "$INSTALL_METHOD")
 ok "Entrypoint   : ${W}${MAIN_FILE}${N}"
 
 INSTALLER_SCRIPT=$(detect_installer "$SRC")
