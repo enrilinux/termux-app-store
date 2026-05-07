@@ -438,7 +438,7 @@ rm -rf "$WORK_DIR"
 _progress "Creating directories..."
 mkdir -p "$WORK_DIR/src" "$WORK_DIR/pkg" "$DEB_DIR"
 _ok "Build environment ready"
-_detail "Work dir:"   "$WORK_DIR"
+_detail "Work dir  :" "$WORK_DIR"
 _detail "Output dir:" "$DEB_DIR"
 
 SRC_FILE="$WORK_DIR/source"
@@ -1224,11 +1224,11 @@ Maintainer: ${TERMUX_PKG_MAINTAINER:-unknown}
 Description: ${TERMUX_PKG_DESCRIPTION:-No description}
 EOF
 
-_ok "control file written"
-_detail "Package:"    "${TERMUX_PKG_NAME:-$PACKAGE}"
-_detail "Version:"    "${TERMUX_PKG_VERSION:-0.0.1}"
-_detail "Arch:"       "$ARCH"
-_detail "Maintainer:" "${TERMUX_PKG_MAINTAINER:-unknown}"
+_ok "Control file written"
+_detail "   Package   :" "${TERMUX_PKG_NAME:-$PACKAGE}"
+_detail "   Version   :" "${TERMUX_PKG_VERSION:-0.0.1}"
+_detail "   Arch      :" "$ARCH"
+_detail "   Maintainer:" "${TERMUX_PKG_MAINTAINER:-unknown}"
 
 _section "Building .deb Package"
 

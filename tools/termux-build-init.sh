@@ -29,7 +29,7 @@ BCYAN=$'\033[96m'
 BRED=$'\033[91m'
 BG_RED=$'\033[41m'
 BLACK=$'\033[30m'
-# compat
+
 N="$R"; G="$BGREEN"; Y="$BYELLOW"; B="$BCYAN"; C="$BCYAN"; W="$WHITE"
 ok()    { printf "${BGREEN}[${GREEN}✓${BGREEN}]${R}  %s\n" "$*"; }
 info()  { printf "${BGREEN}[${BCYAN}INFO${BGREEN}]${R}  %s\n" "$*"; }
@@ -318,6 +318,7 @@ scan_python_imports() {
 
     local imports
     imports=$(cat "${pyfiles[@]}" 2>/dev/null \
+        | tr -d '\000' \
         | sed -n 's/^import  *\([a-zA-Z_][a-zA-Z0-9_]*\).*/\1/p;
                    s/^from  *\([a-zA-Z_][a-zA-Z0-9_]*\).*/\1/p' \
         | sort -u || true)
@@ -343,6 +344,7 @@ scan_shell_deps() {
     shfiles+=("${_sh[@]}")
 
     while IFS= read -r _f; do
+        grep -qU $'\x00' "$_f" 2>/dev/null && continue
         local _shebang
         _shebang=$(head -n1 "$_f" 2>/dev/null || true)
         echo "$_shebang" | grep -qE '^#!.*(bash|sh)\b' && shfiles+=("$_f")
@@ -350,8 +352,13 @@ scan_shell_deps() {
 
     [[ ${#shfiles[@]} -eq 0 ]] && echo "" && return
 
-    local cmds
-    cmds=$(cat "${shfiles[@]}" 2>/dev/null \
+    local cmds _safe_shfiles=()
+    for _sf in "${shfiles[@]}"; do
+        grep -qU $'\x00' "$_sf" 2>/dev/null || _safe_shfiles+=("$_sf")
+    done
+    [[ ${#_safe_shfiles[@]} -eq 0 ]] && echo "" && return
+    cmds=$(cat "${_safe_shfiles[@]}" 2>/dev/null \
+        | tr -d '\000' \
         | sed -n \
             's/.*command -v  *\([a-zA-Z0-9_-]*\).*/\1/p;
              s/.*which  *\([a-zA-Z0-9_-]*\).*/\1/p;
@@ -474,6 +481,7 @@ scan_perl_deps() {
 
     local modules
     modules=$(cat "${plfiles[@]}" 2>/dev/null \
+        | tr -d '\000' \
         | grep -E '^[[:space:]]*(use|require)[[:space:]]+' \
         | sed -n \
             "s/^[[:space:]]*use[[:space:]]\+\([A-Za-z][A-Za-z0-9:_]*\).*/\1/p;
@@ -503,8 +511,8 @@ detect_python_version() {
     local src="$1"
     local main="$2"
 
-    local shebang
-    shebang=$(head -n1 "$src/$main" 2>/dev/null || true)
+    local shebang=""
+    grep -qU $'\x00' "$src/$main" 2>/dev/null || shebang=$(head -n1 "$src/$main" 2>/dev/null || true)
     if echo "$shebang" | grep -qE 'python2|python2\.[0-9]'; then
         echo "2"; return
     fi
@@ -553,9 +561,9 @@ detect_method() {
     elif ls "$src"/*.swift &>/dev/null 2>&1; then echo "swift"
     elif ls "$src"/*.c "$src"/*.cpp &>/dev/null 2>&1; then echo "make"
     elif find "$src" -maxdepth 1 -type f ! -name "*.*" -perm /111 2>/dev/null | \
-         xargs -I{} head -n1 {} 2>/dev/null | grep -qE '^#!.*(bash|sh)\b'; then echo "shell"
+         xargs -I{} sh -c 'grep -qU $'"'"'\x00'"'"' "$1" 2>/dev/null || head -n1 "$1" 2>/dev/null' _ {} | grep -qE '^#!.*(bash|sh)\b'; then echo "shell"
     elif find "$src" -maxdepth 1 -type f ! -name "*.*" 2>/dev/null | \
-         xargs -I{} head -n1 {} 2>/dev/null | grep -qE '^#!.*(bash|sh)\b'; then echo "shell"
+         xargs -I{} sh -c 'grep -qU $'"'"'\x00'"'"' "$1" 2>/dev/null || head -n1 "$1" 2>/dev/null' _ {} | grep -qE '^#!.*(bash|sh)\b'; then echo "shell"
     else echo "unknown"
     fi
 }
@@ -592,6 +600,7 @@ detect_entrypoint() {
     fi
     f=$(find "$src" -maxdepth 1 -type f ! -name "*.*" 2>/dev/null \
         | while IFS= read -r _ef; do
+            grep -qU $'\x00' "\$_ef" 2>/dev/null && continue
             _shebang=$(head -n1 "$_ef" 2>/dev/null || true)
             echo "$_shebang" | grep -qE '^#!.*(bash|sh|python|perl|ruby)\b' && echo "$_ef"
           done | head -n1 || true)
