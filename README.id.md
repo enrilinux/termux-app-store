@@ -30,7 +30,7 @@
 
 > Install dan kelola package Termux dari source code — tanpa root, tanpa akun, tanpa telemetri.
 
-> Baca dengan bahasa: 🇬🇧 **[English](README.md)** &nbsp;|&nbsp; 🇹🇭 **[ภาษาไทย](README.th.md)** &nbsp;|&nbsp; 🇯🇵 **[日本語](README.jp.md)** &nbsp;|&nbsp; 🇨🇳 **[中文](README.ch.md)** &nbsp;|&nbsp; 🇻🇳 **[Tiếng Việt](README.vi.md)**
+> Baca dengan bahasa: 🇬🇧 **[English](README.md)** &nbsp;|&nbsp; 🇹🇭 **[ภาษาไทย](README.th.md)** &nbsp;|&nbsp; 🇯🇵 **[日本語](README.jp.md)** &nbsp;|&nbsp; 🇨🇳 **[中文](README.ch.md)** &nbsp;|&nbsp; 🇻🇳 **[Tiếng Việt](README.vi.md)** &nbsp;|&nbsp; 🇮🇳 **[हिन्दी](README.in.md)**
 
 </div>
 
