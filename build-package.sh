@@ -46,47 +46,44 @@ _width() {
 
 _line_heavy() {
   local w; w=$(_width)
-  printf "${GRAY}"
-  printf '%*s' "$w" '' | tr ' ' '='
+  printf "${CYAN}"
+  printf '%.0s─' $(seq 1 $w)
   printf "${R}\n"
 }
 
 _line_thin() {
-  local w; w=$(_width)
-  printf "${GRAY}"
-  printf '%*s' "$w" '' | tr ' ' '-'
-  printf "${R}\n"
+  :
 }
 
 _banner() {
   local w; w=$(_width)
+  local _l; _l=$(printf '%.0s─' $(seq 1 $w))
   echo ""
-  _line_heavy
-  printf "${BOLD}${BCYAN}"
-  printf "%*s" $(( (w + 6) / 2 )) "Termux App Store Builder"
+  printf "${CYAN}${_l}${R}\n"
+  printf "${BOLD}${CYAN}"
+  printf "%*s" $(( (w + 24) / 2 )) "Termux App Store Builder"
   printf "${R}\n"
   printf "${GRAY}"
-  printf "%*s" $(( (w + 16) / 2 )) "github.com/djunekz/termux-app-store"
+  printf "%*s" $(( (w + 36) / 2 )) "github.com/djunekz/termux-app-store"
   printf "${R}\n"
-  _line_heavy
+  printf "${CYAN}${_l}${R}\n"
   echo ""
 }
 
 _section() {
   echo ""
-  printf "  ${BOLD}${WHITE}:: %s${R}\n" "$1"
-  _line_thin
+  printf "${BYELLOW}— %s —${R}\n" "$1"
 }
 
-_ok()       { printf "  ${BGREEN}[  OK  ]${R}  %s\n"           "$*"; }
-_info()     { printf "  ${BCYAN}[ INFO ]${R}  %s\n"            "$*"; }
-_warn()     { printf "  ${BYELLOW}[ WARN ]${R}  %s\n"          "$*"; }
-_skip()     { printf "  ${GRAY}[ SKIP ]  %s${R}\n"             "$*"; }
-_step()     { printf "  ${BCYAN}[  >>  ]${R}  ${BOLD}%s${R}\n" "$*"; }
-_progress() { printf "  ${YELLOW}[  ..  ]${R}  %s\n"           "$*"; }
-_fatal()    { printf "\n  ${BG_RED}${BLACK}${BOLD} FATAL ${R}  ${BRED}${BOLD}%s${R}\n\n" "$*"; }
-_detail()   { printf "      ${GRAY}%-14s${R}  ${WHITE}%s${R}\n" "$1" "$2"; }
-_badge()    { printf "  ${GRAY}%-12s${R}  ${BOLD}${WHITE}%s${R}\n" "$1" "$2"; }
+_ok()       { printf "${BGREEN}[${GREEN}✓${BGREEN}]${R}  %s\n"           "$*"; }
+_info()     { printf "${BGREEN}[${BCYAN}INFO${BGREEN}]${R}  %s\n"            "$*"; }
+_warn()     { printf "${BGREEN}[${BYELLOW}!${BGREEN}]${R}  %s\n"          "$*"; }
+_skip()     { printf "${BGREEN}[${GRAY}-${BGREEN}]${R}  %s${R}\n"             "$*"; }
+_step()     { printf "${BGREEN}[${BCYAN}>${BGREEN}]${R}  ${BOLD}%s${R}\n" "$*"; }
+_progress() { printf "${BGREEN}[${YELLOW}*${BGREEN}]${R}  %s\n"           "$*"; }
+_fatal()    { printf "\n ${BG_RED}${BLACK}${BOLD} FATAL ${R}  ${BRED}${BOLD}%s${R}\n\n" "$*"; }
+_detail()   { printf "     ${GRAY}%-14s${R} ${DIM}%s${R}\n" "$1" "$2"; }
+_badge()    { printf "${GRAY}%-12s${R} ${BOLD}${WHITE}%s${R}\n" "$1" "$2"; }
 
 PACKAGE="${1:-}"
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -424,7 +421,7 @@ _check_rust_env() {
     _ok "Rust environment clean (rustc $rustc_ver_new)"
 
     echo ""
-    printf "  ${BCYAN}[  >>  ]${R}  ${BOLD}Restarting build...${R}\n"
+    printf "  ${BCYAN}[>>]${R}  ${BOLD}Restarting build...${R}\n"
     echo ""
     exec "$0" "$@"
   else

@@ -15,23 +15,45 @@ fi
 PACKAGES_DIR="$ROOT/packages"
 BUILD_SCRIPT="$ROOT/build-package.sh"
 
-R='\033[0;31m'; G='\033[0;32m'; Y='\033[1;33m'
-B='\033[0;34m'; C='\033[0;36m'; W='\033[1;37m'; N='\033[0m'
-ok()    { echo -e "  ${G}[  OK  ]${N}  $*"; }
-info()  { echo -e "  ${C}[ INFO ]${N}  $*"; }
-warn()  { echo -e "  ${Y}[  !!  ]${N}  $*"; }
-fail()  { echo -e "  ${R}[ FAIL ]${N}  $*"; exit 1; }
-step()  { echo -e "\n${B}:: $*${N}\n${B}$(printf '%.0s-' {1..79})${N}"; }
+R=$'\033[0m'
+BOLD=$'\033[1m'
+DIM=$'\033[2m'
+GRAY=$'\033[90m'
+WHITE=$'\033[97m'
+GREEN=$'\033[32m'
+BGREEN=$'\033[92m'
+YELLOW=$'\033[33m'
+BYELLOW=$'\033[93m'
+CYAN=$'\033[36m'
+BCYAN=$'\033[96m'
+BRED=$'\033[91m'
+BG_RED=$'\033[41m'
+BLACK=$'\033[30m'
+# compat
+N="$R"; G="$BGREEN"; Y="$BYELLOW"; B="$BCYAN"; C="$BCYAN"; W="$WHITE"
+ok()    { printf "${BGREEN}[${GREEN}✓${BGREEN}]${R}  %s\n" "$*"; }
+info()  { printf "${BGREEN}[${BCYAN}INFO${BGREEN}]${R}  %s\n" "$*"; }
+warn()  { printf "${BGREEN}[${BYELLOW}!${BGREEN}]${R}  %s\n" "$*"; }
+fail()  { printf "${BGREEN}[${BRED}FAIL${BGREEN}]${R}  %s\n" "$*"; exit 1; }
+detail(){ printf "     ${GRAY}%-14s${R} ${DIM}%s${R}\n" "$1" "$2"; }
+step()  { echo ""; printf "${BYELLOW}— %s —${R}\n" "$*"; }
 
 banner() {
-cat <<'EOF'
-
-══════════════════════════════════════════════════════════════════════
-        Termux Build Init  -  Auto Create and Build package
-                github.com/djunekz/termux-app-store
-         Supports: GitHub · GitLab · Codeberg · Direct URL
-══════════════════════════════════════════════════════════════════════
-EOF
+  local _w; _w=$(tput cols 2>/dev/null || echo 72)
+  local _l; _l=$(printf '%.0s─' $(seq 1 $_w))
+  echo ""
+  printf "${BCYAN}${_l}${R}\n"
+  printf "${BOLD}${BCYAN}"
+  printf "%*s" $(( (_w + 18) / 2 )) "Termux Build Init"
+  printf "${R}\n"
+  printf "${GRAY}"
+  printf "%*s" $(( (_w + 36) / 2 )) "github.com/djunekz/termux-app-store"
+  printf "${R}\n"
+  printf "${GRAY}"
+  printf "%*s" $(( (_w + 50) / 2 )) "Supports: GitHub · GitLab · Codeberg · Direct URL"
+  printf "${R}\n"
+  printf "${BCYAN}${_l}${R}\n"
+  echo ""
 }
 
 need() {
@@ -1115,7 +1137,9 @@ step "Downloading & analyzing source"
 info "URL: $SRCURL"
 
 if ! curl -sf --head "$SRCURL" -o /dev/null 2>/dev/null; then
-    fail "Source URL is not accessible: $SRCURL"$'\n'"  [ INFO ]  Cek nama branch atau pastikan repo tidak private."
+    printf "${BGREEN}[${BRED}FAIL${BGREEN}]${R}  Source URL is not accessible: %s\n" "$SRCURL"
+    info "Check the branch name or make sure the repository is not private."
+    exit 1
 fi
 
 TMP=$(mktemp -d)
@@ -1161,7 +1185,6 @@ if [[ "$INSTALL_METHOD" == "unknown" ]]; then
     [[ -d "$SRC/scripts" ]]  && _HAS_SCRIPTS_DIR=true
     [[ -d "$SRC/patches" ]]  && _HAS_PATCHES_DIR=true
     [[ -d "$SRC/cmake" ]]    && _HAS_PATCHES_DIR=true
-    # Cek apakah ada file runnable
     _RUNNABLE=$(find "$SRC" -maxdepth 1 -type f \( -name "*.py" -o -name "*.sh" -o -name "*.js" -o -name "*.rb" \) 2>/dev/null | head -1)
     [[ -n "$_RUNNABLE" ]] && _HAS_NO_BINARY=false
 
@@ -1284,10 +1307,10 @@ printf "${W}${N}  %-12s : %-28s ${W}${N}\n" "Version"    "$VERSION"
 printf "${W}${N}  %-12s : %-28s ${W}${N}\n" "License"    "$LICENSE"
 printf "${W}${N}  %-12s : %-28s ${W}${N}\n" "Entrypoint" "$MAIN_FILE"
 printf "${W}${N}  %-12s : %-28s ${W}${N}\n" "Installer"  "${INSTALLER_SCRIPT:-none}"
-echo -e "${W}════════════════════════════════════════════${N}"
-echo -e "${W}${N}  Depends: ${C}${DEPENDS_JOINED:-none}${N}"
-[[ -n "${DEPS_SHELL_WARNS:-}" ]] && echo -e "${R}  Incompatible: ${DEPS_SHELL_WARNS}${N}"
-echo -e "${W}════════════════════════════════════════════${N}"
+printf "${BCYAN}${_sl}${R}\n"
+printf "     ${GRAY}%-14s${R} ${DIM}%s${R}\n" "Depends:" "${DEPENDS_JOINED:-none}"
+[[ -n "${DEPS_SHELL_WARNS:-}" ]] && printf "     ${GRAY}%-14s${R} ${BRED}%s${R}\n" "Incompatible:" "${DEPS_SHELL_WARNS}"
+printf "${BCYAN}${_sl}${R}\n"
 echo ""
 
 if [[ -n "${DEPS_SHELL_WARNS:-}" ]]; then

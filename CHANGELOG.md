@@ -43,6 +43,11 @@ and this project adheres to semantic versioning.
 - Package `ytfzf` v2.6.2 - A posix script to find and watch youtube videos from the terminal. (Without API)
 
 ### Fixed
+- `termux-build-init.sh` — all color variables now use `$'\033[...'` syntax so escape sequences are correctly interpreted by `printf` and `echo`; previously colors appeared as raw text like `\033[97m`
+- `termux-build-init.sh` — Unicode characters in banner (`·`) and status tags (`✓`, `─`) now render correctly instead of showing as `\u00b7`, `\u2713`, `\u2500`
+- `termux-build-init.sh` — output style unified with `build-package.sh`: same colors, same tag format `[✓]` `[INFO]` `[!]` `[FAIL]`, same `— Section —` style, same `─` line separator
+- `termux-build-init.sh` — fail message "Cek nama branch atau pastikan repo tidak private" translated to English and reformatted to match tag style
+- `build-package.sh` — `_line_heavy()` and `_line_thin()` fixed: replaced `tr ' ' '─'` with `printf '%.0s─' $(seq 1 $w)` to correctly render multi-byte Unicode separator characters
 - `termux-build-init.sh` — when `INSTALL_METHOD=unknown`, tool now detects if the repo is a build-scripts/patch collection (contains `scripts/`, `patches/`, or `cmake/` directories with no runnable file in root) and sets `_BUILD_SCRIPTS_ONLY=true`
 - `termux-build-init.sh` — when `INSTALL_METHOD=unknown` and repo is build-scripts only, a red warning box is shown: *"This repo is not a standalone tool — packaging will produce a .deb with no usable command"*; prompt defaults to **N** (abort)
 - `termux-build-init.sh` — when `INSTALL_METHOD=unknown` but repo is not build-scripts only, a yellow warning box is shown: *"Could not detect build system — edit build.sh manually before test build"*; prompt also defaults to **N**
