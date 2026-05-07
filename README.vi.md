@@ -30,7 +30,7 @@
 
 > Cài đặt và quản lý gói Termux từ source code — không cần root, không cần tài khoản, không có telemetry
 
-> Đọc bằng ngôn ngữ: 🇬🇧 **[English](README.md)** &nbsp;|&nbsp; 🇮🇩 [Indonesia](README.id.md) &nbsp;|&nbsp; 🇹🇭 **[ภาษาไทย](README.th.md)** &nbsp;|&nbsp; 🇯🇵 **[日本語](README.jp.md)** &nbsp;|&nbsp; 🇨🇳 **[中文](README.ch.md)**
+> Đọc bằng ngôn ngữ: 🇬🇧 **[English](README.md)** &nbsp;|&nbsp; 🇮🇩 **[Indonesia](README.id.md)** &nbsp;|&nbsp; 🇹🇭 **[ภาษาไทย](README.th.md)** &nbsp;|&nbsp; 🇯🇵 **[日本語](README.jp.md)** &nbsp;|&nbsp; 🇨🇳 **[中文](README.ch.md)** &nbsp;|&nbsp; 🇮🇳 **[हिन्दी](README.in.md)**
 
 </div>
 
