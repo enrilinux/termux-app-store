@@ -30,7 +30,7 @@
 
 > 从源码安装和管理Termux软件包 — 无需root、无需账号、无遥测数据
 
-> 阅读语言: 🇬🇧 **[English](README.md)** &nbsp;|&nbsp; 🇮🇩 **[Indonesia](README.id.md)** &nbsp;|&nbsp; 🇹🇭 **[ภาษาไทย](README.th.md)** &nbsp;|&nbsp; 🇯🇵 **[日本語](README.jp.md)** &nbsp;|&nbsp; 🇻🇳 **[Tiếng Việt](README.vi.md)**
+> 阅读语言: 🇬🇧 **[English](README.md)** &nbsp;|&nbsp; 🇮🇩 **[Indonesia](README.id.md)** &nbsp;|&nbsp; 🇹🇭 **[ภาษาไทย](README.th.md)** &nbsp;|&nbsp; 🇯🇵 **[日本語](README.jp.md)** &nbsp;|&nbsp; 🇻🇳 **[Tiếng Việt](README.vi.md)** &nbsp;|&nbsp; 🇮🇳 **[हिन्दी](README.in.md)**
 
 </div>
 
