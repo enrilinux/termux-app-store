@@ -1,4 +1,4 @@
-name: cli-validation
+name: CLI-Validation
 
 on:
   push:
@@ -12,8 +12,8 @@ permissions:
   contents: read
 
 jobs:
-  cli-validation:
-    name: cli-validation
+  CLI-Validation:
+    name: CLI-Validation
     runs-on: ubuntu-latest
 
     steps:
