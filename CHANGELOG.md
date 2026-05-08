@@ -41,6 +41,13 @@ and this project adheres to semantic versioning.
 - Package `xeuledoc` v1.0.0 - Fetch information about a public Google document.
 - Package `viu` v1.6.1 - Terminal image viewer with native support for iTerm and Kitty
 - Package `ytfzf` v2.6.2 - A posix script to find and watch youtube videos from the terminal. (Without API)
+- Package `binwalk` v3.1.0 - Firmware Analysis Tool
+- Package `dbd` v1.0.0 - Durandals Backdoor
+- Package `dnsmap` v1.0.0 - fork of http://code.google.com/p/dnsmap/source/checkout
+- Package `elpscrk` v1.0.0 - An Intelligent wordlist generator based on user profiling, permutations, and statistics. (Named after the same tool in Mr.Robot series S01E01)
+- Package `eternal-scanner` v2.2 - An internet scanner for exploit CVE-2017-0144 (Eternal Blue) & CVE-2017-0145 (Eternal Romance)
+- Package `evilginx2` v3.3.0 - Standalone man-in-the-middle attack framework used for phishing login credentials along with session cookies, allowing for the bypass of 2-factor authentication
+- Package `fbvid` v1.0.0 - Facebook Video Downloader (CLI) For Linux Systems Coded in PHP
 
 ### Fixed
 - `termux-build-init.sh` — `detect_entrypoint()` step 3: regex in `sed` for parsing `AC_INIT(...)` from `configure.ac` was malformed (`\[\?\([^],)]*\)\]`), causing m4 macro internals like `m4_defn([package_name])` to leak into the entrypoint result (e.g. detected as `m4-defn-package` instead of the actual binary name); regex corrected to `\[*\([^]],)]*\)` and an output validation guard added to reject strings containing `m4_`, `defn`, `$`, `(`, `)`, or `@`
