@@ -38,7 +38,7 @@ verify_official_release() {
   local api_full_name
   api_full_name=$(curl -fsSL \
     -H "Accept: application/vnd.github+json" \
-    "$OFFICIAL_API" 2>/dev/null \
+    "https://api.github.com/repos/$OFFICIAL_REPO" 2>/dev/null \
     | grep '"full_name"' \
     | head -1 \
     | sed 's/.*"full_name": *"\([^"]*\)".*/\1/' || true)
