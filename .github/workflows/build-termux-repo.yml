@@ -41,8 +41,8 @@ jobs:
           d = json.loads(raw)
           print(d.get('total', len(d.get('packages', []))))
           ")
-          echo "version=$VERSION" >> "\$GITHUB_OUTPUT"
-          echo "total=$TOTAL"     >> "\$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "total=$TOTAL"     >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION  |  Packages in index: $TOTAL"
 
       - name: Build termux-app-store .deb for all architectures
@@ -51,6 +51,8 @@ jobs:
           mkdir -p output
 
           LAUNCHER_B64="IyEvZGF0YS9kYXRhL2NvbS50ZXJtdXgvZmlsZXMvdXNyL2Jpbi9weXRob24zCmltcG9ydCBzeXMKc3lzLnBhdGguaW5zZXJ0KDAsICIvZGF0YS9kYXRhL2NvbS50ZXJtdXgvZmlsZXMvdXNyL2xpYi9weXRob24zL2Rpc3QtcGFja2FnZXMiKQpmcm9tIHRlcm11eF9hcHBfc3RvcmUubWFpbiBpbXBvcnQgbWFpbgptYWluKCkK"
+
+          BUILD_FAILED=0
 
           for ARCH in aarch64 arm x86_64 i686; do
             PKG_BUILD="build_tmp/termux-app-store_${ARCH}"
@@ -74,12 +76,32 @@ jobs:
             printf 'Homepage: https://github.com/djunekz/termux-app-store\n'          >> "$PKG_BUILD/DEBIAN/control"
             printf 'Description: The first offline-first, source-based TUI package manager for Termux\n' >> "$PKG_BUILD/DEBIAN/control"
 
-            if dpkg-deb --build "$PKG_BUILD" "output/termux-app-store_${VERSION}_${ARCH}.deb" 2>/dev/null; then
+            echo "--- Building for $ARCH ---"
+            cat "$PKG_BUILD/DEBIAN/control"
+
+            if dpkg-deb --build "$PKG_BUILD" "output/termux-app-store_${VERSION}_${ARCH}.deb"; then
               echo "  [OK] termux-app-store_${VERSION}_${ARCH}.deb"
             else
               echo "  [FAIL] termux-app-store_${VERSION}_${ARCH}.deb"
+              BUILD_FAILED=1
             fi
           done
+
+          if [ "$BUILD_FAILED" -eq 1 ]; then
+            echo "ERROR: One or more .deb builds failed!"
+            exit 1
+          fi
+
+      - name: Verify build output
+        run: |
+          echo "Files in output/:"
+          ls -la output/
+          COUNT=$(ls output/*.deb 2>/dev/null | wc -l)
+          if [ "$COUNT" -eq 0 ]; then
+            echo "ERROR: No .deb files were built!"
+            exit 1
+          fi
+          echo "$COUNT .deb file(s) found."
 
       - name: Checkout gh-pages
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
