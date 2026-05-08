@@ -47,6 +47,14 @@ jobs:
             termux-build \
             build-package.sh \
             tasctl \
+            install.sh \
+            uninstall.sh \
+            install-repo.py \
+            guidebook.py \
+            pkg-scaffold.py \
+            doctor.py \
+            pyproject.toml \
+            MANIFEST.in \
             termux_app_store/ \
             ARCHITECTURE.md \
             BINARY_DISCLAIMER.md \
