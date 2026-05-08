@@ -56,11 +56,10 @@ verify_official_release() {
     printf "%s║   NOT the official Termux App Store by @djunekz.         ║%s\n" "$BRED$B" "$R"
     printf "%s║                                                          ║%s\n" "$BRED$B" "$R"
     printf "%s║   Always install from the official source:               ║%s\n" "$BRED$B" "$R"
-    printf "%s║   bash <(curl -fsSL                                      ║%s\n" "$BRED$B" "$R"
-    printf "%s║   https://github.com/djunekz/termux-app-store/           ║%s\n" "$BRED$B" "$R"
-    printf "%s║   releases/latest/download/install.sh)                   ║%s\n" "$BRED$B" "$R"
     printf "%s║                                                          ║%s\n" "$BRED$B" "$R"
     printf "%s╚══════════════════════════════════════════════════════════╝%s\n" "$BRED$B" "$R"
+    printf "%sCopy this text for installing termux-app-store:%s\n\n" "$BRED$B" "$R"
+    printf "%s curl -fsSL https://raw.githubusercontent.com/djunekz/termux-app-store/master/install.sh | bash %s\n" "$BGRREN$B" "$R"
     printf "\n"
     exit 1
   fi
@@ -105,8 +104,14 @@ check_existing() {
   [[ -f "$INSTALL_DIR/.installed" ]] && \
     current=$(grep '^version=' "$INSTALL_DIR/.installed" 2>/dev/null | cut -d= -f2 || true)
   [[ -n "$current" ]] && printf "  Installed version : %sv%s%s\n" "$B" "$current" "$R"
+
+  if ! [ -t 0 ]; then
+    warn "Running via pipe — auto-overwriting existing installation"
+    return 0
+  fi
+
   printf "  Overwrite? [Y/n]: "
-  read -r resp
+  read -r resp </dev/tty
   case "${resp:-Y}" in
     [nN]|[nN][oO]) die "Installation cancelled" ;;
   esac
