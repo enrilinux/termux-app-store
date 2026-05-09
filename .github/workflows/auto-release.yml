@@ -44,6 +44,7 @@ jobs:
           ARCHIVE="termux-app-store-${VERSION}.tar.gz"
           tar -czf "$ARCHIVE" \
             tools/ \
+            packages/ \
             termux-build \
             build-package.sh \
             tasctl \
