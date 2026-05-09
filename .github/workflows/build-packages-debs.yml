@@ -211,9 +211,9 @@ jobs:
 
                 BINARY_NAME=$(basename "$SRC_FILE")
                 cat > "$BINDIR/$PKG" << LAUNCHER
-#!/data/data/com.termux/files/usr/bin/bash
-exec "/data/data/com.termux/files/usr/lib/$PKG/$BINARY_NAME" "\$@"
-LAUNCHER
+                #!/data/data/com.termux/files/usr/bin/bash
+                exec "/data/data/com.termux/files/usr/lib/$PKG/$BINARY_NAME" "\$@"
+                LAUNCHER
                 chmod +x "$BINDIR/$PKG"
               fi
 
