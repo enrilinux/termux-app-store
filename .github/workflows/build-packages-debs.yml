@@ -132,7 +132,7 @@ jobs:
 
       - name: Check binary cache
         id: cache
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: output/
           key: pkg-${{ matrix.package }}-${{ matrix.version }}-${{ matrix.sha256 }}
@@ -152,132 +152,134 @@ jobs:
           DEPENDS=$(grep  'TERMUX_PKG_DEPENDS='    "$BUILD_SH" | head -1 | cut -d= -f2 | tr -d "\"'" || echo "")
           LICENSE=$(grep  'TERMUX_PKG_LICENSE='    "$BUILD_SH" | head -1 | cut -d= -f2 | tr -d "\"'" || echo "")
           SHA256=$(grep   'TERMUX_PKG_SHA256='     "$BUILD_SH" | head -1 | cut -d= -f2 | tr -d "\"'" || echo "")
-          SRC_URL=$(grep  'TERMUX_PKG_SRCURL='     "$BUILD_SH" | head -1 | cut -d= -f2 | tr -d "\"'" || echo "")
+          SRC_URL_RAW=$(grep 'TERMUX_PKG_SRCURL='  "$BUILD_SH" | head -1 | cut -d= -f2- | tr -d "\"'" || echo "")
+
+          # Expand ${TERMUX_PKG_VERSION} di SRCURL
+          SRC_URL="${SRC_URL_RAW//\$\{TERMUX_PKG_VERSION\}/$VERSION}"
+          SRC_URL="${SRC_URL//\$TERMUX_PKG_VERSION/$VERSION}"
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Package  : $PKG"
           echo "Version  : $VERSION"
-          echo "Desc     : $DESC"
+          echo "SRC_URL  : $SRC_URL"
           echo "Depends  : $DEPENDS"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
           mkdir -p output
 
-          TERMUX_PREFIX="/data/data/com.termux/files/usr"
-
-          termux_step_make_install() {
-            if [[ -f Makefile ]]; then
-              make install DESTDIR="$TERMUX_DESTDIR" PREFIX="$TERMUX_PREFIX" \
-                           prefix="$TERMUX_PREFIX" 2>&1
-            fi
-          }
-          export -f termux_step_make_install
-          export TERMUX_PREFIX
-
-          if [[ -f "build-package.sh" ]]; then
-            echo "Running build-package.sh $PKG..."
-            # Set DESTDIR mock agar build-package.sh tidak akses path absolut
-            export TERMUX_DESTDIR="$(pwd)/build_tmp/${PKG}_runner_destdir"
-            mkdir -p "$TERMUX_DESTDIR"
-            bash build-package.sh "$PKG" 2>&1 || true
+          # Deteksi tipe: pre-built .deb dari developer vs source compile
+          IS_PREBUILT_DEB=0
+          if echo "$SRC_URL" | grep -qE '\.deb($|\?)'; then
+            IS_PREBUILT_DEB=1
+            echo "[*] Type: pre-built .deb (from developer)"
+          else
+            echo "[*] Type: source package"
           fi
 
-          EXISTING_DEB=$(ls output/${PKG}_*.deb 2>/dev/null | head -1 || true)
+          if [[ "$IS_PREBUILT_DEB" -eq 1 ]]; then
+            echo "Downloading: $SRC_URL"
+            curl -fsSL --retry 3 --retry-delay 2 "$SRC_URL" \
+              -o "/tmp/${PKG}-orig.deb" || {
+              echo "✗ Download failed"
+              exit 1
+            }
 
-          if [[ -n "$EXISTING_DEB" ]]; then
-            echo "✓ .deb built by build-package.sh: $EXISTING_DEB"
+            SIZE=$(du -sh "/tmp/${PKG}-orig.deb" | cut -f1)
+            echo "Downloaded: $SIZE"
 
-          else
-            echo "build-package.sh tidak menghasilkan .deb — building wrapper..."
-
-            SRC_FILE=""
-            IS_PREBUILT_DEB=0
-
-            if [[ -n "$SRC_URL" && "$SRC_URL" != *"*"* && "$SRC_URL" =~ ^https?:// ]]; then
-              echo "Downloading source: $SRC_URL"
-              curl -fsSL --retry 3 --retry-delay 2 "$SRC_URL" -o "/tmp/${PKG}-src" 2>/dev/null || true
-
-              if [[ -f "/tmp/${PKG}-src" && -s "/tmp/${PKG}-src" ]]; then
-                SRC_FILE="/tmp/${PKG}-src"
-
-                # Cek apakah file ini sudah berupa .deb prebuilt
-                if file "$SRC_FILE" 2>/dev/null | grep -q "Debian binary package"; then
-                  IS_PREBUILT_DEB=1
-                  echo "[*] Detected prebuilt .deb"
-                fi
-
-                if [[ -n "$SHA256" ]]; then
-                  ACTUAL=$(sha256sum "$SRC_FILE" | cut -d' ' -f1)
-                  if [[ "$ACTUAL" == "$SHA256" ]]; then
-                    echo "✓ SHA256 verified"
-                  else
-                    echo "⚠ SHA256 mismatch — using file anyway"
-                  fi
-                fi
+            # Verify SHA256
+            if [[ -n "$SHA256" ]]; then
+              ACTUAL=$(sha256sum "/tmp/${PKG}-orig.deb" | cut -d' ' -f1)
+              if [[ "$ACTUAL" == "$SHA256" ]]; then
+                echo "✓ SHA256 verified"
               else
-                echo "⚠ Source download failed or empty"
+                echo "⚠ SHA256 mismatch"
+                echo "  Expected: $SHA256"
+                echo "  Got:      $ACTUAL"
               fi
             fi
 
+            # Extract isi .deb asli dan rebuild per-arch
+            ORIG_CONTROL=$(dpkg-deb -f "/tmp/${PKG}-orig.deb" 2>/dev/null || true)
+            ORIG_DEPENDS=$(echo "$ORIG_CONTROL" | grep '^Depends:'        | sed 's/^Depends: //' || echo "$DEPENDS")
+            ORIG_ISIZE=$(echo   "$ORIG_CONTROL" | grep '^Installed-Size:' | awk '{print $2}'    || echo "0")
+            FINAL_DEPENDS="${ORIG_DEPENDS:-$DEPENDS}"
+
             BUILD_FAILED=0
+            for ARCH in aarch64 arm x86_64 i686; do
+              PKG_BUILD="build_tmp/${PKG}_${ARCH}"
+              mkdir -p "$PKG_BUILD"
 
-            if [[ "$IS_PREBUILT_DEB" -eq 1 && -n "$SRC_FILE" ]]; then
-              # Prebuilt .deb: jangan extract+rebuild — langsung pakai .deb asli.
-              # Hanya update field Architecture di control supaya dpkg happy.
-              # Copy untuk semua arch karena Termux _all.deb berjalan di semua arch.
-              echo "  [*] Prebuilt .deb detected — retagging arch, preserving contents..."
+              # Extract semua isi file dari .deb asli
+              dpkg-deb -x "/tmp/${PKG}-orig.deb" "$PKG_BUILD/" 2>&1 || {
+                echo "  ✗ Extract failed for $ARCH"
+                BUILD_FAILED=1
+                continue
+              }
 
-              ORIG_CONTROL=$(dpkg-deb -f "$SRC_FILE" 2>/dev/null || true)
-              ORIG_DEPENDS=$(echo "$ORIG_CONTROL" | grep '^Depends:'       | sed 's/^Depends: //'       || echo "$DEPENDS")
-              ORIG_ISIZE=$(echo  "$ORIG_CONTROL" | grep '^Installed-Size:' | awk '{print $2}'           || echo "0")
-              FINAL_DEPENDS="${ORIG_DEPENDS:-$DEPENDS}"
+              # Rebuild control dengan arch yang benar
+              mkdir -p "$PKG_BUILD/DEBIAN"
+              {
+                echo "Package: $PKG"
+                echo "Version: $VERSION"
+                echo "Architecture: $ARCH"
+                echo "Maintainer: djunekz <gab288.gab288@passinbox.com>"
+                echo "Installed-Size: ${ORIG_ISIZE:-0}"
+                [[ -n "$FINAL_DEPENDS" ]] && echo "Depends: $FINAL_DEPENDS"
+                [[ -n "$HOMEPAGE"      ]] && echo "Homepage: $HOMEPAGE"
+                [[ -n "$LICENSE"       ]] && echo "License: $LICENSE"
+                echo "Description: ${DESC:-Termux App Store package}"
+              } > "$PKG_BUILD/DEBIAN/control"
 
-              for ARCH in aarch64 arm x86_64 i686; do
-                PKG_BUILD="build_tmp/${PKG}_${ARCH}"
-                mkdir -p "$PKG_BUILD"
+              if dpkg-deb --build "$PKG_BUILD" \
+                "output/${PKG}_${VERSION}_${ARCH}.deb" 2>/dev/null; then
+                echo "  ✓ ${PKG}_${VERSION}_${ARCH}.deb"
+              else
+                echo "  ✗ ${PKG}_${VERSION}_${ARCH}.deb FAILED"
+                BUILD_FAILED=1
+              fi
+            done
+            [[ "$BUILD_FAILED" -eq 1 ]] && echo "⚠ Some builds failed"
 
-                # Extract isi lengkap dari .deb asli
-                dpkg-deb -x "$SRC_FILE" "$PKG_BUILD/" 2>&1 || {
-                  echo "  ✗ Extract failed for $ARCH"
-                  BUILD_FAILED=1
-                  continue
-                }
+          else
+            if [[ -f "build-package.sh" ]]; then
+              echo "Running build-package.sh $PKG..."
+              export TERMUX_DESTDIR="$(pwd)/build_tmp/${PKG}_destdir"
+              mkdir -p "$TERMUX_DESTDIR"
+              bash build-package.sh "$PKG" 2>&1 || true
+            fi
 
-                # Rebuild control dengan arch yang benar
-                mkdir -p "$PKG_BUILD/DEBIAN"
-                {
-                  echo "Package: $PKG"
-                  echo "Version: $VERSION"
-                  echo "Architecture: $ARCH"
-                  echo "Maintainer: djunekz <gab288.gab288@passinbox.com>"
-                  echo "Installed-Size: ${ORIG_ISIZE:-0}"
-                  [[ -n "$FINAL_DEPENDS" ]] && echo "Depends: $FINAL_DEPENDS"
-                  [[ -n "$HOMEPAGE"      ]] && echo "Homepage: $HOMEPAGE"
-                  [[ -n "$LICENSE"       ]] && echo "License: $LICENSE"
-                  echo "Description: ${DESC:-Termux App Store package}"
-                } > "$PKG_BUILD/DEBIAN/control"
+            EXISTING_DEB=$(ls output/${PKG}_*.deb 2>/dev/null | head -1 || true)
 
-                if dpkg-deb --build "$PKG_BUILD" "output/${PKG}_${VERSION}_${ARCH}.deb" 2>/dev/null; then
-                  echo "  ✓ ${PKG}_${VERSION}_${ARCH}.deb"
-                else
-                  echo "  ✗ ${PKG}_${VERSION}_${ARCH}.deb FAILED"
-                  BUILD_FAILED=1
-                fi
-              done
-
+            if [[ -n "$EXISTING_DEB" ]]; then
+              echo "✓ .deb dari build-package.sh: $EXISTING_DEB"
             else
+              # Fallback: download source, buat wrapper .deb
+              echo "build-package.sh tidak menghasilkan .deb — building wrapper..."
+              SRC_FILE=""
+
+              if [[ -n "$SRC_URL" && "$SRC_URL" != *"*"* \
+                    && "$SRC_URL" =~ ^https?:// ]]; then
+                echo "Downloading source: $SRC_URL"
+                curl -fsSL --retry 3 "$SRC_URL" \
+                  -o "/tmp/${PKG}-src" 2>/dev/null || true
+                [[ -f "/tmp/${PKG}-src" && -s "/tmp/${PKG}-src" ]] \
+                  && SRC_FILE="/tmp/${PKG}-src" \
+                  && echo "✓ Source: $(du -sh $SRC_FILE | cut -f1)"
+              fi
+
+              BUILD_FAILED=0
               for ARCH in aarch64 arm x86_64 i686; do
                 PKG_BUILD="build_tmp/${PKG}_${ARCH}"
-                DESTDIR_PREFIX="$PKG_BUILD/data/data/com.termux/files/usr"
-                BINDIR="$DESTDIR_PREFIX/bin"
-                LIBDIR="$DESTDIR_PREFIX/lib/$PKG"
+                DESTDIR_USR="$PKG_BUILD/data/data/com.termux/files/usr"
+                BINDIR="$DESTDIR_USR/bin"
+                LIBDIR="$DESTDIR_USR/lib/$PKG"
                 mkdir -p "$PKG_BUILD/DEBIAN" "$BINDIR" "$LIBDIR"
 
+                INSTALLED_SIZE="0"
                 if [[ -n "$SRC_FILE" ]]; then
-                  # Source bukan .deb — copy ke libdir dan buat launcher wrapper
                   cp "$SRC_FILE" "$LIBDIR/"
                   chmod +x "$LIBDIR/"* 2>/dev/null || true
-
                   BINARY_NAME=$(basename "$SRC_FILE")
                   printf '%s\n' \
                     '#!/data/data/com.termux/files/usr/bin/bash' \
@@ -285,12 +287,6 @@ jobs:
                     > "$BINDIR/$PKG"
                   chmod +x "$BINDIR/$PKG"
                   INSTALLED_SIZE=$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo "0")
-                  FINAL_DEPENDS="$DEPENDS"
-                else
-                  # Tidak ada source — buat paket kosong (stub)
-                  echo "  [!] No source available, creating stub .deb for $ARCH"
-                  INSTALLED_SIZE="0"
-                  FINAL_DEPENDS="$DEPENDS"
                 fi
 
                 {
@@ -299,27 +295,28 @@ jobs:
                   echo "Architecture: $ARCH"
                   echo "Maintainer: djunekz <gab288.gab288@passinbox.com>"
                   echo "Installed-Size: $INSTALLED_SIZE"
-                  [[ -n "$FINAL_DEPENDS" ]] && echo "Depends: $FINAL_DEPENDS"
-                  [[ -n "$HOMEPAGE"      ]] && echo "Homepage: $HOMEPAGE"
-                  [[ -n "$LICENSE"       ]] && echo "License: $LICENSE"
+                  [[ -n "$DEPENDS"  ]] && echo "Depends: $DEPENDS"
+                  [[ -n "$HOMEPAGE" ]] && echo "Homepage: $HOMEPAGE"
+                  [[ -n "$LICENSE"  ]] && echo "License: $LICENSE"
                   echo "Description: ${DESC:-Termux App Store package}"
                 } > "$PKG_BUILD/DEBIAN/control"
 
-                if dpkg-deb --build "$PKG_BUILD" "output/${PKG}_${VERSION}_${ARCH}.deb" 2>/dev/null; then
+                if dpkg-deb --build "$PKG_BUILD" \
+                  "output/${PKG}_${VERSION}_${ARCH}.deb" 2>/dev/null; then
                   echo "  ✓ ${PKG}_${VERSION}_${ARCH}.deb"
                 else
                   echo "  ✗ ${PKG}_${VERSION}_${ARCH}.deb FAILED"
                   BUILD_FAILED=1
                 fi
               done
+              [[ "$BUILD_FAILED" -eq 1 ]] && echo "⚠ Some builds failed"
             fi
-
-            [[ "$BUILD_FAILED" -eq 1 ]] && echo "⚠ Some .deb builds failed for $PKG"
           fi
 
           echo ""
-          echo "Output files:"
+          echo "Output:"
           ls -lh output/ 2>/dev/null || echo "(none)"
+
 
       - name: Generate SHA256 checksums
         run: |
@@ -468,82 +465,3 @@ jobs:
                 echo "SHA256: $sha256"
                 echo "Description: $pkg_desc"
                 echo ""
-              } >> "$DIR/Packages"
-
-              COUNT=$((COUNT + 1))
-            done
-
-            rm -f "$DIR/Packages.gz"
-            gzip -k "$DIR/Packages"
-            echo "  [$arch] $COUNT package(s)"
-          done
-
-      - name: Regenerate Release file
-        run: |
-          cd gh-pages
-          {
-            printf 'Origin: Termux App Store\n'
-            printf 'Label: Termux App Store\n'
-            printf 'Suite: termux\n'
-            printf 'Codename: termux\n'
-            printf 'Components: main\n'
-            printf 'Architectures: aarch64 arm x86_64 i686\n'
-            printf 'Description: Official Termux repository by @djunekz\n'
-            printf 'Date: %s\n' "$(date -u '+%a, %d %b %Y %H:%M:%S UTC')"
-          } > dists/termux/Release
-
-          cd dists/termux
-          for algo in MD5Sum SHA256; do
-            echo "$algo:" >> Release
-            for arch in aarch64 arm x86_64 i686; do
-              for f in "main/binary-${arch}/Packages" "main/binary-${arch}/Packages.gz"; do
-                [[ -f "$f" ]] || continue
-                SIZE=$(wc -c < "$f")
-                if [[ "$algo" == "MD5Sum" ]]; then
-                  HASH=$(md5sum    "$f" | cut -d' ' -f1)
-                else
-                  HASH=$(sha256sum "$f" | cut -d' ' -f1)
-                fi
-                echo " $HASH $SIZE $f" >> Release
-              done
-            done
-          done
-
-      - name: Commit and push to gh-pages
-        run: |
-          cd gh-pages
-          git config user.email "258516621+termux-app-store@users.noreply.github.com"
-          git config user.name "Termux App Store"
-          git add -A
-
-          DEB_COUNT=$(ls pool/main/*.deb 2>/dev/null | wc -l || echo 0)
-          TRIGGER="${{ github.event_name }}"
-          PKG_INPUT="${{ github.event.inputs.package }}"
-
-          if [[ -n "$PKG_INPUT" ]]; then
-            MSG="pkg: build ${PKG_INPUT} — ${DEB_COUNT} total .deb [$(date -u +%Y-%m-%dT%H:%M:%SZ)]"
-          elif [[ "$TRIGGER" == "schedule" ]]; then
-            MSG="pkg: weekly rebuild — ${DEB_COUNT} .deb files [$(date -u +%Y-%m-%dT%H:%M:%SZ)]"
-          else
-            MSG="pkg: update pool — ${DEB_COUNT} .deb files [$(date -u +%Y-%m-%dT%H:%M:%SZ)]"
-          fi
-
-          if git diff --staged --quiet; then
-            echo "Nothing to commit — pool already up to date"
-          else
-            git commit -m "$MSG"
-            git push origin HEAD:gh-pages
-            echo "✅ Pushed: $MSG"
-          fi
-
-      - name: Summary
-        run: |
-          echo "## Build & Publish Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          DEB_COUNT=$(ls gh-pages/pool/main/*.deb 2>/dev/null | wc -l || echo 0)
-          echo "✅ **$DEB_COUNT** .deb files in pool" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Pool Contents" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          ls gh-pages/pool/main/*.deb 2>/dev/null | xargs -I{} basename {} | sort >> $GITHUB_STEP_SUMMARY || true
-          echo '```' >> $GITHUB_STEP_SUMMARY
