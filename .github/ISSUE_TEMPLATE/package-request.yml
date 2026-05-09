@@ -1,0 +1,123 @@
+name: 📦 Package Request
+description: Request a package to be added to Termux App Store
+title: "[REQUEST] "
+labels:
+  - package-request
+  - needs-review
+assignees:
+  - djunekz
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📦 Package Request
+        Thanks for suggesting a package! Please fill in the details below.
+        > Make sure to search existing issues before submitting a new request.
+
+  - type: input
+    id: package-name
+    attributes:
+      label: Package Name
+      description: Name of the package you want to add
+      placeholder: e.g. neovim, htop, ffmpeg
+    validations:
+      required: true
+
+  - type: textarea
+    id: package-description
+    attributes:
+      label: Package Description
+      description: Brief description of what this package does
+      placeholder: e.g. A modern, feature-rich terminal text editor
+    validations:
+      required: true
+
+  - type: input
+    id: package-url
+    attributes:
+      label: Official Website / Repository
+      description: Link to the official website or source repository
+      placeholder: https://github.com/author/package
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package-source
+    attributes:
+      label: Download Source
+      description: Where can this package be downloaded?
+      options:
+        - GitHub Releases
+        - Official Website
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: download-url
+    attributes:
+      label: Download URL / Release Page
+      description: Direct link to download or release page
+      placeholder: https://github.com/author/package/releases
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: architecture
+    attributes:
+      label: Supported Architecture
+      description: Select all architectures this package supports
+      options:
+        - label: aarch64 (ARM 64-bit) — most modern Android devices
+        - label: arm (ARM 32-bit)
+        - label: x86_64
+        - label: i686
+        - label: All architectures
+
+  - type: input
+    id: min-android
+    attributes:
+      label: Minimum Android Version
+      description: Minimum Android version required
+      placeholder: e.g. Android 7.0+
+
+  - type: textarea
+    id: why-add
+    attributes:
+      label: Why should this package be added?
+      description: Tell us why this package is useful for Termux users
+      placeholder: This package is useful because...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: maintained
+    attributes:
+      label: Is this package actively maintained?
+      options:
+        - "Yes, actively maintained"
+        - "Yes, but infrequent updates"
+        - "No longer maintained"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information
+      description: Any other information that might be helpful
+      placeholder: Optional...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues and this package has not been requested before
+          required: true
+        - label: This package is legal and does not violate any terms of service
+          required: true
+        - label: This package is relevant for Termux users
+          required: true
+        - label: I have provided accurate information above
+          required: true
