@@ -132,7 +132,7 @@ jobs:
 
       - name: Check binary cache
         id: cache
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: output/
           key: pkg-${{ matrix.package }}-${{ matrix.version }}-${{ matrix.sha256 }}
@@ -163,8 +163,6 @@ jobs:
 
           mkdir -p output
 
-          # Semua fungsi termux_step_* menggunakan DESTDIR agar tidak mencoba
-          # menulis ke /data/data/com.termux/... secara absolut di runner Ubuntu.
           TERMUX_PREFIX="/data/data/com.termux/files/usr"
 
           termux_step_make_install() {
@@ -222,70 +220,99 @@ jobs:
             fi
 
             BUILD_FAILED=0
-            for ARCH in aarch64 arm x86_64 i686; do
-              PKG_BUILD="build_tmp/${PKG}_${ARCH}"
-              # PENTING: PREFIX adalah path relatif di dalam PKG_BUILD (DESTDIR),
-              # bukan path absolut di filesystem runner.
-              DESTDIR_PREFIX="$PKG_BUILD/data/data/com.termux/files/usr"
-              BINDIR="$DESTDIR_PREFIX/bin"
-              LIBDIR="$DESTDIR_PREFIX/lib/$PKG"
-              mkdir -p "$PKG_BUILD/DEBIAN" "$BINDIR" "$LIBDIR"
 
-              if [[ "$IS_PREBUILT_DEB" -eq 1 && -n "$SRC_FILE" ]]; then
-                # Extract prebuilt .deb ke DESTDIR — jangan install ke filesystem root
-                echo "  [*] Extracting prebuilt .deb into DESTDIR for $ARCH..."
+            if [[ "$IS_PREBUILT_DEB" -eq 1 && -n "$SRC_FILE" ]]; then
+              # Prebuilt .deb: jangan extract+rebuild — langsung pakai .deb asli.
+              # Hanya update field Architecture di control supaya dpkg happy.
+              # Copy untuk semua arch karena Termux _all.deb berjalan di semua arch.
+              echo "  [*] Prebuilt .deb detected — retagging arch, preserving contents..."
+
+              ORIG_CONTROL=$(dpkg-deb -f "$SRC_FILE" 2>/dev/null || true)
+              ORIG_DEPENDS=$(echo "$ORIG_CONTROL" | grep '^Depends:'       | sed 's/^Depends: //'       || echo "$DEPENDS")
+              ORIG_ISIZE=$(echo  "$ORIG_CONTROL" | grep '^Installed-Size:' | awk '{print $2}'           || echo "0")
+              FINAL_DEPENDS="${ORIG_DEPENDS:-$DEPENDS}"
+
+              for ARCH in aarch64 arm x86_64 i686; do
+                PKG_BUILD="build_tmp/${PKG}_${ARCH}"
+                mkdir -p "$PKG_BUILD"
+
+                # Extract isi lengkap dari .deb asli
                 dpkg-deb -x "$SRC_FILE" "$PKG_BUILD/" 2>&1 || {
-                  echo "  ✗ dpkg-deb extract failed for $ARCH"
+                  echo "  ✗ Extract failed for $ARCH"
                   BUILD_FAILED=1
                   continue
                 }
-                # Ambil metadata dari .deb asli untuk control file
-                ORIG_CONTROL=$(dpkg-deb -f "$SRC_FILE" 2>/dev/null || true)
-                ORIG_DEPENDS=$(echo "$ORIG_CONTROL" | grep '^Depends:' | sed 's/^Depends: //' || echo "$DEPENDS")
-                ORIG_ISIZE=$(echo "$ORIG_CONTROL" | grep '^Installed-Size:' | awk '{print $2}' || echo "")
-                INSTALLED_SIZE="${ORIG_ISIZE:-$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo "0")}"
-                FINAL_DEPENDS="${ORIG_DEPENDS:-$DEPENDS}"
 
-              elif [[ -n "$SRC_FILE" ]]; then
-                # Source bukan .deb — copy ke libdir dan buat launcher wrapper
-                cp "$SRC_FILE" "$LIBDIR/"
-                chmod +x "$LIBDIR/"* 2>/dev/null || true
+                # Rebuild control dengan arch yang benar
+                mkdir -p "$PKG_BUILD/DEBIAN"
+                {
+                  echo "Package: $PKG"
+                  echo "Version: $VERSION"
+                  echo "Architecture: $ARCH"
+                  echo "Maintainer: djunekz <gab288.gab288@passinbox.com>"
+                  echo "Installed-Size: ${ORIG_ISIZE:-0}"
+                  [[ -n "$FINAL_DEPENDS" ]] && echo "Depends: $FINAL_DEPENDS"
+                  [[ -n "$HOMEPAGE"      ]] && echo "Homepage: $HOMEPAGE"
+                  [[ -n "$LICENSE"       ]] && echo "License: $LICENSE"
+                  echo "Description: ${DESC:-Termux App Store package}"
+                } > "$PKG_BUILD/DEBIAN/control"
 
-                BINARY_NAME=$(basename "$SRC_FILE")
-                printf '%s\n' \
-                  '#!/data/data/com.termux/files/usr/bin/bash' \
-                  "exec \"/data/data/com.termux/files/usr/lib/${PKG}/${BINARY_NAME}\" \"\$@\"" \
-                  > "$BINDIR/$PKG"
-                chmod +x "$BINDIR/$PKG"
-                INSTALLED_SIZE=$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo "0")
-                FINAL_DEPENDS="$DEPENDS"
+                if dpkg-deb --build "$PKG_BUILD" "output/${PKG}_${VERSION}_${ARCH}.deb" 2>/dev/null; then
+                  echo "  ✓ ${PKG}_${VERSION}_${ARCH}.deb"
+                else
+                  echo "  ✗ ${PKG}_${VERSION}_${ARCH}.deb FAILED"
+                  BUILD_FAILED=1
+                fi
+              done
 
-              else
-                # Tidak ada source — buat paket kosong (stub)
-                echo "  [!] No source available, creating stub .deb for $ARCH"
-                INSTALLED_SIZE="0"
-                FINAL_DEPENDS="$DEPENDS"
-              fi
+            else
+              for ARCH in aarch64 arm x86_64 i686; do
+                PKG_BUILD="build_tmp/${PKG}_${ARCH}"
+                DESTDIR_PREFIX="$PKG_BUILD/data/data/com.termux/files/usr"
+                BINDIR="$DESTDIR_PREFIX/bin"
+                LIBDIR="$DESTDIR_PREFIX/lib/$PKG"
+                mkdir -p "$PKG_BUILD/DEBIAN" "$BINDIR" "$LIBDIR"
 
-              {
-                echo "Package: $PKG"
-                echo "Version: $VERSION"
-                echo "Architecture: $ARCH"
-                echo "Maintainer: djunekz <gab288.gab288@passinbox.com>"
-                echo "Installed-Size: $INSTALLED_SIZE"
-                [[ -n "$FINAL_DEPENDS" ]] && echo "Depends: $FINAL_DEPENDS"
-                [[ -n "$HOMEPAGE"      ]] && echo "Homepage: $HOMEPAGE"
-                [[ -n "$LICENSE"       ]] && echo "License: $LICENSE"
-                echo "Description: ${DESC:-Termux App Store package}"
-              } > "$PKG_BUILD/DEBIAN/control"
+                if [[ -n "$SRC_FILE" ]]; then
+                  # Source bukan .deb — copy ke libdir dan buat launcher wrapper
+                  cp "$SRC_FILE" "$LIBDIR/"
+                  chmod +x "$LIBDIR/"* 2>/dev/null || true
 
-              if dpkg-deb --build "$PKG_BUILD" "output/${PKG}_${VERSION}_${ARCH}.deb" 2>/dev/null; then
-                echo "  ✓ ${PKG}_${VERSION}_${ARCH}.deb"
-              else
-                echo "  ✗ ${PKG}_${VERSION}_${ARCH}.deb FAILED"
-                BUILD_FAILED=1
-              fi
-            done
+                  BINARY_NAME=$(basename "$SRC_FILE")
+                  printf '%s\n' \
+                    '#!/data/data/com.termux/files/usr/bin/bash' \
+                    "exec \"/data/data/com.termux/files/usr/lib/${PKG}/${BINARY_NAME}\" \"\$@\"" \
+                    > "$BINDIR/$PKG"
+                  chmod +x "$BINDIR/$PKG"
+                  INSTALLED_SIZE=$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo "0")
+                  FINAL_DEPENDS="$DEPENDS"
+                else
+                  # Tidak ada source — buat paket kosong (stub)
+                  echo "  [!] No source available, creating stub .deb for $ARCH"
+                  INSTALLED_SIZE="0"
+                  FINAL_DEPENDS="$DEPENDS"
+                fi
+
+                {
+                  echo "Package: $PKG"
+                  echo "Version: $VERSION"
+                  echo "Architecture: $ARCH"
+                  echo "Maintainer: djunekz <gab288.gab288@passinbox.com>"
+                  echo "Installed-Size: $INSTALLED_SIZE"
+                  [[ -n "$FINAL_DEPENDS" ]] && echo "Depends: $FINAL_DEPENDS"
+                  [[ -n "$HOMEPAGE"      ]] && echo "Homepage: $HOMEPAGE"
+                  [[ -n "$LICENSE"       ]] && echo "License: $LICENSE"
+                  echo "Description: ${DESC:-Termux App Store package}"
+                } > "$PKG_BUILD/DEBIAN/control"
+
+                if dpkg-deb --build "$PKG_BUILD" "output/${PKG}_${VERSION}_${ARCH}.deb" 2>/dev/null; then
+                  echo "  ✓ ${PKG}_${VERSION}_${ARCH}.deb"
+                else
+                  echo "  ✗ ${PKG}_${VERSION}_${ARCH}.deb FAILED"
+                  BUILD_FAILED=1
+                fi
+              done
+            fi
 
             [[ "$BUILD_FAILED" -eq 1 ]] && echo "⚠ Some .deb builds failed for $PKG"
           fi
