@@ -132,7 +132,7 @@ jobs:
 
       - name: Check binary cache
         id: cache
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: output/
           key: pkg-${{ matrix.package }}-${{ matrix.version }}-${{ matrix.sha256 }}
@@ -163,6 +163,8 @@ jobs:
 
           mkdir -p output
 
+          # Semua fungsi termux_step_* menggunakan DESTDIR agar tidak mencoba
+          # menulis ke /data/data/com.termux/... secara absolut di runner Ubuntu.
           TERMUX_PREFIX="/data/data/com.termux/files/usr"
 
           termux_step_make_install() {
@@ -389,6 +391,14 @@ jobs:
           TOTAL=$(ls gh-pages/pool/main/*.deb 2>/dev/null | wc -l)
           echo ""
           echo "Pool: $ADDED new, $TOTAL total .deb files"
+
+      - name: Update index.json SHA256 to match built .deb files
+        run: |
+          INDEX_SRC="tools/index.json"
+          mkdir -p "gh-pages/tools"
+          cp "$INDEX_SRC" "gh-pages/tools/index.json"
+          echo "aW1wb3J0IGpzb24sIGhhc2hsaWIsIHJlLCBzeXMKZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgppbmRleF9wYXRoID0gUGF0aCgiZ2gtcGFnZXMvdG9vbHMvaW5kZXguanNvbiIpCnBvb2xfZGlyICAgPSBQYXRoKCJnaC1wYWdlcy9wb29sL21haW4iKQoKd2l0aCBvcGVuKGluZGV4X3BhdGgpIGFzIGY6CiAgICBkYXRhID0ganNvbi5sb2FkKGYpCgp1cGRhdGVkID0gMApmb3IgcGtnIGluIGRhdGEuZ2V0KCJwYWNrYWdlcyIsIFtdKToKICAgIG5hbWUgPSBwa2cuZ2V0KCJwYWNrYWdlIiwgIiIpCiAgICB2ZXIgID0gcGtnLmdldCgidmVyc2lvbiIsICIiKQogICAgZGVicyA9IHNvcnRlZChwb29sX2Rpci5nbG9iKGYie25hbWV9X3t2ZXJ9XyouZGViIikpCiAgICBpZiBub3QgZGViczoKICAgICAgICBkZWJzID0gc29ydGVkKHBvb2xfZGlyLmdsb2IoZiJ7bmFtZX1fKi5kZWIiKSkKICAgIGlmIG5vdCBkZWJzOgogICAgICAgIGNvbnRpbnVlCiAgICBpZiBsZW4oZGVicykgPT0gMToKICAgICAgICBuZXdfc2hhID0gaGFzaGxpYi5zaGEyNTYoZGVic1swXS5yZWFkX2J5dGVzKCkpLmhleGRpZ2VzdCgpCiAgICAgICAgaWYgcGtnLmdldCgic2hhMjU2IikgIT0gbmV3X3NoYToKICAgICAgICAgICAgcGtnWyJzaGEyNTYiXSA9IG5ld19zaGEKICAgICAgICAgICAgdXBkYXRlZCArPSAxCiAgICBlbHNlOgogICAgICAgIGFyY2hfaGFzaGVzID0ge30KICAgICAgICBmb3IgZGViIGluIGRlYnM6CiAgICAgICAgICAgIG0gPSByZS5zZWFyY2gociJfKFteX10rKVwuZGViJCIsIGRlYi5uYW1lKQogICAgICAgICAgICBpZiBtOgogICAgICAgICAgICAgICAgYXJjaF9oYXNoZXNbbS5ncm91cCgxKV0gPSBoYXNobGliLnNoYTI1NihkZWIucmVhZF9ieXRlcygpKS5oZXhkaWdlc3QoKQogICAgICAgIGlmIGFyY2hfaGFzaGVzOgogICAgICAgICAgICBwcmltYXJ5ID0gYXJjaF9oYXNoZXMuZ2V0KCJhYXJjaDY0Iikgb3IgbmV4dChpdGVyKGFyY2hfaGFzaGVzLnZhbHVlcygpKSkKICAgICAgICAgICAgaWYgcGtnLmdldCgic2hhMjU2IikgIT0gcHJpbWFyeToKICAgICAgICAgICAgICAgIHBrZ1sic2hhMjU2Il0gPSBwcmltYXJ5CiAgICAgICAgICAgICAgICBwa2dbInNoYTI1Nl9ieV9hcmNoIl0gPSBhcmNoX2hhc2hlcwogICAgICAgICAgICAgICAgdXBkYXRlZCArPSAxCgp3aXRoIG9wZW4oaW5kZXhfcGF0aCwgInciKSBhcyBmOgogICAganNvbi5kdW1wKGRhdGEsIGYsIGluZGVudD0yLCBlbnN1cmVfYXNjaWk9RmFsc2UpCgpwcmludChmIlVwZGF0ZWQgU0hBMjU2IGZvciB7dXBkYXRlZH0gcGFja2FnZShzKSBpbiBpbmRleC5qc29uIikK" \
+            | base64 -d | python3
 
       - name: Regenerate Packages index per architecture
         run: |
