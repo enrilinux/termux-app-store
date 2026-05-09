@@ -9,6 +9,16 @@ import urllib.request
 from pathlib import Path
 
 try:
+    from termux_app_store.fast_install import fast_install, check_mirrors, cache_info, clear_deb_cache
+    _FAST_INSTALL_AVAILABLE = True
+except ImportError:
+    try:
+        from fast_install import fast_install, check_mirrors, cache_info, clear_deb_cache
+        _FAST_INSTALL_AVAILABLE = True
+    except ImportError:
+        _FAST_INSTALL_AVAILABLE = False
+
+try:
     from textual.app import App, ComposeResult, SystemCommand
     from textual.widgets import (
         Header,
@@ -823,41 +833,58 @@ class TermuxAppStore(App):
         self.call_from_thread(lambda: setattr(self.progress, "progress", 0))
         self.call_from_thread(lambda: self.update_log(f"Installing {name}...\n"))
 
-        if not ensure_package_files(name):
-            self.call_from_thread(lambda: self.update_log(f"\n✗ Failed to download build files for {name}."))
-            self.installing = False
-            self.call_from_thread(lambda: setattr(self.install_btn, "disabled", False))
-            self.call_from_thread(lambda: setattr(self.uninstall_btn, "disabled", False))
-            return
+        success = False
 
-        if not ensure_build_package_sh():
-            self.call_from_thread(lambda: self.update_log("\n✗ Failed to download build-package.sh."))
-            self.installing = False
-            self.call_from_thread(lambda: setattr(self.install_btn, "disabled", False))
-            self.call_from_thread(lambda: setattr(self.uninstall_btn, "disabled", False))
-            return
+        if _FAST_INSTALL_AVAILABLE:
+            def _log(msg):
+                self.call_from_thread(lambda t=msg: self.update_log(t))
 
-        proc = subprocess.Popen(
-            ["bash", "build-package.sh", name],
-            cwd=str(get_app_root()),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-
-        for line in iter(proc.stdout.readline, b""):
-            clean_line = strip_ansi(line.decode(errors="ignore").rstrip())
-            if clean_line:
+            def _progress(pct):
                 self.call_from_thread(
-                    lambda t=clean_line: self.update_log(t)
+                    lambda p=pct: setattr(self.progress, "progress", p)
                 )
 
-        proc.wait()
-
-        if proc.returncode == 0:
-            self.call_from_thread(lambda: setattr(self.progress, "progress", 100))
-            self.call_from_thread(lambda: self.update_log("\n✔ Installation completed successfully!"))
+            success = fast_install(
+                pkg_name=name,
+                log_fn=_log,
+                progress_fn=_progress,
+            )
         else:
-            self.call_from_thread(lambda: self.update_log(f"\n✗ Installation failed (exit code {proc.returncode})"))
+            self.call_from_thread(lambda: self.update_log(
+                "Fast install unavailable — building from source...\n"
+            ))
+
+            if not ensure_package_files(name):
+                self.call_from_thread(
+                    lambda: self.update_log(f"\n✗ Failed to download build files for {name}.")
+                )
+            elif not ensure_build_package_sh():
+                self.call_from_thread(
+                    lambda: self.update_log("\n✗ Failed to download build-package.sh.")
+                )
+            else:
+                proc = subprocess.Popen(
+                    ["bash", "build-package.sh", name],
+                    cwd=str(get_app_root()),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                )
+                for line in iter(proc.stdout.readline, b""):
+                    clean_line = strip_ansi(line.decode(errors="ignore").rstrip())
+                    if clean_line:
+                        self.call_from_thread(lambda t=clean_line: self.update_log(t))
+                proc.wait()
+                success = proc.returncode == 0
+
+        if success:
+            self.call_from_thread(lambda: setattr(self.progress, "progress", 100))
+            self.call_from_thread(
+                lambda: self.update_log("\n✔ Installation completed successfully!")
+            )
+        else:
+            self.call_from_thread(
+                lambda: self.update_log("\n✗ Installation failed.")
+            )
 
         self.installing = False
         self.status_cache.clear()
@@ -920,6 +947,31 @@ class TermuxAppStore(App):
             self.log_buffer = self.log_buffer[-500:]
         self.log_view.update("\n".join(self.log_buffer))
         self.log_container.scroll_end(animate=False)
+
+    def action_check_mirrors(self):  # pragma: no cover
+        if not _FAST_INSTALL_AVAILABLE:
+            self.status_bar.update("Fast install not available.")
+            return
+        self.log_buffer.clear()
+        self.update_log("Checking mirrors...\n")
+        def _run():
+            check_mirrors(log_fn=lambda m: self.call_from_thread(lambda t=m: self.update_log(t)))
+        import threading
+        threading.Thread(target=_run, daemon=True).start()
+
+    def action_cache_info(self):  # pragma: no cover
+        if not _FAST_INSTALL_AVAILABLE:
+            self.status_bar.update("Fast install not available.")
+            return
+        self.log_buffer.clear()
+        cache_info(log_fn=lambda m: self.update_log(m))
+
+    def action_clear_cache(self):  # pragma: no cover
+        if not _FAST_INSTALL_AVAILABLE:
+            self.status_bar.update("Fast install not available.")
+            return
+        clear_deb_cache(log_fn=lambda m: self.update_log(m))
+        self.status_bar.update("Cache cleared.")
 
     def action_refresh(self):  # pragma: no cover
         self.status_bar.update("🔄 Refreshing package list...")
@@ -987,6 +1039,21 @@ class TermuxAppStore(App):
             self.worker_queue.put_nowait(("install", name))
 
     def get_system_commands(self, screen):  # pragma: no cover
+        yield SystemCommand(
+            "Check mirrors",
+            "Check speed of all download mirrors",
+            self.action_check_mirrors,
+        )
+        yield SystemCommand(
+            "Cache info",
+            "Show downloaded .deb cache info",
+            self.action_cache_info,
+        )
+        yield SystemCommand(
+            "Clear cache",
+            "Delete all cached .deb files",
+            self.action_clear_cache,
+        )
         yield SystemCommand(
             "Refresh packages",
             "Fetch the latest package list from GitHub",

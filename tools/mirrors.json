@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "description": "Termux App Store - Binary Cache & Mirror Registry",
+  "updated_at": "",
+  "primary": {
+    "name": "GitHub Pages (Official)",
+    "url": "https://djunekz.github.io/termux-app-store",
+    "type": "apt",
+    "region": "global",
+    "priority": 1,
+    "enabled": true
+  },
+  "mirrors": [
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare Pages (CDN)",
+      "url": "https://termux-app-store.pages.dev",
+      "type": "apt",
+      "region": "global",
+      "priority": 2,
+      "enabled": true,
+      "cdn": true
+    },
+    {
+      "id": "jsdelivr",
+      "name": "jsDelivr CDN",
+      "url": "https://cdn.jsdelivr.net/gh/djunekz/termux-app-store@gh-pages",
+      "type": "apt",
+      "region": "global",
+      "priority": 3,
+      "enabled": true,
+      "cdn": true
+    },
+    {
+      "id": "raw-github",
+      "name": "GitHub Raw",
+      "url": "https://raw.githubusercontent.com/djunekz/termux-app-store/gh-pages",
+      "type": "apt",
+      "region": "global",
+      "priority": 4,
+      "enabled": true,
+      "cdn": false
+    }
+  ],
+  "binary_cache": {
+    "enabled": true,
+    "cache_dir": "~/.cache/termux-app-store/binaries",
+    "index_cache_dir": "~/.cache/termux-app-store",
+    "index_ttl_seconds": 3600,
+    "binary_ttl_seconds": 604800,
+    "max_size_mb": 500,
+    "verify_sha256": true
+  },
+  "incremental_build": {
+    "enabled": true,
+    "state_file": "~/.cache/termux-app-store/build-state.json",
+    "skip_if_version_unchanged": true,
+    "skip_if_sha256_unchanged": true
+  }
+}
