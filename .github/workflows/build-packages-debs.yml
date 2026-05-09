@@ -132,7 +132,7 @@ jobs:
 
       - name: Check binary cache
         id: cache
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: output/
           key: pkg-${{ matrix.package }}-${{ matrix.version }}-${{ matrix.sha256 }}
@@ -163,8 +163,22 @@ jobs:
 
           mkdir -p output
 
+          TERMUX_PREFIX="/data/data/com.termux/files/usr"
+
+          termux_step_make_install() {
+            if [[ -f Makefile ]]; then
+              make install DESTDIR="$TERMUX_DESTDIR" PREFIX="$TERMUX_PREFIX" \
+                           prefix="$TERMUX_PREFIX" 2>&1
+            fi
+          }
+          export -f termux_step_make_install
+          export TERMUX_PREFIX
+
           if [[ -f "build-package.sh" ]]; then
             echo "Running build-package.sh $PKG..."
+            # Set DESTDIR mock agar build-package.sh tidak akses path absolut
+            export TERMUX_DESTDIR="$(pwd)/build_tmp/${PKG}_runner_destdir"
+            mkdir -p "$TERMUX_DESTDIR"
             bash build-package.sh "$PKG" 2>&1 || true
           fi
 
@@ -177,12 +191,20 @@ jobs:
             echo "build-package.sh tidak menghasilkan .deb — building wrapper..."
 
             SRC_FILE=""
+            IS_PREBUILT_DEB=0
+
             if [[ -n "$SRC_URL" && "$SRC_URL" != *"*"* && "$SRC_URL" =~ ^https?:// ]]; then
               echo "Downloading source: $SRC_URL"
               curl -fsSL --retry 3 --retry-delay 2 "$SRC_URL" -o "/tmp/${PKG}-src" 2>/dev/null || true
 
               if [[ -f "/tmp/${PKG}-src" && -s "/tmp/${PKG}-src" ]]; then
                 SRC_FILE="/tmp/${PKG}-src"
+
+                # Cek apakah file ini sudah berupa .deb prebuilt
+                if file "$SRC_FILE" 2>/dev/null | grep -q "Debian binary package"; then
+                  IS_PREBUILT_DEB=1
+                  echo "[*] Detected prebuilt .deb"
+                fi
 
                 if [[ -n "$SHA256" ]]; then
                   ACTUAL=$(sha256sum "$SRC_FILE" | cut -d' ' -f1)
@@ -200,24 +222,48 @@ jobs:
             BUILD_FAILED=0
             for ARCH in aarch64 arm x86_64 i686; do
               PKG_BUILD="build_tmp/${PKG}_${ARCH}"
-              PREFIX="$PKG_BUILD/data/data/com.termux/files/usr"
-              BINDIR="$PREFIX/bin"
-              LIBDIR="$PREFIX/lib/$PKG"
+              # PENTING: PREFIX adalah path relatif di dalam PKG_BUILD (DESTDIR),
+              # bukan path absolut di filesystem runner.
+              DESTDIR_PREFIX="$PKG_BUILD/data/data/com.termux/files/usr"
+              BINDIR="$DESTDIR_PREFIX/bin"
+              LIBDIR="$DESTDIR_PREFIX/lib/$PKG"
               mkdir -p "$PKG_BUILD/DEBIAN" "$BINDIR" "$LIBDIR"
 
-              if [[ -n "$SRC_FILE" ]]; then
+              if [[ "$IS_PREBUILT_DEB" -eq 1 && -n "$SRC_FILE" ]]; then
+                # Extract prebuilt .deb ke DESTDIR — jangan install ke filesystem root
+                echo "  [*] Extracting prebuilt .deb into DESTDIR for $ARCH..."
+                dpkg-deb -x "$SRC_FILE" "$PKG_BUILD/" 2>&1 || {
+                  echo "  ✗ dpkg-deb extract failed for $ARCH"
+                  BUILD_FAILED=1
+                  continue
+                }
+                # Ambil metadata dari .deb asli untuk control file
+                ORIG_CONTROL=$(dpkg-deb -f "$SRC_FILE" 2>/dev/null || true)
+                ORIG_DEPENDS=$(echo "$ORIG_CONTROL" | grep '^Depends:' | sed 's/^Depends: //' || echo "$DEPENDS")
+                ORIG_ISIZE=$(echo "$ORIG_CONTROL" | grep '^Installed-Size:' | awk '{print $2}' || echo "")
+                INSTALLED_SIZE="${ORIG_ISIZE:-$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo "0")}"
+                FINAL_DEPENDS="${ORIG_DEPENDS:-$DEPENDS}"
+
+              elif [[ -n "$SRC_FILE" ]]; then
+                # Source bukan .deb — copy ke libdir dan buat launcher wrapper
                 cp "$SRC_FILE" "$LIBDIR/"
                 chmod +x "$LIBDIR/"* 2>/dev/null || true
 
                 BINARY_NAME=$(basename "$SRC_FILE")
-                cat > "$BINDIR/$PKG" << LAUNCHER
-                #!/data/data/com.termux/files/usr/bin/bash
-                exec "/data/data/com.termux/files/usr/lib/$PKG/$BINARY_NAME" "\$@"
-                LAUNCHER
+                printf '%s\n' \
+                  '#!/data/data/com.termux/files/usr/bin/bash' \
+                  "exec \"/data/data/com.termux/files/usr/lib/${PKG}/${BINARY_NAME}\" \"\$@\"" \
+                  > "$BINDIR/$PKG"
                 chmod +x "$BINDIR/$PKG"
-              fi
+                INSTALLED_SIZE=$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo "0")
+                FINAL_DEPENDS="$DEPENDS"
 
-              INSTALLED_SIZE=$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo "0")
+              else
+                # Tidak ada source — buat paket kosong (stub)
+                echo "  [!] No source available, creating stub .deb for $ARCH"
+                INSTALLED_SIZE="0"
+                FINAL_DEPENDS="$DEPENDS"
+              fi
 
               {
                 echo "Package: $PKG"
@@ -225,9 +271,9 @@ jobs:
                 echo "Architecture: $ARCH"
                 echo "Maintainer: djunekz <gab288.gab288@passinbox.com>"
                 echo "Installed-Size: $INSTALLED_SIZE"
-                [[ -n "$DEPENDS"  ]] && echo "Depends: $DEPENDS"
-                [[ -n "$HOMEPAGE" ]] && echo "Homepage: $HOMEPAGE"
-                [[ -n "$LICENSE"  ]] && echo "License: $LICENSE"
+                [[ -n "$FINAL_DEPENDS" ]] && echo "Depends: $FINAL_DEPENDS"
+                [[ -n "$HOMEPAGE"      ]] && echo "Homepage: $HOMEPAGE"
+                [[ -n "$LICENSE"       ]] && echo "License: $LICENSE"
                 echo "Description: ${DESC:-Termux App Store package}"
               } > "$PKG_BUILD/DEBIAN/control"
 
