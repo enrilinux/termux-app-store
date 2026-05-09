@@ -8,6 +8,12 @@ and this project adheres to semantic versioning.
 
 ## [Unreleased]
 
+### Added
+- Package `fuckshitup` v1.0.0 - php-cli vulnerability scanner
+- Package `get` v1.0.0 - Get is a simple script to retrieve an ip from hostname or vice-versa .
+- Package `gobuster` v3.8.2 - Directory/File, DNS and VHost busting tool written in Go
+- Package `killchain` v1.0.0 - killchain — auto-packaged by termux-build-init
+
 ---
 
 ## [v0.3.0] - 2026-05-08 
