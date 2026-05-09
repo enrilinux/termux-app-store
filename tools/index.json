@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-09T03:24:05.152382+00:00",
-  "total": 85,
+  "generated_at": "2026-05-09T10:54:46.566263+00:00",
+  "total": 89,
   "packages": [
     {
       "package": "aichat",
@@ -619,6 +619,23 @@
       "platform_independent": false
     },
     {
+      "package": "fuckshitup",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "php-cli vulnerability scanner",
+      "homepage": "https://github.com/Smaash/fuckshitup",
+      "license": "UNKNOWN",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/Smaash/fuckshitup/archive/refs/heads/master.tar.gz",
+      "sha256": "d9ea301d0a1c823b793a5d5d141991d04c825f5030069946dfbd29be3e050054",
+      "platform_independent": false,
+      "depends": [
+        "php"
+      ]
+    },
+    {
       "package": "gemail-hack",
       "version": "1.0.0",
       "maintainer": "@termux-app-store",
@@ -636,6 +653,20 @@
         "python-pip",
         "python-setuptools"
       ]
+    },
+    {
+      "package": "get",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "Get is a simple script to retrieve an ip from hostname or vice-versa .",
+      "homepage": "https://github.com/peterpt/get",
+      "license": "UNKNOWN",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/peterpt/get/archive/refs/heads/master.tar.gz",
+      "sha256": "e028dcbe1ae7809db24e6bcfda4159847adcfcdf28b3eb166a3329533b27d34a",
+      "platform_independent": false
     },
     {
       "package": "ghosttrack",
@@ -673,6 +704,23 @@
         "python",
         "python-pip",
         "python-setuptools"
+      ]
+    },
+    {
+      "package": "gobuster",
+      "version": "3.8.2",
+      "maintainer": "@termux-app-store",
+      "description": "Directory/File, DNS and VHost busting tool written in Go",
+      "homepage": "https://github.com/OJ/gobuster",
+      "license": "Apache-2.0",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/OJ/gobuster/archive/refs/tags/v3.8.2.tar.gz",
+      "sha256": "6919232eafbd0c4bbc9664d7f434b6a8d82133aa09f1400341ef6985ceff208a",
+      "platform_independent": false,
+      "depends": [
+        "golang"
       ]
     },
     {
@@ -839,6 +887,25 @@
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/maldevel/IPGeoLocation/archive/refs/tags/2.0.4.tar.gz",
       "sha256": "fabc086113f89f9e8fe1ed7fbfec776780d43df63c67401c48b8f36948fa9ecb",
+      "platform_independent": false,
+      "depends": [
+        "python",
+        "python-pip",
+        "python-setuptools"
+      ]
+    },
+    {
+      "package": "killchain",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "killchain — auto-packaged by termux-build-init",
+      "homepage": "https://github.com/ruped24/killchain",
+      "license": "UNKNOWN",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/ruped24/killchain/archive/refs/heads/master.tar.gz",
+      "sha256": "e1a53020ad84e9ae057dabfe25cb2777b84ed0303675edbc7ec075f2007ea867",
       "platform_independent": false,
       "depends": [
         "python",
