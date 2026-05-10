@@ -156,9 +156,32 @@ jobs:
               echo "OK: $EXISTING"
             else
               SRC_FILE=""
+              SRC_DIR=""
               if [[ -n "$SRC_URL" && "$SRC_URL" =~ ^https?:// ]]; then
-                curl -fsSL --retry 3 "$SRC_URL" -o "/tmp/${PKG}-src" 2>/dev/null || true
+                curl -fsSL --retry 3 -L "$SRC_URL" -o "/tmp/${PKG}-src" 2>/dev/null || true
                 [[ -f "/tmp/${PKG}-src" && -s "/tmp/${PKG}-src" ]] && SRC_FILE="/tmp/${PKG}-src"
+              fi
+
+              HAS_MAKE_INSTALL=0
+              grep -q 'termux_step_make_install' "$BUILD_SH" 2>/dev/null && HAS_MAKE_INSTALL=1
+
+              SRC_TYPE="unknown"
+              if [[ -n "$SRC_FILE" ]]; then
+                FILE_INFO=$(file -b "$SRC_FILE" 2>/dev/null || echo "")
+                echo "$FILE_INFO" | grep -qi "^ELF"                          && SRC_TYPE="elf"
+                echo "$FILE_INFO" | grep -qi "gzip\|tar\|bzip2\|xz\|zstd"   && SRC_TYPE="archive"
+                echo "$FILE_INFO" | grep -qi "Zip archive"                   && SRC_TYPE="archive"
+                [[ "$SRC_TYPE" == "unknown" ]] && SRC_TYPE="script"
+              fi
+
+              EXTRACT_DIR=""
+              if [[ "$SRC_TYPE" == "archive" ]]; then
+                EXTRACT_DIR="/tmp/${PKG}-extract"
+                mkdir -p "$EXTRACT_DIR"
+                tar -xf "$SRC_FILE" -C "$EXTRACT_DIR" --strip-components=1 2>/dev/null || \
+                  unzip -q "$SRC_FILE" -d "$EXTRACT_DIR" 2>/dev/null || true
+                echo "  Extracted to: $EXTRACT_DIR"
+                ls "$EXTRACT_DIR" | head -5
               fi
 
               for ARCH in aarch64 arm x86_64 i686; do
@@ -167,38 +190,39 @@ jobs:
                 mkdir -p "$PKG_BUILD/DEBIAN" "$DESTDIR/bin" "$DESTDIR/lib/$PKG"
                 ISIZE=0
 
-                if [[ -n "$SRC_FILE" ]]; then
-                  # Deteksi apakah file ini ELF binary (tidak bisa cross-arch)
-                  FILE_TYPE=$(file -b "$SRC_FILE" 2>/dev/null || echo "")
-                  IS_ELF=0
-                  echo "$FILE_TYPE" | grep -qi "^ELF" && IS_ELF=1
+                if [[ "$SRC_TYPE" == "archive" && "$HAS_MAKE_INSTALL" -eq 1 && -d "$EXTRACT_DIR" ]]; then
+                  (
+                    cd "$EXTRACT_DIR"
+                    TERMUX_PREFIX="$DESTDIR"
+                    TERMUX_PKG_SRCDIR="$EXTRACT_DIR"
+                    export TERMUX_PREFIX TERMUX_PKG_SRCDIR
+                    source "$OLDPWD/$BUILD_SH" 2>/dev/null || true
+                    termux_step_make_install 2>&1 || true
+                  )
+                  ISIZE=$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo 0)
 
-                  if [[ "$IS_ELF" -eq 1 ]]; then
-                    # ELF binary — cek arch-nya sesuai dengan target arch ini tidak
-                    ELF_ARCH=""
-                    echo "$FILE_TYPE" | grep -qi "aarch64\|ARM aarch64" && ELF_ARCH="aarch64"
-                    echo "$FILE_TYPE" | grep -qi "ARM,\|ARM " && [[ -z "$ELF_ARCH" ]] && ELF_ARCH="arm"
-                    echo "$FILE_TYPE" | grep -qi "x86-64\|x86_64" && ELF_ARCH="x86_64"
-                    echo "$FILE_TYPE" | grep -qi "80386\|i386\|i686" && ELF_ARCH="i686"
+                elif [[ "$SRC_TYPE" == "elf" ]]; then
+                  ELF_ARCH=""
+                  echo "$FILE_INFO" | grep -qi "aarch64\|ARM aarch64" && ELF_ARCH="aarch64"
+                  echo "$FILE_INFO" | grep -qi "ARM," && [[ -z "$ELF_ARCH" ]] && ELF_ARCH="arm"
+                  echo "$FILE_INFO" | grep -qi "x86-64" && ELF_ARCH="x86_64"
+                  echo "$FILE_INFO" | grep -qi "80386\|i386" && ELF_ARCH="i686"
 
-                    if [[ -z "$ELF_ARCH" || "$ELF_ARCH" == "$ARCH" ]]; then
-                      # Arch cocok atau tidak dikenali — masukkan binary
-                      cp "$SRC_FILE" "$DESTDIR/bin/$PKG"
-                      chmod +x "$DESTDIR/bin/$PKG"
-                      ISIZE=$(du -sk "$PKG_BUILD/data" | cut -f1)
-                    else
-                      # Arch tidak cocok — buat paket kosong, jangan pasang binary yang salah
-                      echo "  [!] ELF arch mismatch: file=$ELF_ARCH target=$ARCH — creating stub"
-                    fi
-                  else
-                    # Bukan ELF (script, Python, dll) — aman untuk semua arch
-                    cp "$SRC_FILE" "$DESTDIR/lib/$PKG/"
-                    chmod +x "$DESTDIR/lib/$PKG/"* 2>/dev/null || true
-                    printf '#!/data/data/com.termux/files/usr/bin/bash\nexec "/data/data/com.termux/files/usr/lib/%s/%s" "$@"\n' \
-                      "$PKG" "$(basename $SRC_FILE)" > "$DESTDIR/bin/$PKG"
+                  if [[ -z "$ELF_ARCH" || "$ELF_ARCH" == "$ARCH" ]]; then
+                    cp "$SRC_FILE" "$DESTDIR/bin/$PKG"
                     chmod +x "$DESTDIR/bin/$PKG"
                     ISIZE=$(du -sk "$PKG_BUILD/data" | cut -f1)
+                  else
+                    echo "  [!] ELF arch mismatch: file=$ELF_ARCH target=$ARCH — stub only"
                   fi
+
+                elif [[ "$SRC_TYPE" == "script" && -n "$SRC_FILE" ]]; then
+                  cp "$SRC_FILE" "$DESTDIR/lib/$PKG/"
+                  chmod +x "$DESTDIR/lib/$PKG/"* 2>/dev/null || true
+                  printf '#!/data/data/com.termux/files/usr/bin/bash\nexec "/data/data/com.termux/files/usr/lib/%s/%s" "$@"\n' \
+                    "$PKG" "$(basename $SRC_FILE)" > "$DESTDIR/bin/$PKG"
+                  chmod +x "$DESTDIR/bin/$PKG"
+                  ISIZE=$(du -sk "$PKG_BUILD/data" | cut -f1)
                 fi
                 printf 'Package: %s\nVersion: %s\nArchitecture: %s\nMaintainer: djunekz <gab288.gab288@passinbox.com>\nInstalled-Size: %s\n' \
                   "$PKG" "$VERSION" "$ARCH" "$ISIZE" > "$PKG_BUILD/DEBIAN/control"
