@@ -120,14 +120,16 @@ jobs:
           install: |
             set -e
 
-            # Izinkan git di dalam container
+            apt-get update -qq
+
+            apt-get install -y -qq git
+
             git config --global --add safe.directory /repo
             git config --global --add safe.directory '*'
 
-            apt-get update -qq
             apt-get install -y -qq \
               dpkg-dev curl file python3 python3-pip python3-setuptools \
-              build-essential cmake git wget sudo pkg-config \
+              build-essential cmake wget sudo pkg-config \
               nodejs npm \
               perl lua5.4 php-cli \
               patchelf \
@@ -138,11 +140,9 @@ jobs:
               unzip tar gzip jq \
               bash coreutils findutils
 
-            # Rust via rustup
             curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
             . /root/.cargo/env
 
-            # Go terbaru
             GO_VER=$(curl -sSf https://go.dev/VERSION?m=text | head -1)
             curl -sSfL "https://go.dev/dl/${GO_VER}.linux-arm64.tar.gz" | tar -C /usr/local -xz
             ln -sf /usr/local/go/bin/go /usr/local/bin/go
@@ -153,7 +153,6 @@ jobs:
             . /root/.cargo/env 2>/dev/null || true
             export PATH=$PATH:/usr/local/go/bin:/root/.cargo/bin
 
-            # Izinkan git di seluruh path
             git config --global --add safe.directory /repo
             git config --global --add safe.directory '*'
 
@@ -165,11 +164,9 @@ jobs:
             echo "  Building: $PKG"
             echo "============================================"
 
-            # ── Baca build.sh ──
             BUILD_SH="packages/$PKG/build.sh"
             source "$BUILD_SH"
 
-            # ── Setup Termux prefix yang proper ──
             TERMUX_PREFIX="/data/data/com.termux/files/usr"
             TERMUX_HOME="/data/data/com.termux/files/home"
             mkdir -p \
@@ -186,7 +183,6 @@ jobs:
               "$TERMUX_PREFIX/var/lib" \
               "$TERMUX_HOME"
 
-            # Symlink tools ke Termux prefix
             for tool in bash sh python3 python perl node npm go cargo curl wget git dpkg dpkg-deb; do
               BIN=$(command -v $tool 2>/dev/null || true)
               [[ -n "$BIN" && ! -e "$TERMUX_PREFIX/bin/$tool" ]] && \
@@ -207,7 +203,6 @@ jobs:
                      "$TERMUX_PKG_SRCDIR" "$TERMUX_PKG_CACHEDIR" \
                      "$TERMUX_PKG_TMPDIR/extract"
 
-            # ── Deteksi tipe package ──
             SRCURL="${TERMUX_PKG_SRCURL:-}"
             IS_PREBUILT_DEB=false
             IS_PLATFORM_INDEPENDENT="${TERMUX_PKG_PLATFORM_INDEPENDENT:-false}"
@@ -217,7 +212,6 @@ jobs:
             echo "  Version : ${TERMUX_PKG_VERSION:-unknown}"
             echo "  Indep   : $IS_PLATFORM_INDEPENDENT"
 
-            # ── Download source ──
             if [[ -n "$SRCURL" ]]; then
               EXT="${SRCURL##*.}"
               ARCHIVE="$TERMUX_PKG_CACHEDIR/source.$EXT"
@@ -275,8 +269,6 @@ jobs:
               fi
             fi
 
-            # ── Jalankan build ──
-            # Timestamp sebelum install untuk tracking file baru
             TIMESTAMP_FILE=$(mktemp)
 
             if [[ "$IS_PREBUILT_DEB" == "true" ]]; then
@@ -313,19 +305,16 @@ jobs:
               echo "  Running termux_step_make_install()..."
               termux_step_make_install 2>&1
 
-              # Tentukan arch
               if [[ "$IS_PLATFORM_INDEPENDENT" == "true" ]]; then
                 DEB_ARCH="all"
               else
                 DEB_ARCH="aarch64"
               fi
 
-              # Kumpulkan file hasil install — ambil semua yang ada di TERMUX_PREFIX
               cd /repo
               PKG_DIR="$TERMUX_PKG_BUILDDIR/deb_root"
               mkdir -p "$PKG_DIR"
 
-              # Salin struktur TERMUX_PREFIX ke dalam deb_root dengan path lengkap
               if [[ -d "$TERMUX_PREFIX" ]]; then
                 mkdir -p "$PKG_DIR/data/data/com.termux/files"
                 cp -rp "$TERMUX_PREFIX" "$PKG_DIR/data/data/com.termux/files/usr"
@@ -354,7 +343,6 @@ jobs:
 
             rm -f "$TIMESTAMP_FILE"
 
-            # ── Validasi output ──
             cd /repo
             BUILT=$(ls output/${PKG}_*.deb 2>/dev/null | head -1)
             if [[ -z "$BUILT" ]]; then
