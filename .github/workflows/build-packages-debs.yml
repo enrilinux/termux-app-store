@@ -83,15 +83,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
-
-      - name: Install build tools
-        run: |
-          sudo apt-get install -y -qq \
-            dpkg-dev curl file python3 python3-pip \
-            build-essential cmake nodejs npm \
-            ruby perl lua5.4 php-cli cargo golang-go
 
       - name: Check binary cache
         id: cache
@@ -104,42 +98,68 @@ jobs:
             pkg-${{ matrix.package }}-${{ matrix.version }}-
             pkg-${{ matrix.package }}-
 
-      - name: Build .deb via build-package.sh
+      - name: Set up QEMU for aarch64 emulation
+        if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Build .deb inside termux-docker (aarch64)
+        if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p output
+
+          # Copy semua file repo ke folder yang bisa di-mount ke container
+          cp -r . /tmp/termux-build-context
+
+          docker run --rm \
+            --platform linux/arm64 \
+            -v /tmp/termux-build-context:/opt/tas \
+            -v $PWD/output:/opt/output \
+            termux/termux-docker:aarch64 \
+            bash -c '
+              set -e
+
+              # Setup Termux environment
+              export HOME=/root
+              export PREFIX=/data/data/com.termux/files/usr
+              export PATH="$PREFIX/bin:$PATH"
+              export TERM=xterm-256color
+
+              PKG="${{ matrix.package }}"
+              cd /opt/tas
+
+              echo "=== Updating pkg ==="
+              pkg update -y -o Dpkg::Options::="--force-confnew" 2>/dev/null || true
+
+              echo "=== Building $PKG ==="
+              bash build-package.sh "$PKG" 2>&1 || true
+
+              # Copy hasil ke output mount
+              if ls output/${PKG}_*.deb 2>/dev/null | head -1 | grep -q .; then
+                cp output/${PKG}_*.deb /opt/output/
+                echo "Copied: $(ls output/${PKG}_*.deb)"
+              else
+                echo "No .deb produced for $PKG"
+              fi
+            '
+
+      - name: Repackage for all architectures
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
         run: |
           PKG="${{ matrix.package }}"
-          mkdir -p output
+          BUILT=$(ls output/${PKG}_*_aarch64.deb 2>/dev/null | head -1)
 
-          # Semua path PREFIX diarahkan ke folder runner
-          # build-package.sh sudah handle semua: npm, pip, cargo, make, cmake, dll
-          # PREFIX harus konsisten — satu nilai yang sama dipakai build-package.sh
-          # untuk install DAN untuk staging
-          FAKE_ROOT="$PWD/termux-root"
-          mkdir -p "$FAKE_ROOT/bin" "$FAKE_ROOT/lib" "$FAKE_ROOT/lib/node_modules" \
-                   "$FAKE_ROOT/share" "$FAKE_ROOT/tmp"
-
-          # Export PREFIX agar semua subprocess (npm, pip, dll) pakai path yang sama
-          export PREFIX="$FAKE_ROOT"
-          export npm_config_prefix="$FAKE_ROOT"
-          export PYTHONPATH="$FAKE_ROOT/lib/python3/dist-packages"
-
-          echo "Building $PKG ..."
-          echo "  PREFIX=$FAKE_ROOT"
-
-          bash build-package.sh "$PKG" 2>&1 || true
-
-          # Cek hasil
-          BUILT=$(ls output/${PKG}_*.deb 2>/dev/null | head -1)
           if [[ -z "$BUILT" ]]; then
-            echo "build-package.sh did not produce a .deb — skip"
+            echo "No aarch64 .deb found — skip repackage"
             exit 0
           fi
 
           BUILT_VERSION=$(dpkg-deb -f "$BUILT" Version 2>/dev/null || echo "${{ matrix.version }}")
-          echo "Built: $(basename $BUILT) (v$BUILT_VERSION)"
+          echo "Repackaging from: $(basename $BUILT) (v$BUILT_VERSION)"
 
-          # Repackage untuk semua arch — hanya ganti field Architecture di control
-          for ARCH in aarch64 arm x86_64 i686; do
+          # aarch64 sudah ada — repackage untuk arch lain
+          for ARCH in arm x86_64 i686; do
             TARGET="output/${PKG}_${BUILT_VERSION}_${ARCH}.deb"
             [[ -f "$TARGET" ]] && { echo "  [$ARCH] already exists"; continue; }
 
@@ -334,3 +354,5 @@ jobs:
           COUNT=$(ls gh-pages/pool/main/*.deb 2>/dev/null | wc -l || echo 0)
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "**$COUNT** .deb files in pool" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Built natively inside **termux-docker aarch64** — binaries compatible with Termux on Android." >> $GITHUB_STEP_SUMMARY
