@@ -91,6 +91,7 @@ jobs:
 
       - name: Check binary cache
         id: cache
+        if: github.event.inputs.force != 'true'
         uses: actions/cache@v5
         with:
           path: output/
@@ -100,7 +101,7 @@ jobs:
             pkg-${{ matrix.package }}-
 
       - name: Build .deb for all architectures
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
         run: |
           PKG="${{ matrix.package }}"
           BUILD_SH="packages/$PKG/build.sh"
