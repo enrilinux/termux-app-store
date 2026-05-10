@@ -260,9 +260,17 @@ jobs:
 
       - name: Generate SHA256 checksums
         run: |
-          cd output 2>/dev/null || exit 0
-          for f in *.deb; do
-            [[ -f "$f" ]] && sha256sum "$f" > "${f}.sha256"
+          mkdir -p output
+          cd output
+          shopt -s nullglob
+          debs=(*.deb)
+          if [[ ${#debs[@]} -eq 0 ]]; then
+            echo "No .deb files to checksum (package skipped or build-from-source only)"
+            exit 0
+          fi
+          for f in "${debs[@]}"; do
+            sha256sum "$f" > "${f}.sha256"
+            echo "  SHA256: $f"
           done
 
       - name: Upload artifacts
