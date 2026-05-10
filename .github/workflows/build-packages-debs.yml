@@ -162,9 +162,11 @@ jobs:
                 [[ -f "/tmp/${PKG}-src" && -s "/tmp/${PKG}-src" ]] && SRC_FILE="/tmp/${PKG}-src"
               fi
 
+              # Cek apakah build.sh punya termux_step_make_install
               HAS_MAKE_INSTALL=0
               grep -q 'termux_step_make_install' "$BUILD_SH" 2>/dev/null && HAS_MAKE_INSTALL=1
 
+              # Deteksi tipe source
               SRC_TYPE="unknown"
               if [[ -n "$SRC_FILE" ]]; then
                 FILE_INFO=$(file -b "$SRC_FILE" 2>/dev/null || echo "")
@@ -174,6 +176,7 @@ jobs:
                 [[ "$SRC_TYPE" == "unknown" ]] && SRC_TYPE="script"
               fi
 
+              # Extract tarball sekali ke /tmp/src-extract kalau perlu
               EXTRACT_DIR=""
               if [[ "$SRC_TYPE" == "archive" ]]; then
                 EXTRACT_DIR="/tmp/${PKG}-extract"
@@ -191,17 +194,21 @@ jobs:
                 ISIZE=0
 
                 if [[ "$SRC_TYPE" == "archive" && "$HAS_MAKE_INSTALL" -eq 1 && -d "$EXTRACT_DIR" ]]; then
+                  # Source tarball dengan termux_step_make_install — jalankan fungsinya
+                  # dengan TERMUX_PREFIX diarahkan ke DESTDIR
                   (
                     cd "$EXTRACT_DIR"
                     TERMUX_PREFIX="$DESTDIR"
                     TERMUX_PKG_SRCDIR="$EXTRACT_DIR"
                     export TERMUX_PREFIX TERMUX_PKG_SRCDIR
+                    # Source fungsi dari build.sh lalu jalankan
                     source "$OLDPWD/$BUILD_SH" 2>/dev/null || true
                     termux_step_make_install 2>&1 || true
                   )
                   ISIZE=$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo 0)
 
                 elif [[ "$SRC_TYPE" == "elf" ]]; then
+                  # ELF binary — cek arch cocok
                   ELF_ARCH=""
                   echo "$FILE_INFO" | grep -qi "aarch64\|ARM aarch64" && ELF_ARCH="aarch64"
                   echo "$FILE_INFO" | grep -qi "ARM," && [[ -z "$ELF_ARCH" ]] && ELF_ARCH="arm"
@@ -217,6 +224,7 @@ jobs:
                   fi
 
                 elif [[ "$SRC_TYPE" == "script" && -n "$SRC_FILE" ]]; then
+                  # Script/Python/binary script — aman semua arch
                   cp "$SRC_FILE" "$DESTDIR/lib/$PKG/"
                   chmod +x "$DESTDIR/lib/$PKG/"* 2>/dev/null || true
                   printf '#!/data/data/com.termux/files/usr/bin/bash\nexec "/data/data/com.termux/files/usr/lib/%s/%s" "$@"\n' \
@@ -294,6 +302,19 @@ jobs:
           for arch in aarch64 arm x86_64 i686; do
             mkdir -p "gh-pages/dists/termux/main/binary-${arch}"
           done
+
+      - name: Purge old .deb files from pool (force rebuild only)
+        if: github.event.inputs.force == 'true'
+        run: |
+          SPECIFIC="${{ github.event.inputs.package }}"
+          if [[ -n "$SPECIFIC" ]]; then
+            echo "Removing old .deb for: $SPECIFIC"
+            rm -f gh-pages/pool/main/${SPECIFIC}_*.deb gh-pages/pool/main/${SPECIFIC}_*.sha256
+          else
+            echo "Removing ALL old .deb files from pool"
+            rm -f gh-pages/pool/main/*.deb gh-pages/pool/main/*.sha256
+          fi
+          echo "Pool after purge: $(ls gh-pages/pool/main/*.deb 2>/dev/null | wc -l) files"
 
       - name: Update pool
         run: |
