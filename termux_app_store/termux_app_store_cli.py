@@ -27,16 +27,6 @@ import urllib.error
 import shutil
 from pathlib import Path
 
-try:
-    from termux_app_store.fast_install import fast_install, check_mirrors, cache_info, clear_deb_cache
-    _FAST_INSTALL_AVAILABLE = True
-except ImportError:
-    try:
-        from fast_install import fast_install, check_mirrors, cache_info, clear_deb_cache
-        _FAST_INSTALL_AVAILABLE = True
-    except ImportError:
-        _FAST_INSTALL_AVAILABLE = False
-
 CACHE_FILE = (
     Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
     / "termux-app-store"
@@ -491,54 +481,33 @@ def cmd_install(app_root: Path, packages_dir: Path, name: str, silent: bool = Fa
     print(f"  {B}  Installing {CYAN}{name}{R}{B}  {DIM}v{p['version']}{R}")
     print(f"  {DIM}{'─'*46}{R}\n")
 
-    if _FAST_INSTALL_AVAILABLE:
-        _last_pct = [0]
+    if not ensure_package_files(packages_dir, name, force_update=force_update):
+        print(f"{RED}[✗] Failed to download build files for '{name}'.{R}")
+        print(f"    Check your internet connection or try again later.")
+        return False
 
-        def _log(msg):
-            print(f"  {msg}")
+    if not ensure_build_package_sh(app_root):
+        print(f"{RED}[✗] Cannot proceed without build-package.sh.{R}")
+        return False
 
-        def _progress(pct):
-            if pct != _last_pct[0]:
-                bar = "█" * (pct // 5) + "░" * (20 - pct // 5)
-                print(f"\r  [{bar}] {pct}%", end="", flush=True)
-                if pct >= 100:
-                    print()
-                _last_pct[0] = pct
+    proc = subprocess.Popen(
+        ["bash", "build-package.sh", name],
+        cwd=str(app_root),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
 
-        success = fast_install(
-            pkg_name=name,
-            log_fn=_log,
-            progress_fn=_progress,
-        )
-    else:
-        print(f"  {DIM}Fast install unavailable — building from source...{R}\n")
+    for line in iter(proc.stdout.readline, b""):
+        print(" ", line.decode(errors="ignore").rstrip())
 
-        if not ensure_package_files(packages_dir, name, force_update=force_update):
-            print(f"{RED}[✗] Failed to download build files for '{name}'.{R}")
-            print(f"    Check your internet connection or try again later.")
-            return False
+    proc.wait()
 
-        if not ensure_build_package_sh(app_root):
-            print(f"{RED}[✗] Cannot proceed without build-package.sh.{R}")
-            return False
-
-        proc = subprocess.Popen(
-            ["bash", "build-package.sh", name],
-            cwd=str(app_root),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        for line in iter(proc.stdout.readline, b""):
-            print(" ", line.decode(errors="ignore").rstrip())
-        proc.wait()
-        success = proc.returncode == 0
-
-    if success:
+    if proc.returncode == 0:
         hold_package(name)
         print(f"\n  {GREEN}{B}✔  '{name}' installed successfully!{R}\n")
         return True
     else:
-        print(f"\n  {RED}✗  Install failed{R}\n")
+        print(f"\n  {RED}✗  Install failed  {DIM}(exit {proc.returncode}){R}\n")
         return False
 
 
@@ -923,6 +892,7 @@ def cmd_version():
 
 
 def cmd_help():
+    W = 46
     print(f"""
 {B}{CYAN}Termux App Store  {DIM}Official Developer @djunekz{R}
 
@@ -931,7 +901,7 @@ def cmd_help():
 
 {B}PACKAGE COMMANDS:{R}
   {CYAN}list{R}  {DIM}| -l | -L{R}             List all packages + status
-  {CYAN}install{R} {DIM}| i | -i{R} {B}<package>{R}  Install package {DIM}(fast — pre-built .deb){R}
+  {CYAN}install{R} {DIM}| i | -i{R} {B}<package>{R}  Install a package
   {CYAN}uninstall{R} {B}<package>{R}         Uninstall a package
   {CYAN}show{R} {B}<package>{R}              Show package details
 
@@ -940,22 +910,16 @@ def cmd_help():
   {CYAN}upgrade{R}                     Upgrade all outdated packages
   {CYAN}upgrade{R} {B}<package>{R}           Upgrade a specific package
 
-{B}MIRROR & CACHE:{R}
-  {CYAN}mirrors{R}                     Check speed of all download mirrors
-  {CYAN}cache info{R}                  Show local .deb cache info
-  {CYAN}cache clear{R}                 Clear local .deb cache
-
 {B}INFO:{R}
   {CYAN}version{R} {DIM}| -v{R}                Show app version
   {CYAN}help{R}    {DIM}| -h | --help{R}       Show this help message
 
 {B}EXAMPLES:{R}
-  {DIM}termux-app-store install neovim{R}
-  {DIM}termux-app-store -i neovim{R}
+  {DIM}termux-app-store install impulse{R}
+  {DIM}termux-app-store -i impulse{R}
+  {DIM}termux-app-store upgrade webshake{R}
   {DIM}termux-app-store upgrade{R}
-  {DIM}termux-app-store mirrors{R}
-  {DIM}termux-app-store cache info{R}
-  {DIM}termux-app-store cache clear{R}
+  {DIM}termux-app-store update{R}
   {DIM}termux-app-store -l{R}
   {DIM}termux-app-store -v{R}
 """)
@@ -973,8 +937,6 @@ CMD_ALIASES = {
     "upgrade":   "upgrade",
     "version":   "version",
     "-v":        "version",
-    "mirrors":   "mirrors",
-    "cache":     "cache",
     "help":      "help",
     "-h":        "help",
     "--help":    "help",
@@ -1130,54 +1092,6 @@ def run_cli():
     elif cmd == "upgrade":
         target = args[1] if len(args) >= 2 else None
         cmd_upgrade(APP_ROOT, PACKAGES_DIR, target)
-
-    elif cmd == "mirrors":
-        print(f"\n  {DIM}Checking all mirrors...{R}\n")
-        if _FAST_INSTALL_AVAILABLE:
-            results = check_mirrors(log_fn=lambda m: print(f"  {m}"))
-            online = sum(1 for r in results if r["online"])
-            print(f"\n  {online}/{len(results)} mirrors online\n")
-        else:
-            print(f"  {YELLOW}Fast install module not available.{R}\n")
-
-    elif cmd == "cache":
-        sub = args[1] if len(args) >= 2 else "info"
-        if sub == "info":
-            if _FAST_INSTALL_AVAILABLE:
-                print()
-                cache_info(log_fn=lambda m: print(f"  {m}"))
-            else:
-                print(f"  {YELLOW}Fast install module not available.{R}\n")
-        elif sub == "clear":
-            if _FAST_INSTALL_AVAILABLE:
-                clear_deb_cache(log_fn=lambda m: print(f"  {m}"))
-            else:
-                print(f"  {YELLOW}Fast install module not available.{R}\n")
-        else:
-            print(f"  {RED}Unknown cache subcommand: '{sub}'{R}")
-            print(f"  Usage: termux-app-store cache [info|clear]")
-
-    elif cmd == "mirrors":
-        print(f"\n  {CYAN}Checking mirrors...{R}\n")
-        if _FAST_INSTALL_AVAILABLE:
-            check_mirrors(log_fn=lambda m: print(f"  {m}"))
-        else:
-            print(f"  {YELLOW}Fast install not available.{R}")
-
-    elif cmd == "cache":
-        sub = args[1] if len(args) >= 2 else "info"
-        if sub == "clear":
-            if _FAST_INSTALL_AVAILABLE:
-                clear_deb_cache(log_fn=lambda m: print(f"  {m}"))
-            else:
-                print(f"  {YELLOW}Fast install not available.{R}")
-        else:
-            if _FAST_INSTALL_AVAILABLE:
-                print()
-                cache_info(log_fn=lambda m: print(f"  {m}"))
-                print()
-            else:
-                print(f"  {YELLOW}Fast install not available.{R}")
 
 
 
