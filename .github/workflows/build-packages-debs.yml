@@ -166,6 +166,18 @@ jobs:
               HAS_MAKE_INSTALL=0
               grep -q 'termux_step_make_install' "$BUILD_SH" 2>/dev/null && HAS_MAKE_INSTALL=1
 
+              # Deteksi apakah package butuh kompilasi — tidak bisa di GitHub Actions runner
+              # karena perlu cross-compile toolchain untuk aarch64-android
+              NEEDS_COMPILE=0
+              grep -qE 'cargo (install|build)|make\b|cmake\b|\./configure|gcc|g\+\+|rustc|go build|meson\b|ninja\b' \
+                "$BUILD_SH" 2>/dev/null && NEEDS_COMPILE=1
+
+              if [[ "$HAS_MAKE_INSTALL" -eq 1 && "$NEEDS_COMPILE" -eq 1 ]]; then
+                echo "⚠ '$PKG' butuh kompilasi (cargo/make/cmake/go) — skip build di GitHub Actions"
+                echo "  Package ini akan build dari source langsung di device via build-package.sh"
+                exit 0
+              fi
+
               # Deteksi tipe source
               SRC_TYPE="unknown"
               if [[ -n "$SRC_FILE" ]]; then
