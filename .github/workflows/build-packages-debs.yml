@@ -26,7 +26,7 @@ jobs:
       package_count: ${{ steps.detect.outputs.package_count }}
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Scan packages directory
         id: detect
         run: |
@@ -47,11 +47,20 @@ jobs:
             exit 0
           fi
           
-          PACKAGES_JSON=$(printf '%s\n' "${PACKAGES[@]}" | jq -R . | jq -s .)
-          echo "packages=$PACKAGES_JSON" >> "$GITHUB_OUTPUT"
+          # Create valid JSON array
+          PACKAGES_JSON='['
+          for i in "${!PACKAGES[@]}"; do
+            if [[ $i -gt 0 ]]; then
+              PACKAGES_JSON="${PACKAGES_JSON},"
+            fi
+            PACKAGES_JSON="${PACKAGES_JSON}\"${PACKAGES[$i]}\""
+          done
+          PACKAGES_JSON="${PACKAGES_JSON}]"
+          
+          echo "packages=${PACKAGES_JSON}" >> "$GITHUB_OUTPUT"
           echo "package_count=${#PACKAGES[@]}" >> "$GITHUB_OUTPUT"
           
-          echo "Found ${#PACKAGES[@]} packages"
+          echo "✓ Found ${#PACKAGES[@]} packages"
 
   build-packages:
     name: Build ${{ matrix.package }}
