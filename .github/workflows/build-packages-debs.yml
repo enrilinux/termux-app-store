@@ -148,35 +148,96 @@ jobs:
 
           else
             echo "Type: source package"
-            if [[ -f "build-package.sh" ]]; then
-              bash build-package.sh "$PKG" 2>&1 || true
+
+            # Cek apakah build.sh punya termux_step_make_install
+            HAS_MAKE_INSTALL=0
+            grep -q 'termux_step_make_install' "$BUILD_SH" 2>/dev/null && HAS_MAKE_INSTALL=1
+
+            # Deteksi apakah package butuh kompilasi — tidak bisa di GitHub Actions runner
+            NEEDS_COMPILE=0
+            grep -qE 'cargo (install|build)|make\b|cmake\b|\./configure|gcc|g\+\+|rustc|go build|meson\b|ninja\b' \
+              "$BUILD_SH" 2>/dev/null && NEEDS_COMPILE=1
+
+            if [[ "$HAS_MAKE_INSTALL" -eq 1 && "$NEEDS_COMPILE" -eq 1 ]]; then
+              echo "⚠ '$PKG' butuh kompilasi (cargo/make/cmake/go) — skip build di GitHub Actions"
+              echo "  Package ini akan build dari source langsung di device via build-package.sh"
+              exit 0
             fi
 
-            EXISTING=$(ls output/${PKG}_*.deb 2>/dev/null | head -1 || true)
-            if [[ -n "$EXISTING" ]]; then
-              echo "OK: $EXISTING"
-            else
+            # Untuk package dengan termux_step_make_install yang hanya cp/install (tidak compile),
+            # jalankan dengan TERMUX_PREFIX diarahkan ke folder DESTDIR sementara
+            if [[ "$HAS_MAKE_INSTALL" -eq 1 && "$NEEDS_COMPILE" -eq 0 ]]; then
+              echo "Type: termux_step_make_install (file copy only)"
+
+              # Download source
               SRC_FILE=""
-              SRC_DIR=""
+              if [[ -n "$SRC_URL" && "$SRC_URL" =~ ^https?:// ]]; then
+                curl -fsSL --retry 3 -L "$SRC_URL" -o "/tmp/${PKG}-src-raw" 2>/dev/null || true
+                [[ -f "/tmp/${PKG}-src-raw" && -s "/tmp/${PKG}-src-raw" ]] && SRC_FILE="/tmp/${PKG}-src-raw"
+              fi
+
+              if [[ -z "$SRC_FILE" ]]; then
+                echo "⚠ Download failed — skip"
+                exit 0
+              fi
+
+              # Extract tarball
+              EXTRACT_DIR="/tmp/${PKG}-extract"
+              rm -rf "$EXTRACT_DIR" && mkdir -p "$EXTRACT_DIR"
+              FILE_INFO=$(file -b "$SRC_FILE")
+              if echo "$FILE_INFO" | grep -qi "gzip\|bzip2\|xz\|zstd"; then
+                tar -xf "$SRC_FILE" -C "$EXTRACT_DIR" --strip-components=1 2>/dev/null || true
+              elif echo "$FILE_INFO" | grep -qi "Zip"; then
+                unzip -q "$SRC_FILE" -d "$EXTRACT_DIR" 2>/dev/null || true
+              else
+                echo "⚠ Unknown archive type: $FILE_INFO — skip"
+                exit 0
+              fi
+
+              echo "Extracted: $(ls $EXTRACT_DIR | head -5 | tr '\n' ' ')"
+
+              # Jalankan termux_step_make_install per arch dengan DESTDIR yang benar
+              for ARCH in aarch64 arm x86_64 i686; do
+                PKG_BUILD="build_tmp/${PKG}_${ARCH}"
+                FAKE_PREFIX="$PWD/$PKG_BUILD/data/data/com.termux/files/usr"
+                mkdir -p "$FAKE_PREFIX/bin" "$FAKE_PREFIX/lib" "$FAKE_PREFIX/share"
+
+                (
+                  cd "$EXTRACT_DIR"
+                  export TERMUX_PREFIX="$FAKE_PREFIX"
+                  export TERMUX_PKG_SRCDIR="$EXTRACT_DIR"
+                  export TERMUX_PKG_NAME="$PKG"
+                  export TERMUX_PKG_VERSION="$VERSION"
+                  # Source fungsi dari build.sh lalu jalankan
+                  set +euo pipefail
+                  source "$OLDPWD/$BUILD_SH" 2>/dev/null || true
+                  termux_step_make_install 2>&1 || true
+                  set -euo pipefail
+                )
+
+                ISIZE=$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo 0)
+                mkdir -p "$PKG_BUILD/DEBIAN"
+                {
+                  echo "Package: $PKG"
+                  echo "Version: $VERSION"
+                  echo "Architecture: $ARCH"
+                  echo "Maintainer: djunekz <gab288.gab288@passinbox.com>"
+                  echo "Installed-Size: $ISIZE"
+                  [[ -n "$DEPENDS"  ]] && echo "Depends: $DEPENDS"
+                  [[ -n "$HOMEPAGE" ]] && echo "Homepage: $HOMEPAGE"
+                  echo "Description: ${DESC:-Termux App Store package}"
+                } > "$PKG_BUILD/DEBIAN/control"
+
+                dpkg-deb --build "$PKG_BUILD" "output/${PKG}_${VERSION}_${ARCH}.deb" 2>/dev/null && \
+                  echo "  OK: ${PKG}_${VERSION}_${ARCH}.deb" || echo "  FAIL: $ARCH"
+              done
+
+            else
+              # Tidak ada termux_step_make_install — coba download binary/script langsung
+              SRC_FILE=""
               if [[ -n "$SRC_URL" && "$SRC_URL" =~ ^https?:// ]]; then
                 curl -fsSL --retry 3 -L "$SRC_URL" -o "/tmp/${PKG}-src" 2>/dev/null || true
                 [[ -f "/tmp/${PKG}-src" && -s "/tmp/${PKG}-src" ]] && SRC_FILE="/tmp/${PKG}-src"
-              fi
-
-              # Cek apakah build.sh punya termux_step_make_install
-              HAS_MAKE_INSTALL=0
-              grep -q 'termux_step_make_install' "$BUILD_SH" 2>/dev/null && HAS_MAKE_INSTALL=1
-
-              # Deteksi apakah package butuh kompilasi — tidak bisa di GitHub Actions runner
-              # karena perlu cross-compile toolchain untuk aarch64-android
-              NEEDS_COMPILE=0
-              grep -qE 'cargo (install|build)|make\b|cmake\b|\./configure|gcc|g\+\+|rustc|go build|meson\b|ninja\b' \
-                "$BUILD_SH" 2>/dev/null && NEEDS_COMPILE=1
-
-              if [[ "$HAS_MAKE_INSTALL" -eq 1 && "$NEEDS_COMPILE" -eq 1 ]]; then
-                echo "⚠ '$PKG' butuh kompilasi (cargo/make/cmake/go) — skip build di GitHub Actions"
-                echo "  Package ini akan build dari source langsung di device via build-package.sh"
-                exit 0
               fi
 
               # Deteksi tipe source
@@ -191,13 +252,11 @@ jobs:
 
               # Extract tarball sekali ke /tmp/src-extract kalau perlu
               EXTRACT_DIR=""
-              if [[ "$SRC_TYPE" == "archive" ]]; then
-                EXTRACT_DIR="/tmp/${PKG}-extract"
-                mkdir -p "$EXTRACT_DIR"
-                tar -xf "$SRC_FILE" -C "$EXTRACT_DIR" --strip-components=1 2>/dev/null || \
-                  unzip -q "$SRC_FILE" -d "$EXTRACT_DIR" 2>/dev/null || true
-                echo "  Extracted to: $EXTRACT_DIR"
-                ls "$EXTRACT_DIR" | head -5
+              if [[ -n "$SRC_FILE" ]]; then
+                FILE_INFO=$(file -b "$SRC_FILE" 2>/dev/null || echo "")
+                SRC_TYPE="script"
+                echo "$FILE_INFO" | grep -qi "^ELF"                        && SRC_TYPE="elf"
+                echo "$FILE_INFO" | grep -qi "gzip\|tar\|bzip2\|xz\|zstd\|Zip" && SRC_TYPE="archive"
               fi
 
               for ARCH in aarch64 arm x86_64 i686; do
@@ -206,28 +265,12 @@ jobs:
                 mkdir -p "$PKG_BUILD/DEBIAN" "$DESTDIR/bin" "$DESTDIR/lib/$PKG"
                 ISIZE=0
 
-                if [[ "$SRC_TYPE" == "archive" && "$HAS_MAKE_INSTALL" -eq 1 && -d "$EXTRACT_DIR" ]]; then
-                  # Source tarball dengan termux_step_make_install — jalankan fungsinya
-                  # dengan TERMUX_PREFIX diarahkan ke DESTDIR
-                  (
-                    cd "$EXTRACT_DIR"
-                    TERMUX_PREFIX="$DESTDIR"
-                    TERMUX_PKG_SRCDIR="$EXTRACT_DIR"
-                    export TERMUX_PREFIX TERMUX_PKG_SRCDIR
-                    # Source fungsi dari build.sh lalu jalankan
-                    source "$OLDPWD/$BUILD_SH" 2>/dev/null || true
-                    termux_step_make_install 2>&1 || true
-                  )
-                  ISIZE=$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo 0)
-
-                elif [[ "$SRC_TYPE" == "elf" ]]; then
-                  # ELF binary — cek arch cocok
+                if [[ "$SRC_TYPE" == "elf" ]]; then
                   ELF_ARCH=""
                   echo "$FILE_INFO" | grep -qi "aarch64\|ARM aarch64" && ELF_ARCH="aarch64"
                   echo "$FILE_INFO" | grep -qi "ARM," && [[ -z "$ELF_ARCH" ]] && ELF_ARCH="arm"
                   echo "$FILE_INFO" | grep -qi "x86-64" && ELF_ARCH="x86_64"
                   echo "$FILE_INFO" | grep -qi "80386\|i386" && ELF_ARCH="i686"
-
                   if [[ -z "$ELF_ARCH" || "$ELF_ARCH" == "$ARCH" ]]; then
                     cp "$SRC_FILE" "$DESTDIR/bin/$PKG"
                     chmod +x "$DESTDIR/bin/$PKG"
@@ -237,7 +280,6 @@ jobs:
                   fi
 
                 elif [[ "$SRC_TYPE" == "script" && -n "$SRC_FILE" ]]; then
-                  # Script/Python/binary script — aman semua arch
                   cp "$SRC_FILE" "$DESTDIR/lib/$PKG/"
                   chmod +x "$DESTDIR/lib/$PKG/"* 2>/dev/null || true
                   printf '#!/data/data/com.termux/files/usr/bin/bash\nexec "/data/data/com.termux/files/usr/lib/%s/%s" "$@"\n' \
@@ -245,12 +287,16 @@ jobs:
                   chmod +x "$DESTDIR/bin/$PKG"
                   ISIZE=$(du -sk "$PKG_BUILD/data" | cut -f1)
                 fi
-                printf 'Package: %s\nVersion: %s\nArchitecture: %s\nMaintainer: djunekz <gab288.gab288@passinbox.com>\nInstalled-Size: %s\n' \
-                  "$PKG" "$VERSION" "$ARCH" "$ISIZE" > "$PKG_BUILD/DEBIAN/control"
-                [[ -n "$DEPENDS"  ]] && echo "Depends: $DEPENDS"  >> "$PKG_BUILD/DEBIAN/control"
-                [[ -n "$HOMEPAGE" ]] && echo "Homepage: $HOMEPAGE" >> "$PKG_BUILD/DEBIAN/control"
-                echo "Description: ${DESC:-Termux App Store package}" >> "$PKG_BUILD/DEBIAN/control"
-                dpkg-deb --build "$PKG_BUILD" "output/${PKG}_${VERSION}_${ARCH}.deb" && \
+
+                {
+                  printf 'Package: %s\nVersion: %s\nArchitecture: %s\nMaintainer: djunekz <gab288.gab288@passinbox.com>\nInstalled-Size: %s\n' \
+                    "$PKG" "$VERSION" "$ARCH" "$ISIZE"
+                  [[ -n "$DEPENDS"  ]] && echo "Depends: $DEPENDS"
+                  [[ -n "$HOMEPAGE" ]] && echo "Homepage: $HOMEPAGE"
+                  echo "Description: ${DESC:-Termux App Store package}"
+                } > "$PKG_BUILD/DEBIAN/control"
+
+                dpkg-deb --build "$PKG_BUILD" "output/${PKG}_${VERSION}_${ARCH}.deb" 2>/dev/null && \
                   echo "  OK: $ARCH" || echo "  FAIL: $ARCH"
               done
             fi
