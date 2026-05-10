@@ -166,13 +166,39 @@ jobs:
                 DESTDIR="$PKG_BUILD/data/data/com.termux/files/usr"
                 mkdir -p "$PKG_BUILD/DEBIAN" "$DESTDIR/bin" "$DESTDIR/lib/$PKG"
                 ISIZE=0
+
                 if [[ -n "$SRC_FILE" ]]; then
-                  cp "$SRC_FILE" "$DESTDIR/lib/$PKG/"
-                  chmod +x "$DESTDIR/lib/$PKG/"* 2>/dev/null || true
-                  printf '#!/data/data/com.termux/files/usr/bin/bash\nexec "/data/data/com.termux/files/usr/lib/%s/%s" "$@"\n' \
-                    "$PKG" "$(basename $SRC_FILE)" > "$DESTDIR/bin/$PKG"
-                  chmod +x "$DESTDIR/bin/$PKG"
-                  ISIZE=$(du -sk "$PKG_BUILD/data" | cut -f1)
+                  # Deteksi apakah file ini ELF binary (tidak bisa cross-arch)
+                  FILE_TYPE=$(file -b "$SRC_FILE" 2>/dev/null || echo "")
+                  IS_ELF=0
+                  echo "$FILE_TYPE" | grep -qi "^ELF" && IS_ELF=1
+
+                  if [[ "$IS_ELF" -eq 1 ]]; then
+                    # ELF binary — cek arch-nya sesuai dengan target arch ini tidak
+                    ELF_ARCH=""
+                    echo "$FILE_TYPE" | grep -qi "aarch64\|ARM aarch64" && ELF_ARCH="aarch64"
+                    echo "$FILE_TYPE" | grep -qi "ARM,\|ARM " && [[ -z "$ELF_ARCH" ]] && ELF_ARCH="arm"
+                    echo "$FILE_TYPE" | grep -qi "x86-64\|x86_64" && ELF_ARCH="x86_64"
+                    echo "$FILE_TYPE" | grep -qi "80386\|i386\|i686" && ELF_ARCH="i686"
+
+                    if [[ -z "$ELF_ARCH" || "$ELF_ARCH" == "$ARCH" ]]; then
+                      # Arch cocok atau tidak dikenali — masukkan binary
+                      cp "$SRC_FILE" "$DESTDIR/bin/$PKG"
+                      chmod +x "$DESTDIR/bin/$PKG"
+                      ISIZE=$(du -sk "$PKG_BUILD/data" | cut -f1)
+                    else
+                      # Arch tidak cocok — buat paket kosong, jangan pasang binary yang salah
+                      echo "  [!] ELF arch mismatch: file=$ELF_ARCH target=$ARCH — creating stub"
+                    fi
+                  else
+                    # Bukan ELF (script, Python, dll) — aman untuk semua arch
+                    cp "$SRC_FILE" "$DESTDIR/lib/$PKG/"
+                    chmod +x "$DESTDIR/lib/$PKG/"* 2>/dev/null || true
+                    printf '#!/data/data/com.termux/files/usr/bin/bash\nexec "/data/data/com.termux/files/usr/lib/%s/%s" "$@"\n' \
+                      "$PKG" "$(basename $SRC_FILE)" > "$DESTDIR/bin/$PKG"
+                    chmod +x "$DESTDIR/bin/$PKG"
+                    ISIZE=$(du -sk "$PKG_BUILD/data" | cut -f1)
+                  fi
                 fi
                 printf 'Package: %s\nVersion: %s\nArchitecture: %s\nMaintainer: djunekz <gab288.gab288@passinbox.com>\nInstalled-Size: %s\n' \
                   "$PKG" "$VERSION" "$ARCH" "$ISIZE" > "$PKG_BUILD/DEBIAN/control"
@@ -327,6 +353,13 @@ jobs:
           Path("gh-pages/dists/termux/Release").write_text("\n".join(rel_lines) + "\n")
           print("Release file generated")
           EOF
+
+      - name: Update index.json with .deb SHA256 hashes
+        run: |
+          mkdir -p gh-pages/tools
+          cp tools/index.json gh-pages/tools/index.json
+          echo "aW1wb3J0IGpzb24sIGhhc2hsaWIKZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgppbmRleF9wYXRoID0gUGF0aCgiZ2gtcGFnZXMvdG9vbHMvaW5kZXguanNvbiIpCnBvb2xfZGlyICAgPSBQYXRoKCJnaC1wYWdlcy9wb29sL21haW4iKQoKd2l0aCBvcGVuKGluZGV4X3BhdGgpIGFzIGY6CiAgICBkYXRhID0ganNvbi5sb2FkKGYpCgp1cGRhdGVkID0gMApmb3IgcGtnIGluIGRhdGEuZ2V0KCJwYWNrYWdlcyIsIFtdKToKICAgIG5hbWUgPSBwa2cuZ2V0KCJwYWNrYWdlIiwgIiIpCiAgICB2ZXIgID0gcGtnLmdldCgidmVyc2lvbiIsICIiKQogICAgZGVicyA9IHNvcnRlZChwb29sX2Rpci5nbG9iKGYie25hbWV9X3t2ZXJ9XyouZGViIikpCiAgICBpZiBub3QgZGViczoKICAgICAgICBkZWJzID0gc29ydGVkKHBvb2xfZGlyLmdsb2IoZiJ7bmFtZX1fKi5kZWIiKSkKICAgIGlmIG5vdCBkZWJzOgogICAgICAgIGNvbnRpbnVlCiAgICBhcmNoX2hhc2hlcyA9IHt9CiAgICBmb3IgZGViIGluIGRlYnM6CiAgICAgICAgYXJjaCA9IGRlYi5zdGVtLnJzcGxpdCgiXyIsIDEpWy0xXQogICAgICAgIGFyY2hfaGFzaGVzW2FyY2hdID0gaGFzaGxpYi5zaGEyNTYoZGViLnJlYWRfYnl0ZXMoKSkuaGV4ZGlnZXN0KCkKICAgIGlmIG5vdCBhcmNoX2hhc2hlczoKICAgICAgICBjb250aW51ZQogICAgcHJpbWFyeSA9IGFyY2hfaGFzaGVzLmdldCgiYWFyY2g2NCIpIG9yIG5leHQoaXRlcihhcmNoX2hhc2hlcy52YWx1ZXMoKSkpCiAgICBwa2dbInNoYTI1NiJdID0gcHJpbWFyeQogICAgcGtnWyJzaGEyNTZfYnlfYXJjaCJdID0gYXJjaF9oYXNoZXMKICAgIHVwZGF0ZWQgKz0gMQoKd2l0aCBvcGVuKGluZGV4X3BhdGgsICJ3IikgYXMgZjoKICAgIGpzb24uZHVtcChkYXRhLCBmLCBpbmRlbnQ9MiwgZW5zdXJlX2FzY2lpPUZhbHNlKQpwcmludChmIlVwZGF0ZWQgU0hBMjU2IGZvciB7dXBkYXRlZH0gcGFja2FnZShzKSIpCg==" \
+            | base64 -d | python3
 
       - name: Commit and push
         run: |
