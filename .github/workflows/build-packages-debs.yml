@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: 'Package spesifik (kosong = build semua yang berubah di index)'
+        description: 'Package spesifik (kosong = build semua yang berubah)'
         required: false
         default: ''
       force:
@@ -29,7 +29,7 @@ jobs:
       matrix: ${{ steps.detect.outputs.matrix }}
       has_packages: ${{ steps.detect.outputs.has_packages }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 2
 
@@ -41,54 +41,20 @@ jobs:
           TRIGGER="${{ github.event_name }}"
 
           if [[ -n "$SPECIFIC" ]]; then
-            if [[ -f "packages/$SPECIFIC/build.sh" ]]; then
-              PKGS="$SPECIFIC"
-              echo "Mode: single package → $PKGS"
-            else
-              echo "❌ Package '$SPECIFIC' not found in packages/"
-              exit 1
-            fi
-
-          elif [[ "$FORCE" == "true" ]]; then
+            [[ -f "packages/$SPECIFIC/build.sh" ]] || { echo "Package '$SPECIFIC' not found"; exit 1; }
+            PKGS="$SPECIFIC"
+          elif [[ "$FORCE" == "true" || "$TRIGGER" == "schedule" ]]; then
             PKGS=$(ls packages/ 2>/dev/null | tr '\n' ' ')
-            echo "Mode: force rebuild all → $(echo $PKGS | wc -w) packages"
-
-          elif [[ "$TRIGGER" == "schedule" ]]; then
-            PKGS=$(ls packages/ 2>/dev/null | tr '\n' ' ')
-            echo "Mode: weekly schedule → $(echo $PKGS | wc -w) packages"
-
           else
-            echo "Mode: detect changed packages from index.json"
-            PKGS=$(python3 - << 'PYEOF'
-          import json, subprocess, sys
-
+            PKGS=$(python3 -c "
+          import json, subprocess
           try:
-              old_raw = subprocess.check_output(
-                  ['git', 'show', 'HEAD~1:tools/index.json'],
-                  stderr=subprocess.DEVNULL
-              ).decode()
-              old = {p['package']: p.get('version', '') for p in json.loads(old_raw).get('packages', [])}
-          except Exception:
+              old = {p['package']:p.get('version','') for p in json.loads(subprocess.check_output(['git','show','HEAD~1:tools/index.json'],stderr=subprocess.DEVNULL).decode()).get('packages',[])}
+          except:
               old = {}
-
-          try:
-              with open('tools/index.json') as f:
-                  new_data = json.load(f)
-              new = {p['package']: p.get('version', '') for p in new_data.get('packages', [])}
-          except Exception:
-              print('')
-              sys.exit(0)
-
-          changed = [pkg for pkg, ver in new.items() if old.get(pkg, '') != ver]
-          print(' '.join(changed))
-          PYEOF
-            )
-
-            if [[ -z "$PKGS" ]]; then
-              echo "No changes detected — building nothing"
-            else
-              echo "Changed packages: $PKGS"
-            fi
+          new = {p['package']:p.get('version','') for p in json.load(open('tools/index.json')).get('packages',[])}
+          print(' '.join(pkg for pkg,ver in new.items() if old.get(pkg,'') != ver))
+          " 2>/dev/null || echo "")
           fi
 
           if [[ -z "$(echo $PKGS | tr -d ' ')" ]]; then
@@ -100,20 +66,14 @@ jobs:
           MATRIX_ITEMS=""
           for pkg in $PKGS; do
             [[ -f "packages/$pkg/build.sh" ]] || continue
-
-            VERSION=$(grep 'TERMUX_PKG_VERSION=' "packages/$pkg/build.sh" \
-              | head -1 | cut -d= -f2 | tr -d "\"'" 2>/dev/null || echo "unknown")
-            SHA256=$(grep 'TERMUX_PKG_SHA256=' "packages/$pkg/build.sh" \
-              | head -1 | cut -d= -f2 | tr -d "\"'" 2>/dev/null | cut -c1-16 || echo "")
-
+            VERSION=$(grep 'TERMUX_PKG_VERSION=' "packages/$pkg/build.sh" | head -1 | cut -d= -f2 | tr -d "\"'" 2>/dev/null || echo "unknown")
+            SHA256=$(grep 'TERMUX_PKG_SHA256=' "packages/$pkg/build.sh" | head -1 | cut -d= -f2 | tr -d "\"'" 2>/dev/null | cut -c1-16 || echo "")
             [[ -n "$MATRIX_ITEMS" ]] && MATRIX_ITEMS="$MATRIX_ITEMS,"
             MATRIX_ITEMS="${MATRIX_ITEMS}{\"package\":\"$pkg\",\"version\":\"$VERSION\",\"sha256\":\"$SHA256\"}"
           done
 
-          MATRIX="{\"include\":[$MATRIX_ITEMS]}"
-          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "matrix={\"include\":[$MATRIX_ITEMS]}" >> "$GITHUB_OUTPUT"
           echo "has_packages=true" >> "$GITHUB_OUTPUT"
-          echo "Final matrix: $MATRIX"
 
   build-deb:
     name: Build ${{ matrix.package }} v${{ matrix.version }}
@@ -123,9 +83,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
-
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Install build tools
         run: sudo apt-get install -y -qq dpkg-dev curl
@@ -153,180 +112,90 @@ jobs:
           LICENSE=$(grep  'TERMUX_PKG_LICENSE='    "$BUILD_SH" | head -1 | cut -d= -f2 | tr -d "\"'" || echo "")
           SHA256=$(grep   'TERMUX_PKG_SHA256='     "$BUILD_SH" | head -1 | cut -d= -f2 | tr -d "\"'" || echo "")
           SRC_URL_RAW=$(grep 'TERMUX_PKG_SRCURL='  "$BUILD_SH" | head -1 | cut -d= -f2- | tr -d "\"'" || echo "")
-
-          # Expand ${TERMUX_PKG_VERSION} di SRCURL
           SRC_URL="${SRC_URL_RAW//\$\{TERMUX_PKG_VERSION\}/$VERSION}"
           SRC_URL="${SRC_URL//\$TERMUX_PKG_VERSION/$VERSION}"
 
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "Package  : $PKG"
-          echo "Version  : $VERSION"
-          echo "SRC_URL  : $SRC_URL"
-          echo "Depends  : $DEPENDS"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
+          echo "Package: $PKG | Version: $VERSION | URL: $SRC_URL"
           mkdir -p output
 
-          # Deteksi tipe: pre-built .deb dari developer vs source compile
           IS_PREBUILT_DEB=0
-          if echo "$SRC_URL" | grep -qE '\.deb($|\?)'; then
-            IS_PREBUILT_DEB=1
-            echo "[*] Type: pre-built .deb (from developer)"
-          else
-            echo "[*] Type: source package"
-          fi
+          echo "$SRC_URL" | grep -qE '\.deb($|\?)' && IS_PREBUILT_DEB=1
 
           if [[ "$IS_PREBUILT_DEB" -eq 1 ]]; then
-            echo "Downloading: $SRC_URL"
-            curl -fsSL --retry 3 --retry-delay 2 "$SRC_URL" \
-              -o "/tmp/${PKG}-orig.deb" || {
-              echo "✗ Download failed"
-              exit 1
-            }
+            echo "Type: pre-built .deb from developer"
+            curl -fsSL --retry 3 "$SRC_URL" -o "/tmp/${PKG}-orig.deb" || { echo "Download failed"; exit 1; }
 
-            SIZE=$(du -sh "/tmp/${PKG}-orig.deb" | cut -f1)
-            echo "Downloaded: $SIZE"
+            [[ -n "$SHA256" ]] && ACTUAL=$(sha256sum "/tmp/${PKG}-orig.deb" | cut -d' ' -f1) && \
+              [[ "$ACTUAL" == "$SHA256" ]] && echo "SHA256 OK" || echo "SHA256 mismatch (expected=$SHA256 got=$ACTUAL)"
 
-            # Verify SHA256
-            if [[ -n "$SHA256" ]]; then
-              ACTUAL=$(sha256sum "/tmp/${PKG}-orig.deb" | cut -d' ' -f1)
-              if [[ "$ACTUAL" == "$SHA256" ]]; then
-                echo "✓ SHA256 verified"
-              else
-                echo "⚠ SHA256 mismatch"
-                echo "  Expected: $SHA256"
-                echo "  Got:      $ACTUAL"
-              fi
-            fi
+            ORIG_DEPENDS=$(dpkg-deb -f "/tmp/${PKG}-orig.deb" Depends 2>/dev/null || echo "$DEPENDS")
+            ORIG_ISIZE=$(dpkg-deb -f "/tmp/${PKG}-orig.deb" Installed-Size 2>/dev/null || echo "0")
 
-            # Extract isi .deb asli dan rebuild per-arch
-            ORIG_CONTROL=$(dpkg-deb -f "/tmp/${PKG}-orig.deb" 2>/dev/null || true)
-            ORIG_DEPENDS=$(echo "$ORIG_CONTROL" | grep '^Depends:'        | sed 's/^Depends: //' || echo "$DEPENDS")
-            ORIG_ISIZE=$(echo   "$ORIG_CONTROL" | grep '^Installed-Size:' | awk '{print $2}'    || echo "0")
-            FINAL_DEPENDS="${ORIG_DEPENDS:-$DEPENDS}"
-
-            BUILD_FAILED=0
             for ARCH in aarch64 arm x86_64 i686; do
               PKG_BUILD="build_tmp/${PKG}_${ARCH}"
               mkdir -p "$PKG_BUILD"
-
-              # Extract semua isi file dari .deb asli
-              dpkg-deb -x "/tmp/${PKG}-orig.deb" "$PKG_BUILD/" 2>&1 || {
-                echo "  ✗ Extract failed for $ARCH"
-                BUILD_FAILED=1
-                continue
-              }
-
-              # Rebuild control dengan arch yang benar
+              dpkg-deb -x "/tmp/${PKG}-orig.deb" "$PKG_BUILD/" || { echo "Extract failed $ARCH"; continue; }
               mkdir -p "$PKG_BUILD/DEBIAN"
-              {
-                echo "Package: $PKG"
-                echo "Version: $VERSION"
-                echo "Architecture: $ARCH"
-                echo "Maintainer: djunekz <gab288.gab288@passinbox.com>"
-                echo "Installed-Size: ${ORIG_ISIZE:-0}"
-                [[ -n "$FINAL_DEPENDS" ]] && echo "Depends: $FINAL_DEPENDS"
-                [[ -n "$HOMEPAGE"      ]] && echo "Homepage: $HOMEPAGE"
-                [[ -n "$LICENSE"       ]] && echo "License: $LICENSE"
-                echo "Description: ${DESC:-Termux App Store package}"
-              } > "$PKG_BUILD/DEBIAN/control"
-
-              if dpkg-deb --build "$PKG_BUILD" \
-                "output/${PKG}_${VERSION}_${ARCH}.deb" 2>/dev/null; then
-                echo "  ✓ ${PKG}_${VERSION}_${ARCH}.deb"
-              else
-                echo "  ✗ ${PKG}_${VERSION}_${ARCH}.deb FAILED"
-                BUILD_FAILED=1
-              fi
+              printf 'Package: %s\nVersion: %s\nArchitecture: %s\nMaintainer: djunekz <gab288.gab288@passinbox.com>\nInstalled-Size: %s\n' \
+                "$PKG" "$VERSION" "$ARCH" "${ORIG_ISIZE:-0}" > "$PKG_BUILD/DEBIAN/control"
+              [[ -n "${ORIG_DEPENDS:-$DEPENDS}" ]] && echo "Depends: ${ORIG_DEPENDS:-$DEPENDS}" >> "$PKG_BUILD/DEBIAN/control"
+              [[ -n "$HOMEPAGE" ]] && echo "Homepage: $HOMEPAGE" >> "$PKG_BUILD/DEBIAN/control"
+              echo "Description: ${DESC:-Termux App Store package}" >> "$PKG_BUILD/DEBIAN/control"
+              dpkg-deb --build "$PKG_BUILD" "output/${PKG}_${VERSION}_${ARCH}.deb" && \
+                echo "  OK: ${PKG}_${VERSION}_${ARCH}.deb" || echo "  FAIL: $ARCH"
             done
-            [[ "$BUILD_FAILED" -eq 1 ]] && echo "⚠ Some builds failed"
 
           else
+            echo "Type: source package"
             if [[ -f "build-package.sh" ]]; then
-              echo "Running build-package.sh $PKG..."
-              export TERMUX_DESTDIR="$(pwd)/build_tmp/${PKG}_destdir"
-              mkdir -p "$TERMUX_DESTDIR"
               bash build-package.sh "$PKG" 2>&1 || true
             fi
 
-            EXISTING_DEB=$(ls output/${PKG}_*.deb 2>/dev/null | head -1 || true)
-
-            if [[ -n "$EXISTING_DEB" ]]; then
-              echo "✓ .deb dari build-package.sh: $EXISTING_DEB"
+            EXISTING=$(ls output/${PKG}_*.deb 2>/dev/null | head -1 || true)
+            if [[ -n "$EXISTING" ]]; then
+              echo "OK: $EXISTING"
             else
-              # Fallback: download source, buat wrapper .deb
-              echo "build-package.sh tidak menghasilkan .deb — building wrapper..."
               SRC_FILE=""
-
-              if [[ -n "$SRC_URL" && "$SRC_URL" != *"*"* \
-                    && "$SRC_URL" =~ ^https?:// ]]; then
-                echo "Downloading source: $SRC_URL"
-                curl -fsSL --retry 3 "$SRC_URL" \
-                  -o "/tmp/${PKG}-src" 2>/dev/null || true
-                [[ -f "/tmp/${PKG}-src" && -s "/tmp/${PKG}-src" ]] \
-                  && SRC_FILE="/tmp/${PKG}-src" \
-                  && echo "✓ Source: $(du -sh $SRC_FILE | cut -f1)"
+              if [[ -n "$SRC_URL" && "$SRC_URL" =~ ^https?:// ]]; then
+                curl -fsSL --retry 3 "$SRC_URL" -o "/tmp/${PKG}-src" 2>/dev/null || true
+                [[ -f "/tmp/${PKG}-src" && -s "/tmp/${PKG}-src" ]] && SRC_FILE="/tmp/${PKG}-src"
               fi
 
-              BUILD_FAILED=0
               for ARCH in aarch64 arm x86_64 i686; do
                 PKG_BUILD="build_tmp/${PKG}_${ARCH}"
-                DESTDIR_USR="$PKG_BUILD/data/data/com.termux/files/usr"
-                BINDIR="$DESTDIR_USR/bin"
-                LIBDIR="$DESTDIR_USR/lib/$PKG"
-                mkdir -p "$PKG_BUILD/DEBIAN" "$BINDIR" "$LIBDIR"
-
-                INSTALLED_SIZE="0"
+                DESTDIR="$PKG_BUILD/data/data/com.termux/files/usr"
+                mkdir -p "$PKG_BUILD/DEBIAN" "$DESTDIR/bin" "$DESTDIR/lib/$PKG"
+                ISIZE=0
                 if [[ -n "$SRC_FILE" ]]; then
-                  cp "$SRC_FILE" "$LIBDIR/"
-                  chmod +x "$LIBDIR/"* 2>/dev/null || true
-                  BINARY_NAME=$(basename "$SRC_FILE")
-                  printf '%s\n' \
-                    '#!/data/data/com.termux/files/usr/bin/bash' \
-                    "exec \"/data/data/com.termux/files/usr/lib/${PKG}/${BINARY_NAME}\" \"\$@\"" \
-                    > "$BINDIR/$PKG"
-                  chmod +x "$BINDIR/$PKG"
-                  INSTALLED_SIZE=$(du -sk "$PKG_BUILD/data" 2>/dev/null | cut -f1 || echo "0")
+                  cp "$SRC_FILE" "$DESTDIR/lib/$PKG/"
+                  chmod +x "$DESTDIR/lib/$PKG/"* 2>/dev/null || true
+                  printf '#!/data/data/com.termux/files/usr/bin/bash\nexec "/data/data/com.termux/files/usr/lib/%s/%s" "$@"\n' \
+                    "$PKG" "$(basename $SRC_FILE)" > "$DESTDIR/bin/$PKG"
+                  chmod +x "$DESTDIR/bin/$PKG"
+                  ISIZE=$(du -sk "$PKG_BUILD/data" | cut -f1)
                 fi
-
-                {
-                  echo "Package: $PKG"
-                  echo "Version: $VERSION"
-                  echo "Architecture: $ARCH"
-                  echo "Maintainer: djunekz <gab288.gab288@passinbox.com>"
-                  echo "Installed-Size: $INSTALLED_SIZE"
-                  [[ -n "$DEPENDS"  ]] && echo "Depends: $DEPENDS"
-                  [[ -n "$HOMEPAGE" ]] && echo "Homepage: $HOMEPAGE"
-                  [[ -n "$LICENSE"  ]] && echo "License: $LICENSE"
-                  echo "Description: ${DESC:-Termux App Store package}"
-                } > "$PKG_BUILD/DEBIAN/control"
-
-                if dpkg-deb --build "$PKG_BUILD" \
-                  "output/${PKG}_${VERSION}_${ARCH}.deb" 2>/dev/null; then
-                  echo "  ✓ ${PKG}_${VERSION}_${ARCH}.deb"
-                else
-                  echo "  ✗ ${PKG}_${VERSION}_${ARCH}.deb FAILED"
-                  BUILD_FAILED=1
-                fi
+                printf 'Package: %s\nVersion: %s\nArchitecture: %s\nMaintainer: djunekz <gab288.gab288@passinbox.com>\nInstalled-Size: %s\n' \
+                  "$PKG" "$VERSION" "$ARCH" "$ISIZE" > "$PKG_BUILD/DEBIAN/control"
+                [[ -n "$DEPENDS"  ]] && echo "Depends: $DEPENDS"  >> "$PKG_BUILD/DEBIAN/control"
+                [[ -n "$HOMEPAGE" ]] && echo "Homepage: $HOMEPAGE" >> "$PKG_BUILD/DEBIAN/control"
+                echo "Description: ${DESC:-Termux App Store package}" >> "$PKG_BUILD/DEBIAN/control"
+                dpkg-deb --build "$PKG_BUILD" "output/${PKG}_${VERSION}_${ARCH}.deb" && \
+                  echo "  OK: $ARCH" || echo "  FAIL: $ARCH"
               done
-              [[ "$BUILD_FAILED" -eq 1 ]] && echo "⚠ Some builds failed"
             fi
           fi
 
-          echo ""
-          echo "Output:"
-          ls -lh output/ 2>/dev/null || echo "(none)"
-
+          ls -lh output/ 2>/dev/null || true
 
       - name: Generate SHA256 checksums
         run: |
           cd output 2>/dev/null || exit 0
           for f in *.deb; do
-            [[ -f "$f" ]] && sha256sum "$f" > "${f}.sha256" && echo "  ✓ ${f}.sha256"
+            [[ -f "$f" ]] && sha256sum "$f" > "${f}.sha256"
           done
 
-      - name: Upload .deb artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+      - name: Upload artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: deb-${{ matrix.package }}-${{ matrix.version }}
           path: |
@@ -344,31 +213,20 @@ jobs:
       needs.detect-changes.outputs.has_packages == 'true' &&
       needs.build-deb.result != 'cancelled'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Install tools
-        run: sudo apt-get install -y -qq dpkg-dev
+        run: sudo apt-get install -y -qq dpkg-dev python3
 
-      - name: Download all .deb artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
+      - name: Download all artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           pattern: deb-*
           path: all-debs/
           merge-multiple: true
 
-      - name: List downloaded .deb files
-        run: |
-          COUNT=$(find all-debs/ -name "*.deb" 2>/dev/null | wc -l)
-          echo "$COUNT .deb file(s) downloaded:"
-          find all-debs/ -name "*.deb" | sort
-
-          if [[ "$COUNT" -eq 0 ]]; then
-            echo "No .deb files found — nothing to publish"
-            exit 0
-          fi
-
       - name: Checkout gh-pages
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           ref: gh-pages
           path: gh-pages
@@ -377,11 +235,9 @@ jobs:
       - name: Initialize gh-pages if missing
         run: |
           if [[ ! -d "gh-pages/.git" ]]; then
-            mkdir -p gh-pages
-            cd gh-pages
+            mkdir -p gh-pages && cd gh-pages
             git init
-            git remote add origin \
-              "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
             git checkout --orphan gh-pages
           fi
           mkdir -p gh-pages/pool/main
@@ -389,79 +245,101 @@ jobs:
             mkdir -p "gh-pages/dists/termux/main/binary-${arch}"
           done
 
-      - name: Update pool (incremental)
+      - name: Update pool
         run: |
-          ADDED=0
           for deb in all-debs/*.deb; do
             [[ -f "$deb" ]] || continue
             fname=$(basename "$deb")
-
             PKG=$(echo "$fname"  | sed 's/_[^_]*_[^_]*\.deb$//')
             ARCH=$(echo "$fname" | sed 's/.*_\([^_]*\)\.deb$/\1/')
-
             for old in "gh-pages/pool/main/${PKG}_"*"_${ARCH}.deb"; do
-              if [[ -f "$old" && "$(basename $old)" != "$fname" ]]; then
-                rm -f "$old" "${old}.sha256"
-                echo "  Removed old: $(basename $old)"
-              fi
+              [[ -f "$old" && "$(basename $old)" != "$fname" ]] && rm -f "$old" "${old}.sha256" && echo "Removed: $(basename $old)"
             done
-
             cp "$deb" "gh-pages/pool/main/"
             [[ -f "${deb}.sha256" ]] && cp "${deb}.sha256" "gh-pages/pool/main/"
-            echo "  Added: $fname"
-            ADDED=$((ADDED + 1))
+            echo "Added: $fname"
           done
+          echo "Pool total: $(ls gh-pages/pool/main/*.deb 2>/dev/null | wc -l) .deb files"
 
-          TOTAL=$(ls gh-pages/pool/main/*.deb 2>/dev/null | wc -l)
-          echo ""
-          echo "Pool: $ADDED new, $TOTAL total .deb files"
-
-      - name: Update index.json SHA256 to match built .deb files
+      - name: Generate Packages index and Release
         run: |
-          INDEX_SRC="tools/index.json"
-          mkdir -p "gh-pages/tools"
-          cp "$INDEX_SRC" "gh-pages/tools/index.json"
-          echo "aW1wb3J0IGpzb24sIGhhc2hsaWIsIHJlLCBzeXMKZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgppbmRleF9wYXRoID0gUGF0aCgiZ2gtcGFnZXMvdG9vbHMvaW5kZXguanNvbiIpCnBvb2xfZGlyICAgPSBQYXRoKCJnaC1wYWdlcy9wb29sL21haW4iKQoKd2l0aCBvcGVuKGluZGV4X3BhdGgpIGFzIGY6CiAgICBkYXRhID0ganNvbi5sb2FkKGYpCgp1cGRhdGVkID0gMApmb3IgcGtnIGluIGRhdGEuZ2V0KCJwYWNrYWdlcyIsIFtdKToKICAgIG5hbWUgPSBwa2cuZ2V0KCJwYWNrYWdlIiwgIiIpCiAgICB2ZXIgID0gcGtnLmdldCgidmVyc2lvbiIsICIiKQogICAgZGVicyA9IHNvcnRlZChwb29sX2Rpci5nbG9iKGYie25hbWV9X3t2ZXJ9XyouZGViIikpCiAgICBpZiBub3QgZGViczoKICAgICAgICBkZWJzID0gc29ydGVkKHBvb2xfZGlyLmdsb2IoZiJ7bmFtZX1fKi5kZWIiKSkKICAgIGlmIG5vdCBkZWJzOgogICAgICAgIGNvbnRpbnVlCiAgICBpZiBsZW4oZGVicykgPT0gMToKICAgICAgICBuZXdfc2hhID0gaGFzaGxpYi5zaGEyNTYoZGVic1swXS5yZWFkX2J5dGVzKCkpLmhleGRpZ2VzdCgpCiAgICAgICAgaWYgcGtnLmdldCgic2hhMjU2IikgIT0gbmV3X3NoYToKICAgICAgICAgICAgcGtnWyJzaGEyNTYiXSA9IG5ld19zaGEKICAgICAgICAgICAgdXBkYXRlZCArPSAxCiAgICBlbHNlOgogICAgICAgIGFyY2hfaGFzaGVzID0ge30KICAgICAgICBmb3IgZGViIGluIGRlYnM6CiAgICAgICAgICAgIG0gPSByZS5zZWFyY2gociJfKFteLl0rKVwuZGViJCIsIGRlYi5uYW1lKQogICAgICAgICAgICBpZiBtOgogICAgICAgICAgICAgICAgYXJjaF9oYXNoZXNbbS5ncm91cCgxKV0gPSBoYXNobGliLnNoYTI1NihkZWIucmVhZF9ieXRlcygpKS5oZXhkaWdlc3QoKQogICAgICAgIGlmIGFyY2hfaGFzaGVzOgogICAgICAgICAgICBwcmltYXJ5ID0gYXJjaF9oYXNoZXMuZ2V0KCJhYXJjaDY0Iikgb3IgbmV4dChpdGVyKGFyY2hfaGFzaGVzLnZhbHVlcygpKSkKICAgICAgICAgICAgaWYgcGtnLmdldCgic2hhMjU2IikgIT0gcHJpbWFyeToKICAgICAgICAgICAgICAgIHBrZ1sic2hhMjU2Il0gPSBwcmltYXJ5CiAgICAgICAgICAgICAgICBwa2dbInNoYTI1Nl9ieV9hcmNoIl0gPSBhcmNoX2hhc2hlcwogICAgICAgICAgICAgICAgdXBkYXRlZCArPSAxCgp3aXRoIG9wZW4oaW5kZXhfcGF0aCwgInciKSBhcyBmOgogICAganNvbi5kdW1wKGRhdGEsIGYsIGluZGVudD0yLCBlbnN1cmVfYXNjaWk9RmFsc2UpCgpwcmludChmIlVwZGF0ZWQgU0hBMjU2IGZvciB7dXBkYXRlZH0gcGFja2FnZShzKSBpbiBpbmRleC5qc29uIikK" \
-            | base64 -d | python3
+          python3 - <<'EOF'
+          import hashlib, subprocess, sys
+          from pathlib import Path
+          from datetime import datetime, timezone
 
-      - name: Regenerate Packages index per architecture
+          pool = Path("gh-pages/pool/main")
+          archs = ["aarch64", "arm", "x86_64", "i686"]
+
+          for arch in archs:
+              out_dir = Path(f"gh-pages/dists/termux/main/binary-{arch}")
+              out_dir.mkdir(parents=True, exist_ok=True)
+              entries = []
+              for deb in sorted(pool.glob(f"*_{arch}.deb")):
+                  def field(f, d=deb):
+                      return subprocess.run(["dpkg-deb","-f",str(d),f], capture_output=True, text=True).stdout.strip()
+                  data = deb.read_bytes()
+                  lines = [
+                      f"Package: {field('Package')}",
+                      f"Version: {field('Version')}",
+                      f"Architecture: {field('Architecture')}",
+                      f"Maintainer: {field('Maintainer')}",
+                      f"Installed-Size: {field('Installed-Size')}",
+                  ]
+                  dep = field("Depends")
+                  home = field("Homepage")
+                  if dep:  lines.append(f"Depends: {dep}")
+                  if home: lines.append(f"Homepage: {home}")
+                  lines += [
+                      f"Filename: {deb.relative_to('gh-pages')}",
+                      f"Size: {len(data)}",
+                      f"MD5sum: {hashlib.md5(data).hexdigest()}",
+                      f"SHA1: {hashlib.sha1(data).hexdigest()}",
+                      f"SHA256: {hashlib.sha256(data).hexdigest()}",
+                      f"Description: {field('Description')}",
+                      "",
+                  ]
+                  entries.append("\n".join(lines))
+              pkg_file = out_dir / "Packages"
+              pkg_file.write_text("\n".join(entries))
+              gz = out_dir / "Packages.gz"
+              gz.unlink(missing_ok=True)
+              subprocess.run(["gzip", "-k", str(pkg_file)])
+              print(f"  [{arch}] {len(entries)} packages")
+
+          date_str = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S UTC")
+          rel_lines = [
+              "Origin: Termux App Store", "Label: Termux App Store",
+              "Suite: termux", "Codename: termux", "Components: main",
+              f"Architectures: {' '.join(archs)}",
+              "Description: Official Termux repository by @djunekz",
+              f"Date: {date_str}",
+          ]
+          for algo in ["MD5Sum", "SHA256"]:
+              rel_lines.append(f"{algo}:")
+              for arch in archs:
+                  for fname in [f"main/binary-{arch}/Packages", f"main/binary-{arch}/Packages.gz"]:
+                      p = Path(f"gh-pages/dists/termux/{fname}")
+                      if not p.exists(): continue
+                      data = p.read_bytes()
+                      h = hashlib.md5(data).hexdigest() if algo == "MD5Sum" else hashlib.sha256(data).hexdigest()
+                      rel_lines.append(f" {h} {len(data)} {fname}")
+          Path("gh-pages/dists/termux/Release").write_text("\n".join(rel_lines) + "\n")
+          print("Release file generated")
+          EOF
+
+      - name: Commit and push
         run: |
           cd gh-pages
-          for arch in aarch64 arm x86_64 i686; do
-            DIR="dists/termux/main/binary-${arch}"
-            mkdir -p "$DIR"
-            > "$DIR/Packages"
+          git config user.email "258516621+termux-app-store@users.noreply.github.com"
+          git config user.name "Termux App Store"
+          git add -A
+          COUNT=$(ls pool/main/*.deb 2>/dev/null | wc -l || echo 0)
+          MSG="pkg: update pool — ${COUNT} .deb files [$(date -u +%Y-%m-%dT%H:%M:%SZ)]"
+          git diff --staged --quiet && echo "Nothing to commit" || (git commit -m "$MSG" && git push origin HEAD:gh-pages && echo "Pushed: $MSG")
 
-            COUNT=0
-            for deb in pool/main/*_${arch}.deb; do
-              [[ -f "$deb" ]] || continue
-
-              pkg_name=$(dpkg-deb  -f "$deb" Package        2>/dev/null || true)
-              pkg_ver=$(dpkg-deb   -f "$deb" Version        2>/dev/null || true)
-              pkg_arch=$(dpkg-deb  -f "$deb" Architecture   2>/dev/null || true)
-              pkg_maint=$(dpkg-deb -f "$deb" Maintainer     2>/dev/null || true)
-              pkg_isize=$(dpkg-deb -f "$deb" Installed-Size 2>/dev/null || true)
-              pkg_dep=$(dpkg-deb   -f "$deb" Depends        2>/dev/null || true)
-              pkg_home=$(dpkg-deb  -f "$deb" Homepage       2>/dev/null || true)
-              pkg_desc=$(dpkg-deb  -f "$deb" Description    2>/dev/null || true)
-
-              file_size=$(wc -c < "$deb")
-              md5=$(md5sum       "$deb" | cut -d' ' -f1)
-              sha1=$(sha1sum     "$deb" | cut -d' ' -f1)
-              sha256=$(sha256sum "$deb" | cut -d' ' -f1)
-
-              {
-                echo "Package: $pkg_name"
-                echo "Version: $pkg_ver"
-                echo "Architecture: $pkg_arch"
-                echo "Maintainer: $pkg_maint"
-                echo "Installed-Size: $pkg_isize"
-                [[ -n "$pkg_dep"  ]] && echo "Depends: $pkg_dep"
-                [[ -n "$pkg_home" ]] && echo "Homepage: $pkg_home"
-                echo "Filename: $deb"
-                echo "Size: $file_size"
-                echo "MD5sum: $md5"
-                echo "SHA1: $sha1"
-                echo "SHA256: $sha256"
-                echo "Description: $pkg_desc"
-                echo ""
+      - name: Summary
+        run: |
+          COUNT=$(ls gh-pages/pool/main/*.deb 2>/dev/null | wc -l || echo 0)
+          echo "## Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**$COUNT** .deb files in pool" >> $GITHUB_STEP_SUMMARY
