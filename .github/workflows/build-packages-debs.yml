@@ -107,7 +107,7 @@ jobs:
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: linux/arm64,linux/arm/v7
+          platforms: linux/arm64
 
       - name: Build .deb di aarch64 via QEMU
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
@@ -118,21 +118,29 @@ jobs:
           githubToken: ${{ github.token }}
           dockerRunArgs: --volume "${PWD}:/repo"
           install: |
+            set -e
+
+            # Izinkan git di dalam container
+            git config --global --add safe.directory /repo
+            git config --global --add safe.directory '*'
+
             apt-get update -qq
             apt-get install -y -qq \
-              dpkg-dev curl file python3 python3-pip \
-              build-essential cmake git wget sudo \
-              nodejs npm ruby gem \
+              dpkg-dev curl file python3 python3-pip python3-setuptools \
+              build-essential cmake git wget sudo pkg-config \
+              nodejs npm \
               perl lua5.4 php-cli \
-              patchelf pkg-config \
+              patchelf \
               autoconf automake libtool \
               zlib1g-dev libssl-dev libffi-dev \
-              unzip tar gzip
+              libfontconfig1-dev libfreetype-dev \
+              libglib2.0-dev libxml2-dev libxslt1-dev \
+              unzip tar gzip jq \
+              bash coreutils findutils
 
-            # Rust terbaru via rustup
-            curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+            # Rust via rustup
+            curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
             . /root/.cargo/env
-            rustup update stable
 
             # Go terbaru
             GO_VER=$(curl -sSf https://go.dev/VERSION?m=text | head -1)
@@ -141,47 +149,232 @@ jobs:
             ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
 
           run: |
+            set -e
             . /root/.cargo/env 2>/dev/null || true
             export PATH=$PATH:/usr/local/go/bin:/root/.cargo/bin
+
+            # Izinkan git di seluruh path
+            git config --global --add safe.directory /repo
+            git config --global --add safe.directory '*'
 
             cd /repo
             PKG="${{ matrix.package }}"
             mkdir -p output
 
-            # Buat path Termux agar build-package.sh tidak error
-            TERMUX_PREFIX="/data/data/com.termux/files/usr"
-            mkdir -p "$TERMUX_PREFIX/bin" "$TERMUX_PREFIX/lib" \
-                     "$TERMUX_PREFIX/include" "$TERMUX_PREFIX/share" \
-                     "$TERMUX_PREFIX/etc" "$TERMUX_PREFIX/tmp"
+            echo "============================================"
+            echo "  Building: $PKG"
+            echo "============================================"
 
-            # Symlink tools standar
-            for tool in bash sh python3 python perl ruby node npm go cargo; do
+            # ── Baca build.sh ──
+            BUILD_SH="packages/$PKG/build.sh"
+            source "$BUILD_SH"
+
+            # ── Setup Termux prefix yang proper ──
+            TERMUX_PREFIX="/data/data/com.termux/files/usr"
+            TERMUX_HOME="/data/data/com.termux/files/home"
+            mkdir -p \
+              "$TERMUX_PREFIX/bin" \
+              "$TERMUX_PREFIX/lib" \
+              "$TERMUX_PREFIX/lib/python3/dist-packages" \
+              "$TERMUX_PREFIX/lib/node_modules" \
+              "$TERMUX_PREFIX/include" \
+              "$TERMUX_PREFIX/share/doc" \
+              "$TERMUX_PREFIX/share/man/man1" \
+              "$TERMUX_PREFIX/share/licenses" \
+              "$TERMUX_PREFIX/etc" \
+              "$TERMUX_PREFIX/tmp" \
+              "$TERMUX_PREFIX/var/lib" \
+              "$TERMUX_HOME"
+
+            # Symlink tools ke Termux prefix
+            for tool in bash sh python3 python perl node npm go cargo curl wget git dpkg dpkg-deb; do
               BIN=$(command -v $tool 2>/dev/null || true)
               [[ -n "$BIN" && ! -e "$TERMUX_PREFIX/bin/$tool" ]] && \
                 ln -sf "$BIN" "$TERMUX_PREFIX/bin/$tool" || true
             done
+            [[ ! -e "$TERMUX_PREFIX/bin/python" ]] && \
+              ln -sf "$(command -v python3)" "$TERMUX_PREFIX/bin/python" || true
 
-            echo "Building $PKG for aarch64..."
-            bash build-package.sh "$PKG" 2>&1
+            export TERMUX_PKG_TMPDIR="/tmp/termux-build/$PKG"
+            export TERMUX_PKG_BUILDDIR="$TERMUX_PKG_TMPDIR/build"
+            export TERMUX_PKG_SRCDIR="$TERMUX_PKG_TMPDIR/src"
+            export TERMUX_PKG_CACHEDIR="/tmp/termux-cache"
+            export TERMUX_ARCH="aarch64"
+            export TERMUX_HOST_PLATFORM="aarch64-linux-android"
+            export HOME="$TERMUX_HOME"
 
-            BUILT=$(ls output/${PKG}_*.deb 2>/dev/null | head -1)
-            if [[ -z "$BUILT" ]]; then
-              echo "build-package.sh did not produce a .deb"
+            mkdir -p "$TERMUX_PKG_TMPDIR" "$TERMUX_PKG_BUILDDIR" \
+                     "$TERMUX_PKG_SRCDIR" "$TERMUX_PKG_CACHEDIR" \
+                     "$TERMUX_PKG_TMPDIR/extract"
+
+            # ── Deteksi tipe package ──
+            SRCURL="${TERMUX_PKG_SRCURL:-}"
+            IS_PREBUILT_DEB=false
+            IS_PLATFORM_INDEPENDENT="${TERMUX_PKG_PLATFORM_INDEPENDENT:-false}"
+            [[ "$SRCURL" == *.deb ]] && IS_PREBUILT_DEB=true
+
+            echo "  Type    : $(${IS_PREBUILT_DEB} && echo 'pre-built .deb' || echo 'compile from source')"
+            echo "  Version : ${TERMUX_PKG_VERSION:-unknown}"
+            echo "  Indep   : $IS_PLATFORM_INDEPENDENT"
+
+            # ── Download source ──
+            if [[ -n "$SRCURL" ]]; then
+              EXT="${SRCURL##*.}"
+              ARCHIVE="$TERMUX_PKG_CACHEDIR/source.$EXT"
+
+              if [[ ! -f "$ARCHIVE" ]]; then
+                echo "  Downloading: $SRCURL"
+                curl -fsSL --retry 3 --retry-delay 5 -o "$ARCHIVE" "$SRCURL" || {
+                  echo "FATAL: Download failed"
+                  exit 1
+                }
+              fi
+
+              # Verifikasi SHA256
+              if [[ -n "${TERMUX_PKG_SHA256:-}" ]]; then
+                ACTUAL=$(sha256sum "$ARCHIVE" | cut -d' ' -f1)
+                if [[ "$ACTUAL" != "$TERMUX_PKG_SHA256" ]]; then
+                  echo "FATAL: SHA256 mismatch"
+                  echo "  Expected: $TERMUX_PKG_SHA256"
+                  echo "  Actual  : $ACTUAL"
+                  exit 1
+                fi
+                echo "  SHA256 OK"
+              fi
+
+              # Extract
+              if [[ "$IS_PREBUILT_DEB" == "true" ]]; then
+                echo "  Pre-built .deb detected, repackaging..."
+                dpkg-deb -R "$ARCHIVE" "$TERMUX_PKG_SRCDIR"
+              else
+                case "$EXT" in
+                  zip)
+                    unzip -q "$ARCHIVE" -d "$TERMUX_PKG_TMPDIR/extract"
+                    INNER=$(ls "$TERMUX_PKG_TMPDIR/extract/" | head -1)
+                    if [[ -n "$INNER" && -d "$TERMUX_PKG_TMPDIR/extract/$INNER" ]]; then
+                      mv "$TERMUX_PKG_TMPDIR/extract/$INNER"/* "$TERMUX_PKG_SRCDIR/" 2>/dev/null || \
+                        mv "$TERMUX_PKG_TMPDIR/extract/$INNER" "$TERMUX_PKG_SRCDIR"
+                    else
+                      cp -r "$TERMUX_PKG_TMPDIR/extract/." "$TERMUX_PKG_SRCDIR/" 2>/dev/null || true
+                    fi
+                    ;;
+                  gz|tgz|bz2|xz)
+                    tar -xf "$ARCHIVE" -C "$TERMUX_PKG_TMPDIR/extract" 2>/dev/null || true
+                    # Strip top-level directory jika ada
+                    INNER=$(ls "$TERMUX_PKG_TMPDIR/extract/" 2>/dev/null | head -1)
+                    if [[ -n "$INNER" && -d "$TERMUX_PKG_TMPDIR/extract/$INNER" ]]; then
+                      cp -r "$TERMUX_PKG_TMPDIR/extract/$INNER/." "$TERMUX_PKG_SRCDIR/"
+                    else
+                      cp -r "$TERMUX_PKG_TMPDIR/extract/." "$TERMUX_PKG_SRCDIR/" 2>/dev/null || true
+                    fi
+                    ;;
+                  *)
+                    cp "$ARCHIVE" "$TERMUX_PKG_SRCDIR/"
+                    ;;
+                esac
+              fi
+            fi
+
+            # ── Jalankan build ──
+            # Timestamp sebelum install untuk tracking file baru
+            TIMESTAMP_FILE=$(mktemp)
+
+            if [[ "$IS_PREBUILT_DEB" == "true" ]]; then
+              # Repackage pre-built .deb
+              PKG_DIR="$TERMUX_PKG_BUILDDIR/pkg"
+              mkdir -p "$PKG_DIR/DEBIAN"
+              find "$TERMUX_PKG_SRCDIR" -mindepth 1 -maxdepth 1 \
+                ! -name 'DEBIAN' -exec cp -r {} "$PKG_DIR/" \;
+
+              INSTALLED_SIZE=$(du -sk "$PKG_DIR" | cut -f1)
+              printf 'Package: %s\nVersion: %s\nArchitecture: all\nMaintainer: %s\nInstalled-Size: %s\n' \
+                "$PKG" "${TERMUX_PKG_VERSION:-1.0.0}" \
+                "${TERMUX_PKG_MAINTAINER:-@termux-app-store}" \
+                "$INSTALLED_SIZE" > "$PKG_DIR/DEBIAN/control"
+              [[ -n "${TERMUX_PKG_DEPENDS:-}" ]] && \
+                printf 'Depends: %s\n' "$TERMUX_PKG_DEPENDS" >> "$PKG_DIR/DEBIAN/control"
+              [[ -n "${TERMUX_PKG_HOMEPAGE:-}" ]] && \
+                printf 'Homepage: %s\n' "$TERMUX_PKG_HOMEPAGE" >> "$PKG_DIR/DEBIAN/control"
+              printf 'Description: %s\n' "${TERMUX_PKG_DESCRIPTION:-$PKG package}" \
+                >> "$PKG_DIR/DEBIAN/control"
+
+              dpkg-deb --build "$PKG_DIR" \
+                "/repo/output/${PKG}_${TERMUX_PKG_VERSION:-1.0.0}_all.deb"
+
+            elif declare -f termux_step_make_install > /dev/null; then
+              BUILD_IN_SRC="${TERMUX_PKG_BUILD_IN_SRC:-false}"
+
+              if [[ "$BUILD_IN_SRC" == "true" ]]; then
+                cd "$TERMUX_PKG_SRCDIR"
+              else
+                cd "$TERMUX_PKG_BUILDDIR"
+              fi
+
+              echo "  Running termux_step_make_install()..."
+              termux_step_make_install 2>&1
+
+              # Tentukan arch
+              if [[ "$IS_PLATFORM_INDEPENDENT" == "true" ]]; then
+                DEB_ARCH="all"
+              else
+                DEB_ARCH="aarch64"
+              fi
+
+              # Kumpulkan file hasil install — ambil semua yang ada di TERMUX_PREFIX
+              cd /repo
+              PKG_DIR="$TERMUX_PKG_BUILDDIR/deb_root"
+              mkdir -p "$PKG_DIR"
+
+              # Salin struktur TERMUX_PREFIX ke dalam deb_root dengan path lengkap
+              if [[ -d "$TERMUX_PREFIX" ]]; then
+                mkdir -p "$PKG_DIR/data/data/com.termux/files"
+                cp -rp "$TERMUX_PREFIX" "$PKG_DIR/data/data/com.termux/files/usr"
+              fi
+
+              mkdir -p "$PKG_DIR/DEBIAN"
+              INSTALLED_SIZE=$(du -sk "$PKG_DIR" | cut -f1)
+
+              printf 'Package: %s\nVersion: %s\nArchitecture: %s\nMaintainer: %s\nInstalled-Size: %s\n' \
+                "$PKG" "${TERMUX_PKG_VERSION:-1.0.0}" "$DEB_ARCH" \
+                "${TERMUX_PKG_MAINTAINER:-@termux-app-store}" \
+                "$INSTALLED_SIZE" > "$PKG_DIR/DEBIAN/control"
+              [[ -n "${TERMUX_PKG_DEPENDS:-}" ]] && \
+                printf 'Depends: %s\n' "$TERMUX_PKG_DEPENDS" >> "$PKG_DIR/DEBIAN/control"
+              [[ -n "${TERMUX_PKG_HOMEPAGE:-}" ]] && \
+                printf 'Homepage: %s\n' "$TERMUX_PKG_HOMEPAGE" >> "$PKG_DIR/DEBIAN/control"
+              printf 'Description: %s\n' "${TERMUX_PKG_DESCRIPTION:-$PKG package}" \
+                >> "$PKG_DIR/DEBIAN/control"
+
+              dpkg-deb --build "$PKG_DIR" \
+                "/repo/output/${PKG}_${TERMUX_PKG_VERSION:-1.0.0}_${DEB_ARCH}.deb"
+            else
+              echo "FATAL: Tidak ada termux_step_make_install() dan bukan pre-built .deb"
               exit 1
             fi
 
-            VERSION=$(dpkg-deb -f "$BUILT" Version 2>/dev/null || echo "unknown")
-            ARCH=$(dpkg-deb -f "$BUILT" Architecture 2>/dev/null || echo "unknown")
-            echo "Built: $(basename $BUILT) — arch=$ARCH version=$VERSION"
+            rm -f "$TIMESTAMP_FILE"
+
+            # ── Validasi output ──
+            cd /repo
+            BUILT=$(ls output/${PKG}_*.deb 2>/dev/null | head -1)
+            if [[ -z "$BUILT" ]]; then
+              echo "FATAL: Tidak ada .deb yang dihasilkan"
+              exit 1
+            fi
+
+            echo ""
+            echo "── Build Result ─────────────────────────"
+            dpkg-deb -I "$BUILT"
+            echo "  File : $(basename $BUILT)"
+            echo "  Size : $(du -sh "$BUILT" | cut -f1)"
+            echo "─────────────────────────────────────────"
 
             cd output
             for f in *.deb; do
               sha256sum "$f" > "${f}.sha256"
-              echo "SHA256: $f"
             done
             cd ..
             chmod -R 777 output/
-            ls -lh output/
 
       - name: Generate SHA256 checksums
         run: |
@@ -246,7 +439,7 @@ jobs:
             git checkout --orphan gh-pages
           fi
           mkdir -p gh-pages/pool/main
-          for arch in aarch64 arm x86_64 i686; do
+          for arch in aarch64 arm x86_64 i686 all; do
             mkdir -p "gh-pages/dists/termux/main/binary-${arch}"
           done
 
@@ -290,7 +483,7 @@ jobs:
           from datetime import datetime, timezone
 
           pool  = Path("gh-pages/pool/main")
-          archs = ["aarch64", "arm", "x86_64", "i686"]
+          archs = ["aarch64", "arm", "x86_64", "i686", "all"]
 
           for arch in archs:
               out_dir = Path(f"gh-pages/dists/termux/main/binary-{arch}")
@@ -335,7 +528,7 @@ jobs:
           rel_lines = [
               "Origin: Termux App Store", "Label: Termux App Store",
               "Suite: termux", "Codename: termux", "Components: main",
-              f"Architectures: {' '.join(archs)}",
+              "Architectures: aarch64 arm x86_64 i686 all",
               "Description: Official Termux repository by @djunekz",
               f"Date: {date_str}",
           ]
@@ -383,7 +576,9 @@ jobs:
                   arch_hashes[arch] = hashlib.sha256(deb.read_bytes()).hexdigest()
               if not arch_hashes:
                   continue
-              primary = arch_hashes.get("aarch64") or next(iter(arch_hashes.values()))
+              primary = arch_hashes.get("aarch64") \
+                     or arch_hashes.get("all") \
+                     or next(iter(arch_hashes.values()))
               pkg["sha256"] = primary
               pkg["sha256_by_arch"] = arch_hashes
               updated += 1
