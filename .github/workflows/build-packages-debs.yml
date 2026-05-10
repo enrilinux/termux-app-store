@@ -114,36 +114,51 @@ jobs:
         uses: uraimo/run-on-arch-action@v2
         with:
           arch: aarch64
-          distro: ubuntu22.04
+          distro: ubuntu24.04
           githubToken: ${{ github.token }}
           dockerRunArgs: --volume "${PWD}:/repo"
           install: |
             apt-get update -qq
             apt-get install -y -qq \
               dpkg-dev curl file python3 python3-pip \
-              build-essential cmake git wget \
-              nodejs npm \
-              cargo \
-              golang-go \
-              ruby gem \
-              perl lua5.3 php-cli \
+              build-essential cmake git wget sudo \
+              nodejs npm ruby gem \
+              perl lua5.4 php-cli \
               patchelf pkg-config \
               autoconf automake libtool \
-              zlib1g-dev libssl-dev libffi-dev
+              zlib1g-dev libssl-dev libffi-dev \
+              unzip tar gzip
+
+            # Rust terbaru via rustup
+            curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+            . /root/.cargo/env
+            rustup update stable
+
+            # Go terbaru
+            GO_VER=$(curl -sSf https://go.dev/VERSION?m=text | head -1)
+            curl -sSfL "https://go.dev/dl/${GO_VER}.linux-arm64.tar.gz" | tar -C /usr/local -xz
+            ln -sf /usr/local/go/bin/go /usr/local/bin/go
+            ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
+
           run: |
+            . /root/.cargo/env 2>/dev/null || true
+            export PATH=$PATH:/usr/local/go/bin:/root/.cargo/bin
+
             cd /repo
             PKG="${{ matrix.package }}"
             mkdir -p output
 
             # Buat path Termux agar build-package.sh tidak error
-            # build-package.sh menginstall ke PREFIX, kita arahkan ke folder runner
             TERMUX_PREFIX="/data/data/com.termux/files/usr"
-            mkdir -p "$TERMUX_PREFIX/bin" "$TERMUX_PREFIX/lib"                      "$TERMUX_PREFIX/include" "$TERMUX_PREFIX/share"                      "$TERMUX_PREFIX/etc" "$TERMUX_PREFIX/tmp"
+            mkdir -p "$TERMUX_PREFIX/bin" "$TERMUX_PREFIX/lib" \
+                     "$TERMUX_PREFIX/include" "$TERMUX_PREFIX/share" \
+                     "$TERMUX_PREFIX/etc" "$TERMUX_PREFIX/tmp"
 
-            # Symlink tools standar supaya script install tidak gagal
-            for tool in bash sh python3 python perl ruby node npm; do
+            # Symlink tools standar
+            for tool in bash sh python3 python perl ruby node npm go cargo; do
               BIN=$(command -v $tool 2>/dev/null || true)
-              [[ -n "$BIN" && ! -e "$TERMUX_PREFIX/bin/$tool" ]] &&                 ln -sf "$BIN" "$TERMUX_PREFIX/bin/$tool" || true
+              [[ -n "$BIN" && ! -e "$TERMUX_PREFIX/bin/$tool" ]] && \
+                ln -sf "$BIN" "$TERMUX_PREFIX/bin/$tool" || true
             done
 
             echo "Building $PKG for aarch64..."
@@ -159,15 +174,12 @@ jobs:
             ARCH=$(dpkg-deb -f "$BUILT" Architecture 2>/dev/null || echo "unknown")
             echo "Built: $(basename $BUILT) — arch=$ARCH version=$VERSION"
 
-            # Generate SHA256 di dalam container (hindari permission denied di host)
             cd output
             for f in *.deb; do
               sha256sum "$f" > "${f}.sha256"
               echo "SHA256: $f"
             done
             cd ..
-
-            # Fix permission agar host runner bisa akses
             chmod -R 777 output/
             ls -lh output/
 
@@ -181,8 +193,6 @@ jobs:
             echo "No .deb files (build skipped or failed)"
             exit 0
           fi
-          # SHA256 sudah di-generate di dalam QEMU
-          # Pastikan file ada, kalau belum generate ulang
           for f in "${debs[@]}"; do
             [[ -f "${f}.sha256" ]] || sha256sum "$f" > "${f}.sha256"
             echo "OK: ${f}.sha256"
