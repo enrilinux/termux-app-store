@@ -105,13 +105,13 @@ jobs:
 
       - name: Set up QEMU
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
-        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff9c06a23e6f5de5b59  # v3
+        uses: docker/setup-qemu-action@v3
         with:
           platforms: linux/arm64,linux/arm/v7
 
       - name: Build .deb di aarch64 via QEMU
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
-        uses: uraimo/run-on-arch-action@eac6d56a89be9440cc21a42a2d08735c3fd9da22  # v2
+        uses: uraimo/run-on-arch-action@v2
         with:
           arch: aarch64
           distro: ubuntu22.04
