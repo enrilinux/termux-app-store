@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: 'Package spesifik (kosong = build semua yang berubah)'
+        description: 'Package spesifik (kosong = semua yang berubah)'
         required: false
         default: ''
       force:
@@ -29,7 +29,7 @@ jobs:
       matrix: ${{ steps.detect.outputs.matrix }}
       has_packages: ${{ steps.detect.outputs.has_packages }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
         with:
           fetch-depth: 2
 
@@ -49,7 +49,9 @@ jobs:
             PKGS=$(python3 -c "
           import json, subprocess
           try:
-              old = {p['package']:p.get('version','') for p in json.loads(subprocess.check_output(['git','show','HEAD~1:tools/index.json'],stderr=subprocess.DEVNULL).decode()).get('packages',[])}
+              old = {p['package']:p.get('version','') for p in json.loads(
+                  subprocess.check_output(['git','show','HEAD~1:tools/index.json'],
+                  stderr=subprocess.DEVNULL).decode()).get('packages',[])}
           except:
               old = {}
           new = {p['package']:p.get('version','') for p in json.load(open('tools/index.json')).get('packages',[])}
@@ -66,14 +68,17 @@ jobs:
           MATRIX_ITEMS=""
           for pkg in $PKGS; do
             [[ -f "packages/$pkg/build.sh" ]] || continue
-            VERSION=$(grep 'TERMUX_PKG_VERSION=' "packages/$pkg/build.sh" | head -1 | cut -d= -f2 | tr -d "\"'" 2>/dev/null || echo "unknown")
-            SHA256=$(grep 'TERMUX_PKG_SHA256=' "packages/$pkg/build.sh" | head -1 | cut -d= -f2 | tr -d "\"'" 2>/dev/null | cut -c1-16 || echo "")
+            VERSION=$(grep 'TERMUX_PKG_VERSION=' "packages/$pkg/build.sh" \
+              | head -1 | cut -d= -f2 | tr -d "\"'" 2>/dev/null || echo "unknown")
+            SHA256=$(grep 'TERMUX_PKG_SHA256=' "packages/$pkg/build.sh" \
+              | head -1 | cut -d= -f2 | tr -d "\"'" 2>/dev/null | cut -c1-16 || echo "")
             [[ -n "$MATRIX_ITEMS" ]] && MATRIX_ITEMS="$MATRIX_ITEMS,"
             MATRIX_ITEMS="${MATRIX_ITEMS}{\"package\":\"$pkg\",\"version\":\"$VERSION\",\"sha256\":\"$SHA256\"}"
           done
 
           echo "matrix={\"include\":[$MATRIX_ITEMS]}" >> "$GITHUB_OUTPUT"
           echo "has_packages=true" >> "$GITHUB_OUTPUT"
+          echo "Packages to build: $PKGS"
 
   build-deb:
     name: Build ${{ matrix.package }} v${{ matrix.version }}
@@ -83,20 +88,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
 
-      - name: Install build tools
-        run: |
-          sudo apt-get install -y -qq \
-            dpkg-dev curl file python3 python3-pip \
-            build-essential cmake nodejs npm cargo golang-go \
-            ruby gem perl lua5.4 php-cli
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Check binary cache
         id: cache
         if: github.event.inputs.force != 'true'
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: output/
           key: pkg-${{ matrix.package }}-${{ matrix.version }}-${{ matrix.sha256 }}
@@ -104,49 +103,51 @@ jobs:
             pkg-${{ matrix.package }}-${{ matrix.version }}-
             pkg-${{ matrix.package }}-
 
-      - name: Build .deb via build-package.sh
+      - name: Set up QEMU
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
-        run: |
-          PKG="${{ matrix.package }}"
-          mkdir -p output
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff9c06a23e6f5de5b59  # v3
+        with:
+          platforms: linux/arm64,linux/arm/v7
 
-          # Override PREFIX ke folder sementara di runner
-          # build-package.sh akan build untuk aarch64 saja karena
-          # cross-compile tidak tersedia — untuk semua arch, repackage dari hasil build
-          FAKE_ROOT="$PWD/termux-root"
-          mkdir -p "$FAKE_ROOT"
+      - name: Build .deb di aarch64 via QEMU
+        if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
+        uses: uraimo/run-on-arch-action@eac6d56a89be9440cc21a42a2d08735c3fd9da22  # v2
+        with:
+          arch: aarch64
+          distro: ubuntu22.04
+          githubToken: ${{ github.token }}
+          dockerRunArgs: --volume "${PWD}:/repo"
+          install: |
+            apt-get update -qq
+            apt-get install -y -qq \
+              dpkg-dev curl file python3 python3-pip \
+              build-essential cmake git wget \
+              nodejs npm \
+              cargo \
+              golang-go \
+              ruby gem \
+              perl lua5.3 php-cli \
+              patchelf pkg-config \
+              autoconf automake libtool \
+              zlib1g-dev libssl-dev libffi-dev
+          run: |
+            cd /repo
+            PKG="${{ matrix.package }}"
+            mkdir -p output
 
-          # Jalankan build-package.sh dengan PREFIX yang diarahkan ke folder runner
-          PREFIX="$FAKE_ROOT" bash build-package.sh "$PKG" 2>&1 || true
+            echo "Building $PKG for aarch64..."
+            bash build-package.sh "$PKG" 2>&1
 
-          # Hasilnya ada di output/ — repackage untuk semua arch
-          BUILT=$(ls output/${PKG}_*.deb 2>/dev/null | head -1)
-          if [[ -z "$BUILT" ]]; then
-            echo "build-package.sh did not produce a .deb — skip"
-            exit 0
-          fi
-
-          VERSION=$(dpkg-deb -f "$BUILT" Version 2>/dev/null || echo "${{ matrix.version }}")
-          echo "Built: $BUILT (v$VERSION)"
-
-          # Repackage untuk semua arch dari .deb yang sudah ada
-          for ARCH in aarch64 arm x86_64 i686; do
-            TARGET="output/${PKG}_${VERSION}_${ARCH}.deb"
-            if [[ "$(basename $BUILT)" == "${PKG}_${VERSION}_${ARCH}.deb" ]]; then
-              echo "  [$ARCH] already built"
-              continue
+            BUILT=$(ls output/${PKG}_*.deb 2>/dev/null | head -1)
+            if [[ -z "$BUILT" ]]; then
+              echo "build-package.sh did not produce a .deb"
+              exit 1
             fi
-            TMPDIR="repack_tmp/${PKG}_${ARCH}"
-            mkdir -p "$TMPDIR"
-            dpkg-deb -x  "$BUILT" "$TMPDIR/"
-            dpkg-deb -e  "$BUILT" "$TMPDIR/DEBIAN"
-            # Update Architecture field
-            sed -i "s/^Architecture:.*/Architecture: $ARCH/" "$TMPDIR/DEBIAN/control"
-            dpkg-deb --build "$TMPDIR" "$TARGET" 2>/dev/null && \
-              echo "  [$ARCH] OK: $(basename $TARGET)" || echo "  [$ARCH] FAIL"
-          done
 
-          ls -lh output/ || true
+            VERSION=$(dpkg-deb -f "$BUILT" Version 2>/dev/null || echo "unknown")
+            ARCH=$(dpkg-deb -f "$BUILT" Architecture 2>/dev/null || echo "unknown")
+            echo "Built: $(basename $BUILT) — arch=$ARCH version=$VERSION"
+            ls -lh output/
 
       - name: Generate SHA256 checksums
         run: |
@@ -155,16 +156,16 @@ jobs:
           shopt -s nullglob
           debs=(*.deb)
           if [[ ${#debs[@]} -eq 0 ]]; then
-            echo "No .deb files (package skipped or build failed)"
+            echo "No .deb files (build skipped or failed)"
             exit 0
           fi
           for f in "${debs[@]}"; do
             sha256sum "$f" > "${f}.sha256"
-            echo "  SHA256: $f"
+            echo "SHA256: $f"
           done
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v4
         with:
           name: deb-${{ matrix.package }}-${{ matrix.version }}
           path: |
@@ -182,20 +183,20 @@ jobs:
       needs.detect-changes.outputs.has_packages == 'true' &&
       needs.build-deb.result != 'cancelled'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Install tools
         run: sudo apt-get install -y -qq dpkg-dev python3
 
       - name: Download all artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v4
         with:
           pattern: deb-*
           path: all-debs/
           merge-multiple: true
 
       - name: Checkout gh-pages
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
         with:
           ref: gh-pages
           path: gh-pages
@@ -206,7 +207,8 @@ jobs:
           if [[ ! -d "gh-pages/.git" ]]; then
             mkdir -p gh-pages && cd gh-pages
             git init
-            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+            git remote add origin \
+              "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
             git checkout --orphan gh-pages
           fi
           mkdir -p gh-pages/pool/main
@@ -214,20 +216,22 @@ jobs:
             mkdir -p "gh-pages/dists/termux/main/binary-${arch}"
           done
 
-      - name: Purge old .deb files from pool (force rebuild only)
+      - name: Purge old .deb (force rebuild only)
         if: github.event.inputs.force == 'true'
         run: |
           SPECIFIC="${{ github.event.inputs.package }}"
           if [[ -n "$SPECIFIC" ]]; then
-            echo "Removing old .deb for: $SPECIFIC"
-            rm -f gh-pages/pool/main/${SPECIFIC}_*.deb gh-pages/pool/main/${SPECIFIC}_*.sha256
+            rm -f "gh-pages/pool/main/${SPECIFIC}_"*.deb \
+                  "gh-pages/pool/main/${SPECIFIC}_"*.sha256
+            echo "Removed old .deb for: $SPECIFIC"
           else
-            echo "Removing ALL old .deb files from pool"
             rm -f gh-pages/pool/main/*.deb gh-pages/pool/main/*.sha256
+            echo "Removed ALL old .deb files"
           fi
 
-      - name: Update pool
+      - name: Update pool (incremental)
         run: |
+          ADDED=0
           for deb in all-debs/*.deb; do
             [[ -f "$deb" ]] || continue
             fname=$(basename "$deb")
@@ -235,22 +239,23 @@ jobs:
             ARCH=$(echo "$fname" | sed 's/.*_\([^_]*\)\.deb$/\1/')
             for old in "gh-pages/pool/main/${PKG}_"*"_${ARCH}.deb"; do
               [[ -f "$old" && "$(basename $old)" != "$fname" ]] && \
-                rm -f "$old" "${old}.sha256" && echo "Removed: $(basename $old)"
+                rm -f "$old" "${old}.sha256" && echo "  Removed: $(basename $old)"
             done
             cp "$deb" "gh-pages/pool/main/"
             [[ -f "${deb}.sha256" ]] && cp "${deb}.sha256" "gh-pages/pool/main/"
-            echo "Added: $fname"
+            echo "  Added: $fname"
+            ADDED=$((ADDED+1))
           done
-          echo "Pool total: $(ls gh-pages/pool/main/*.deb 2>/dev/null | wc -l) .deb files"
+          echo "Pool: $ADDED added, $(ls gh-pages/pool/main/*.deb 2>/dev/null | wc -l) total"
 
       - name: Generate Packages index and Release
         run: |
           python3 - <<'EOF'
-          import hashlib, subprocess, sys
+          import hashlib, subprocess
           from pathlib import Path
           from datetime import datetime, timezone
 
-          pool = Path("gh-pages/pool/main")
+          pool  = Path("gh-pages/pool/main")
           archs = ["aarch64", "arm", "x86_64", "i686"]
 
           for arch in archs:
@@ -259,7 +264,10 @@ jobs:
               entries = []
               for deb in sorted(pool.glob(f"*_{arch}.deb")):
                   def field(f, d=deb):
-                      return subprocess.run(["dpkg-deb","-f",str(d),f], capture_output=True, text=True).stdout.strip()
+                      return subprocess.run(
+                          ["dpkg-deb", "-f", str(d), f],
+                          capture_output=True, text=True
+                      ).stdout.strip()
                   data = deb.read_bytes()
                   lines = [
                       f"Package: {field('Package')}",
@@ -268,7 +276,7 @@ jobs:
                       f"Maintainer: {field('Maintainer')}",
                       f"Installed-Size: {field('Installed-Size')}",
                   ]
-                  dep = field("Depends")
+                  dep  = field("Depends")
                   home = field("Homepage")
                   if dep:  lines.append(f"Depends: {dep}")
                   if home: lines.append(f"Homepage: {home}")
@@ -300,11 +308,13 @@ jobs:
           for algo in ["MD5Sum", "SHA256"]:
               rel_lines.append(f"{algo}:")
               for arch in archs:
-                  for fname in [f"main/binary-{arch}/Packages", f"main/binary-{arch}/Packages.gz"]:
+                  for fname in [f"main/binary-{arch}/Packages",
+                                 f"main/binary-{arch}/Packages.gz"]:
                       p = Path(f"gh-pages/dists/termux/{fname}")
                       if not p.exists(): continue
                       data = p.read_bytes()
-                      h = hashlib.md5(data).hexdigest() if algo == "MD5Sum" else hashlib.sha256(data).hexdigest()
+                      h = hashlib.md5(data).hexdigest() if algo == "MD5Sum" \
+                          else hashlib.sha256(data).hexdigest()
                       rel_lines.append(f" {h} {len(data)} {fname}")
           Path("gh-pages/dists/termux/Release").write_text("\n".join(rel_lines) + "\n")
           print("Release file generated")
@@ -365,3 +375,9 @@ jobs:
           COUNT=$(ls gh-pages/pool/main/*.deb 2>/dev/null | wc -l || echo 0)
           echo "## Summary" >> $GITHUB_STEP_SUMMARY
           echo "**$COUNT** .deb files in pool" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pool Contents" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ls gh-pages/pool/main/*.deb 2>/dev/null | xargs -I{} basename {} | sort \
+            >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
