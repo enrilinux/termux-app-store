@@ -343,7 +343,7 @@ if [[ -n "${TERMUX_PKG_DEPENDS:-}" ]]; then
     (( _spin_i++ )) || true
   done
   wait "$_PKG_PID" || true
-  printf "\r%*s\r" "$(tput cols)" ""
+  printf "\r%*s\r" "$(tput cols 2>/dev/null || echo 80)" ""
   rm -f "$_PKG_LOG"
 
   _ok "Dependencies installed"
@@ -466,7 +466,7 @@ if [[ -n "${TERMUX_PKG_SRCURL:-}" ]]; then
   done
   wait "$_CURL_PID"
   _CURL_EXIT=$?
-  printf "\r%*s\r" "$(tput cols)" ""
+  printf "\r%*s\r" "$(tput cols 2>/dev/null || echo 80)" ""
   if [[ $_CURL_EXIT -ne 0 ]]; then
     _fatal "Download failed (curl exit $_CURL_EXIT)"
     exit 1
@@ -694,7 +694,7 @@ if declare -f termux_step_make > /dev/null 2>&1; then
     (( _spin_i++ )) || true
   done
   wait "$_MAKE_PID" || _MAKE_EXIT=$?
-  printf "\r%*s\r" "$(tput cols)" ""
+  printf "\r%*s\r" "$(tput cols 2>/dev/null || echo 80)" ""
   _MAKE_ELAPSED=$(( $(date +%s) - _MAKE_START ))
 
   _MAKE_OUTPUT=$(cat "$_MAKE_LOG")
@@ -864,7 +864,7 @@ elif declare -f termux_step_make_install > /dev/null 2>&1; then
     (( _spin_i++ )) || true
   done
   wait "$_INSTALL_PID" || _INSTALL_EXIT=$?
-  printf "\r%*s\r" "$(tput cols)" ""
+  printf "\r%*s\r" "$(tput cols 2>/dev/null || echo 80)" ""
 
   _INSTALL_OUTPUT=$(cat "$_INSTALL_LOG")
   rm -f "$_INSTALL_LOG"
@@ -1109,7 +1109,7 @@ else
       (( _spin_i++ )) || true
     done
     wait "$_NPM_PID" || _NPM_EXIT=$?
-    printf "\r%*s\r" "$(tput cols)" ""
+    printf "\r%*s\r" "$(tput cols 2>/dev/null || echo 80)" ""
 
     _NPM_OUTPUT=$(cat "$_NPM_LOG")
     rm -f "$_NPM_LOG"
