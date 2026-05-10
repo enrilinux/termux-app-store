@@ -109,18 +109,17 @@ jobs:
         run: |
           mkdir -p output
 
-          # Copy semua file repo ke folder yang bisa di-mount ke container
-          cp -r . /tmp/termux-build-context
+          # Siapkan working directory yang writable di luar repo
+          WORK_DIR=$(mktemp -d)
+          cp -r . "$WORK_DIR/"
+          mkdir -p "$WORK_DIR/output"
 
           docker run --rm \
             --platform linux/arm64 \
-            -v /tmp/termux-build-context:/opt/tas \
-            -v $PWD/output:/opt/output \
+            -v "$WORK_DIR:/opt/tas" \
             termux/termux-docker:aarch64 \
             bash -c '
               set -e
-
-              # Setup Termux environment
               export HOME=/root
               export PREFIX=/data/data/com.termux/files/usr
               export PATH="$PREFIX/bin:$PATH"
@@ -135,14 +134,14 @@ jobs:
               echo "=== Building $PKG ==="
               bash build-package.sh "$PKG" 2>&1 || true
 
-              # Copy hasil ke output mount
-              if ls output/${PKG}_*.deb 2>/dev/null | head -1 | grep -q .; then
-                cp output/${PKG}_*.deb /opt/output/
-                echo "Copied: $(ls output/${PKG}_*.deb)"
-              else
-                echo "No .deb produced for $PKG"
-              fi
+              echo "=== Done ==="
+              ls output/ 2>/dev/null || echo "(no output)"
             '
+
+          # Copy hasil dari working dir ke output
+          ls "$WORK_DIR/output/"*.deb 2>/dev/null && \
+            cp "$WORK_DIR/output/"*.deb output/ || true
+          rm -rf "$WORK_DIR"
 
       - name: Repackage for all architectures
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
