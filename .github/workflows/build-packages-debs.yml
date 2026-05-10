@@ -135,6 +135,17 @@ jobs:
             PKG="${{ matrix.package }}"
             mkdir -p output
 
+            # Buat path Termux agar build-package.sh tidak error
+            # build-package.sh menginstall ke PREFIX, kita arahkan ke folder runner
+            TERMUX_PREFIX="/data/data/com.termux/files/usr"
+            mkdir -p "$TERMUX_PREFIX/bin" "$TERMUX_PREFIX/lib"                      "$TERMUX_PREFIX/include" "$TERMUX_PREFIX/share"                      "$TERMUX_PREFIX/etc" "$TERMUX_PREFIX/tmp"
+
+            # Symlink tools standar supaya script install tidak gagal
+            for tool in bash sh python3 python perl ruby node npm; do
+              BIN=$(command -v $tool 2>/dev/null || true)
+              [[ -n "$BIN" && ! -e "$TERMUX_PREFIX/bin/$tool" ]] &&                 ln -sf "$BIN" "$TERMUX_PREFIX/bin/$tool" || true
+            done
+
             echo "Building $PKG for aarch64..."
             bash build-package.sh "$PKG" 2>&1
 
@@ -147,6 +158,17 @@ jobs:
             VERSION=$(dpkg-deb -f "$BUILT" Version 2>/dev/null || echo "unknown")
             ARCH=$(dpkg-deb -f "$BUILT" Architecture 2>/dev/null || echo "unknown")
             echo "Built: $(basename $BUILT) — arch=$ARCH version=$VERSION"
+
+            # Generate SHA256 di dalam container (hindari permission denied di host)
+            cd output
+            for f in *.deb; do
+              sha256sum "$f" > "${f}.sha256"
+              echo "SHA256: $f"
+            done
+            cd ..
+
+            # Fix permission agar host runner bisa akses
+            chmod -R 777 output/
             ls -lh output/
 
       - name: Generate SHA256 checksums
@@ -159,9 +181,11 @@ jobs:
             echo "No .deb files (build skipped or failed)"
             exit 0
           fi
+          # SHA256 sudah di-generate di dalam QEMU
+          # Pastikan file ada, kalau belum generate ulang
           for f in "${debs[@]}"; do
-            sha256sum "$f" > "${f}.sha256"
-            echo "SHA256: $f"
+            [[ -f "${f}.sha256" ]] || sha256sum "$f" > "${f}.sha256"
+            echo "OK: ${f}.sha256"
           done
 
       - name: Upload artifacts
