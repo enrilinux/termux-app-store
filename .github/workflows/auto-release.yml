@@ -145,7 +145,7 @@ jobs:
           VERSION_BARE="${VERSION#v}"
           NOTES=$(awk "/^## \[${VERSION_BARE}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
           if [[ -z "$NOTES" ]]; then
-            NOTES="See [CHANGELOG.md](CHANGELOG.md) for details."
+            NOTES="See CHANGELOG.md for details."
           fi
           echo "$NOTES" > release_notes.txt
 
