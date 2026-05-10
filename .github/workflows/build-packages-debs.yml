@@ -5,7 +5,7 @@ permissions:
 
 on:
   schedule:
-    - cron: '0 2 * * 0'  # Every Sunday 02:00 UTC
+    - cron: '0 2 * * 0'
   workflow_dispatch:
     inputs:
       force:
@@ -19,71 +19,85 @@ on:
 
 jobs:
   detect-packages:
-    name: Detect Packages to Build
+    name: Detect All Packages
     runs-on: ubuntu-latest
     outputs:
       packages: ${{ steps.detect.outputs.packages }}
-      package_count: ${{ steps.detect.outputs.package_count }}
+      count: ${{ steps.detect.outputs.count }}
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Scan packages directory
+
+      - name: Scan packages/
         id: detect
         run: |
-          PACKAGES=()
+          declare -a PACKAGES
           
           for pkg_dir in packages/*/; do
+            [[ ! -f "$pkg_dir/build.sh" ]] && continue
             PKG_NAME=$(basename "$pkg_dir")
-            BUILD_SH="$pkg_dir/build.sh"
-            
-            if [[ -f "$BUILD_SH" ]]; then
-              PACKAGES+=("$PKG_NAME")
-            fi
+            PACKAGES+=("$PKG_NAME")
           done
           
-          if [[ ${#PACKAGES[@]} -eq 0 ]]; then
-            echo "packages=[]" >> "$GITHUB_OUTPUT"
-            echo "package_count=0" >> "$GITHUB_OUTPUT"
+          COUNT=${#PACKAGES[@]}
+          
+          if [[ $COUNT -eq 0 ]]; then
+            echo "packages=[]" >> $GITHUB_OUTPUT
+            echo "count=0" >> $GITHUB_OUTPUT
             exit 0
           fi
           
-          # Create valid JSON array
-          PACKAGES_JSON='['
+          # Build JSON array manually
+          JSON='['
           for i in "${!PACKAGES[@]}"; do
-            if [[ $i -gt 0 ]]; then
-              PACKAGES_JSON="${PACKAGES_JSON},"
-            fi
-            PACKAGES_JSON="${PACKAGES_JSON}\"${PACKAGES[$i]}\""
+            [[ $i -gt 0 ]] && JSON="$JSON,"
+            JSON="$JSON\"${PACKAGES[$i]}\""
           done
-          PACKAGES_JSON="${PACKAGES_JSON}]"
+          JSON="$JSON]"
           
-          echo "packages=${PACKAGES_JSON}" >> "$GITHUB_OUTPUT"
-          echo "package_count=${#PACKAGES[@]}" >> "$GITHUB_OUTPUT"
-          
-          echo "✓ Found ${#PACKAGES[@]} packages"
+          echo "packages=$JSON" >> $GITHUB_OUTPUT
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "✓ Found $COUNT packages"
 
-  build-packages:
-    name: Build ${{ matrix.package }}
+  build-debs:
+    name: Build Packages
     runs-on: ubuntu-latest
     needs: detect-packages
-    if: needs.detect-packages.outputs.package_count > 0
+    if: needs.detect-packages.outputs.count > 0
     strategy:
       fail-fast: false
       matrix:
         package: ${{ fromJson(needs.detect-packages.outputs.packages) }}
-    
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract package metadata
+      - name: Setup environment
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            dpkg-dev curl file python3 python3-pip python3-setuptools \
+            build-essential cmake git wget sudo pkg-config nodejs npm \
+            perl lua5.4 php-cli patchelf autoconf automake libtool \
+            zlib1g-dev libssl-dev libffi-dev libfontconfig1-dev libfreetype-dev \
+            libglib2.0-dev libxml2-dev libxslt1-dev unzip tar gzip
+
+      - name: Install Rust
+        run: |
+          curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install Go
+        run: |
+          GO_VER=$(curl -sSf https://go.dev/VERSION?m=text | head -1)
+          curl -sSfL "https://go.dev/dl/${GO_VER}.linux-x86_64.tar.gz" | sudo tar -C /usr/local -xz
+          echo "/usr/local/go/bin" >> $GITHUB_PATH
+
+      - name: Get package version
         id: meta
         run: |
           BUILD_SH="packages/${{ matrix.package }}/build.sh"
-          VERSION=$(grep 'TERMUX_PKG_VERSION=' "$BUILD_SH" | head -1 | cut -d= -f2 | tr -d "\"'" || echo "0.0.0")
-          SHA256=$(grep 'TERMUX_PKG_SHA256=' "$BUILD_SH" | head -1 | cut -d= -f2 | tr -d "\"'" | cut -c1-16 || echo "")
-          
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+          VERSION=$(grep 'TERMUX_PKG_VERSION=' "$BUILD_SH" | head -1 | cut -d= -f2 | tr -d "\"'" | head -c 20)
+          echo "version=${VERSION:-0.0.0}" >> $GITHUB_OUTPUT
 
       - name: Check cache
         id: cache
@@ -94,47 +108,13 @@ jobs:
           key: pkg-${{ matrix.package }}-${{ steps.meta.outputs.version }}
           restore-keys: pkg-${{ matrix.package }}-
 
-      - name: Set up QEMU
+      - name: Build package
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: linux/arm64
+        run: |
+          mkdir -p output logs
+          bash ./build-package.sh "${{ matrix.package }}" 2>&1 | tee "logs/${{ matrix.package }}.log"
 
-      - name: Build with build-package.sh
-        if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
-        uses: uraimo/run-on-arch-action@v2
-        with:
-          arch: aarch64
-          distro: ubuntu22.04
-          githubToken: ${{ github.token }}
-          dockerRunArgs: --volume "${PWD}:/repo"
-          install: |
-            apt-get update -qq
-            apt-get install -y -qq git
-            git config --global --add safe.directory /repo
-            git config --global --add safe.directory '*'
-            apt-get install -y -qq \
-              dpkg-dev curl file python3 python3-pip python3-setuptools \
-              build-essential cmake wget sudo pkg-config nodejs npm \
-              perl lua5.4 php-cli patchelf autoconf automake libtool \
-              zlib1g-dev libssl-dev libffi-dev libfontconfig1-dev libfreetype-dev \
-              libglib2.0-dev libxml2-dev libxslt1-dev unzip tar gzip jq bash coreutils findutils
-            curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
-            . /root/.cargo/env
-            GO_VER=$(curl -sSf https://go.dev/VERSION?m=text | head -1)
-            curl -sSfL "https://go.dev/dl/${GO_VER}.linux-arm64.tar.gz" | tar -C /usr/local -xz
-            ln -sf /usr/local/go/bin/go /usr/local/bin/go
-          
-          run: |
-            set -e
-            . /root/.cargo/env 2>/dev/null || true
-            export PATH=$PATH:/usr/local/go/bin:/root/.cargo/bin
-            cd /repo
-            
-            echo "Building: ${{ matrix.package }}"
-            bash ./build-package.sh "${{ matrix.package }}"
-
-      - name: Generate SHA256
+      - name: Generate checksums
         if: always()
         run: |
           mkdir -p output
@@ -147,17 +127,17 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.package }}-${{ steps.meta.outputs.version }}
+          name: pkg-${{ matrix.package }}
           path: |
-            output/*.deb
-            output/*.sha256
+            output/
+            logs/
           retention-days: 7
           if-no-files-found: warn
 
   publish:
     name: Publish to gh-pages
     runs-on: ubuntu-latest
-    needs: build-packages
+    needs: build-debs
     if: always()
     
     steps:
@@ -174,8 +154,8 @@ jobs:
       - name: Prepare pool
         run: |
           mkdir -p pool/main
-          find artifacts -name "*.deb" -exec cp {} pool/main/ \;
-          find artifacts -name "*.sha256" -exec cp {} pool/main/ \;
+          find artifacts -type f \( -name "*.deb" -o -name "*.sha256" \) -exec cp {} pool/main/ \;
+          echo "✓ Collected $(ls pool/main/*.deb 2>/dev/null | wc -l) packages"
 
       - name: Checkout gh-pages
         uses: actions/checkout@v4
@@ -184,16 +164,13 @@ jobs:
           path: gh-pages
         continue-on-error: true
 
-      - name: Setup gh-pages
+      - name: Setup repo structure
         run: |
           mkdir -p gh-pages/pool/main
           mkdir -p gh-pages/dists/termux/main/binary-{aarch64,arm,x86_64,i686,all}
-          mkdir -p gh-pages/tools
 
       - name: Update pool
-        run: |
-          cp pool/main/*.deb gh-pages/pool/main/ 2>/dev/null || true
-          cp pool/main/*.sha256 gh-pages/pool/main/ 2>/dev/null || true
+        run: cp pool/main/*.{deb,sha256} gh-pages/pool/main/ 2>/dev/null || true
 
       - name: Generate index
         run: |
@@ -206,24 +183,21 @@ jobs:
           for arch in ["aarch64", "arm", "x86_64", "i686", "all"]:
               out = Path(f"gh-pages/dists/termux/main/binary-{arch}")
               out.mkdir(parents=True, exist_ok=True)
-              
               entries = []
               for deb in sorted(pool.glob(f"*_{arch}.deb")):
-                  result = subprocess.run(["dpkg-deb", "-f", str(deb)], capture_output=True, text=True)
-                  data = deb.read_bytes()
-                  entries.append(result.stdout.strip() + f"\nFilename: pool/main/{deb.name}\nSize: {len(data)}\nSHA256: {hashlib.sha256(data).hexdigest()}\n")
-              
+                  try:
+                      data = deb.read_bytes()
+                      r = subprocess.run(["dpkg-deb", "-f", str(deb)], capture_output=True, text=True, timeout=5)
+                      entries.append(f"{r.stdout.strip()}\nFilename: pool/main/{deb.name}\nSize: {len(data)}\nSHA256: {hashlib.sha256(data).hexdigest()}\n")
+                  except: pass
               (out / "Packages").write_text("\n".join(entries))
-              subprocess.run(["gzip", "-kf", str(out / "Packages")])
+              subprocess.run(["gzip", "-kf", str(out / "Packages")], check=False)
+              print(f"✓ [{arch}] {len(entries)}")
           
-          date_str = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S UTC")
-          release = f"Origin: Termux App Store\nLabel: Termux App Store\nSuite: termux\nCodename: termux\nComponents: main\nArchitectures: aarch64 arm x86_64 i686 all\nDate: {date_str}\n"
+          release = f"Origin: Termux App Store\nLabel: Termux App Store\nSuite: termux\nCodename: termux\nComponents: main\nArchitectures: aarch64 arm x86_64 i686 all\nDate: {datetime.now(timezone.utc).strftime('%a, %d %b %Y %H:%M:%S UTC')}\n"
           Path("gh-pages/dists/termux/Release").write_text(release)
+          print("✓ Release generated")
           PYTHON
-
-      - name: Update index.json
-        run: |
-          cp tools/index.json gh-pages/tools/index.json
 
       - name: Push gh-pages
         run: |
@@ -231,8 +205,7 @@ jobs:
           git config user.email "258516621+termux-app-store@users.noreply.github.com"
           git config user.name "Termux App Store"
           git add -A
-          COUNT=$(ls pool/main/*.deb 2>/dev/null | wc -l || echo 0)
           if ! git diff --staged --quiet; then
-            git commit -m "build: update .deb pool — ${COUNT} packages"
+            git commit -m "build: update .deb pool"
             git push origin HEAD:gh-pages
           fi
