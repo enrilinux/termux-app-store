@@ -121,7 +121,6 @@ jobs:
             -v "$WORK_DIR:/opt/tas" \
             termux/termux-docker:aarch64 \
             bash -c '
-              set -e
               export HOME=/root
               export PREFIX=/data/data/com.termux/files/usr
               export PATH="$PREFIX/bin:$PATH"
@@ -143,7 +142,9 @@ jobs:
           # Copy hasil dari working dir ke output
           ls "$WORK_DIR/output/"*.deb 2>/dev/null && \
             cp "$WORK_DIR/output/"*.deb output/ || true
-          rm -rf "$WORK_DIR"
+
+          # Cleanup — gunakan sudo karena file dibuat sebagai root di dalam container
+          sudo rm -rf "$WORK_DIR" 2>/dev/null || rm -rf "$WORK_DIR" 2>/dev/null || true
 
       - name: Repackage for all architectures
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
