@@ -20,6 +20,7 @@ and this project adheres to semantic versioning.
 
 ### Changed
 - Package `zoracrypter` v1.0.0 - Updated metadata
+- Package `bashxt` v3.0 - Updated metadata
 
 ---
 
