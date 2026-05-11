@@ -1091,6 +1091,33 @@ elif declare -f termux_step_make_install > /dev/null 2>&1; then
     _detail "Files staged:" "$_STAGED_COUNT"
   fi
 
+  _LIB_PKG_DIR="$WORK_DIR/pkg$PREFIX/lib/$PACKAGE"
+  _BIN_PKG="$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
+  if [[ -d "$_LIB_PKG_DIR" && ! -f "$_BIN_PKG" ]]; then
+    _ENTRY=""
+    for _candidate in "$_LIB_PKG_DIR/__main__.py" \
+                      "$_LIB_PKG_DIR/main.py" \
+                      "$_LIB_PKG_DIR/${PACKAGE}.py" \
+                      "$_LIB_PKG_DIR/${PACKAGE}/__main__.py" \
+                      "$_LIB_PKG_DIR/${PACKAGE}/main.py"; do
+      if [[ -f "$_candidate" ]]; then
+        _ENTRY="$_candidate"
+        break
+      fi
+    done
+
+    if [[ -n "$_ENTRY" ]]; then
+      mkdir -p "$WORK_DIR/pkg$PREFIX/bin"
+      _ENTRY_REL="${_ENTRY#$WORK_DIR/pkg}"
+      cat > "$_BIN_PKG" <<LAUNCHEREOF
+#!/data/data/com.termux/files/usr/bin/bash
+exec python3 "${_ENTRY_REL}" "\$@"
+LAUNCHEREOF
+      chmod +x "$_BIN_PKG"
+      _ok "Created Python launcher: $PREFIX/bin/$PACKAGE → ${_ENTRY_REL}"
+    fi
+  fi
+
   _ok "Custom install completed"
 
 else
