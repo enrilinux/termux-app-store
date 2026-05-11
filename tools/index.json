@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-11T14:20:32.735823+00:00",
+  "generated_at": "2026-05-11T14:56:30.496233+00:00",
   "total": 89,
   "packages": [
     {
@@ -91,7 +91,7 @@
       "installed_size": "Unknown",
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/djunekz/bashxt/releases/download/v${TERMUX_PKG_VERSION}/bashxt_${TERMUX_PKG_VERSION}_all.deb",
-      "sha256": "07d6d801ec554b4ae9cc0877ab1ee4c4ef2a61dd3b49a496fdd6b74787c84c94",
+      "sha256": "12345652b542a95342c61043d426b422f2a1eced944cdaffc70efc782781231e",
       "platform_independent": false
     },
     {
