@@ -14,6 +14,9 @@ and this project adheres to semantic versioning.
 - Package `gobuster` v3.8.2 - Directory/File, DNS and VHost busting tool written in Go
 - Package `killchain` v1.0.0 - killchain — auto-packaged by termux-build-init
 
+### Update
+- Package `termstyle` v1.0.0 → v2.0.0
+
 ---
 
 ## [v0.3.0] - 2026-05-08 
