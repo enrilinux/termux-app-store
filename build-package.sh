@@ -1094,27 +1094,43 @@ elif declare -f termux_step_make_install > /dev/null 2>&1; then
   _LIB_PKG_DIR="$WORK_DIR/pkg$PREFIX/lib/$PACKAGE"
   _BIN_PKG="$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
   if [[ -d "$_LIB_PKG_DIR" && ! -f "$_BIN_PKG" ]]; then
-    _ENTRY=""
-    for _candidate in "$_LIB_PKG_DIR/__main__.py" \
-                      "$_LIB_PKG_DIR/main.py" \
-                      "$_LIB_PKG_DIR/${PACKAGE}.py" \
-                      "$_LIB_PKG_DIR/${PACKAGE}/__main__.py" \
-                      "$_LIB_PKG_DIR/${PACKAGE}/main.py"; do
-      if [[ -f "$_candidate" ]]; then
-        _ENTRY="$_candidate"
-        break
-      fi
-    done
+    mkdir -p "$WORK_DIR/pkg$PREFIX/bin"
 
-    if [[ -n "$_ENTRY" ]]; then
-      mkdir -p "$WORK_DIR/pkg$PREFIX/bin"
-      _ENTRY_REL="${_ENTRY#$WORK_DIR/pkg}"
+    _ENTRY=""
+    _ENTRY_TYPE=""
+
+    if [[ -f "$_LIB_PKG_DIR/$PACKAGE/__main__.py" ]]; then
+      _ENTRY_TYPE="module"
+    elif [[ -f "$_LIB_PKG_DIR/__main__.py" ]]; then
+      _ENTRY="$PREFIX/lib/$PACKAGE/__main__.py"
+      _ENTRY_TYPE="script"
+    elif [[ -f "$_LIB_PKG_DIR/$PACKAGE/main.py" ]]; then
+      _ENTRY="$PREFIX/lib/$PACKAGE/$PACKAGE/main.py"
+      _ENTRY_TYPE="script"
+    elif [[ -f "$_LIB_PKG_DIR/main.py" ]]; then
+      _ENTRY="$PREFIX/lib/$PACKAGE/main.py"
+      _ENTRY_TYPE="script"
+    elif [[ -f "$_LIB_PKG_DIR/${PACKAGE}.py" ]]; then
+      _ENTRY="$PREFIX/lib/$PACKAGE/${PACKAGE}.py"
+      _ENTRY_TYPE="script"
+    fi
+
+    if [[ "$_ENTRY_TYPE" == "module" ]]; then
       cat > "$_BIN_PKG" <<LAUNCHEREOF
 #!/data/data/com.termux/files/usr/bin/bash
-exec python3 "${_ENTRY_REL}" "\$@"
+cd "/data/data/com.termux/files/usr/lib/$PACKAGE"
+exec python3 -m $PACKAGE "\$@"
 LAUNCHEREOF
       chmod +x "$_BIN_PKG"
-      _ok "Created Python launcher: $PREFIX/bin/$PACKAGE → ${_ENTRY_REL}"
+      _ok "Created Python module launcher: $PREFIX/bin/$PACKAGE → python3 -m $PACKAGE"
+    elif [[ "$_ENTRY_TYPE" == "script" && -n "$_ENTRY" ]]; then
+      cat > "$_BIN_PKG" <<LAUNCHEREOF
+#!/data/data/com.termux/files/usr/bin/bash
+cd "/data/data/com.termux/files/usr/lib/$PACKAGE"
+exec python3 "${_ENTRY}" "\$@"
+LAUNCHEREOF
+      chmod +x "$_BIN_PKG"
+      _ok "Created Python script launcher: $PREFIX/bin/$PACKAGE → ${_ENTRY}"
     fi
   fi
 
@@ -1243,20 +1259,30 @@ else
       elif [[ "$MAIN_FILE" == *.sh ]]; then
         INTERPRETER="bash"
       else
-        INTERPRETER="bash"
+        _ftype=$(file -b "$MAIN_FILE" 2>/dev/null || echo "")
+        if echo "$_ftype" | grep -qi "^ELF"; then
+          INTERPRETER=""
+        else
+          INTERPRETER="bash"
+        fi
       fi
 
       mkdir -p "$WORK_DIR/pkg$PREFIX/bin"
-      cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
+      if [[ -z "$INTERPRETER" ]]; then
+        install -m755 "$MAIN_FILE" "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
+        _ok "ELF binary staged directly to bin/"
+      else
+        cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 exec $INTERPRETER "$PREFIX/lib/$PACKAGE/$MAIN_REL" "\$@"
 EOF
-      chmod +x "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
+        chmod +x "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
 
       _ok "Main file detected"
       _detail "File:"        "$MAIN_FILE"
       _detail "Interpreter:" "$INTERPRETER"
       _detail "Wrapper:"     "$PREFIX/bin/$PACKAGE"
+      fi
     fi
   else
     _warn "No executable/main file found in $SRC_ROOT"
