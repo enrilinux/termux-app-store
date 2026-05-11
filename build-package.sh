@@ -1048,6 +1048,12 @@ elif declare -f termux_step_make_install > /dev/null 2>&1; then
     _detail "Staged npm:" "$PREFIX/lib/node_modules/$PACKAGE"
   fi
 
+  if [[ -d "$PREFIX/share/$PACKAGE" ]]; then
+    mkdir -p "$WORK_DIR/pkg$PREFIX/share"
+    cp -r "$PREFIX/share/$PACKAGE" "$WORK_DIR/pkg$PREFIX/share/"
+    _detail "Staged share:" "$PREFIX/share/$PACKAGE"
+  fi
+
   if [[ -d "$PREFIX/share/doc/$PACKAGE" ]]; then
     mkdir -p "$WORK_DIR/pkg$PREFIX/share/doc"
     cp -r "$PREFIX/share/doc/$PACKAGE" "$WORK_DIR/pkg$PREFIX/share/doc/"
