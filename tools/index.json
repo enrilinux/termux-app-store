@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-11T09:51:19.038282+00:00",
+  "generated_at": "2026-05-11T14:20:32.735823+00:00",
   "total": 89,
   "packages": [
     {
@@ -82,7 +82,7 @@
     },
     {
       "package": "bashxt",
-      "version": "2.2",
+      "version": "3.0",
       "maintainer": "@termux-app-store",
       "description": "basic command, code color, shortcut keyboar, etc information",
       "homepage": "https://github.com/djunekz/bashxt",
@@ -91,7 +91,7 @@
       "installed_size": "Unknown",
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/djunekz/bashxt/releases/download/v${TERMUX_PKG_VERSION}/bashxt_${TERMUX_PKG_VERSION}_all.deb",
-      "sha256": "d4ed7c6021bc1c22b5441d1ba1ba94187504fffc2a7bb73bc2ebe8ff6adf7f7d",
+      "sha256": "07d6d801ec554b4ae9cc0877ab1ee4c4ef2a61dd3b49a496fdd6b74787c84c94",
       "platform_independent": false
     },
     {
