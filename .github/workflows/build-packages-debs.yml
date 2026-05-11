@@ -41,8 +41,11 @@ jobs:
           TRIGGER="${{ github.event_name }}"
 
           if [[ -n "$SPECIFIC" ]]; then
-            [[ -f "packages/$SPECIFIC/build.sh" ]] || { echo "Package '$SPECIFIC' not found"; exit 1; }
-            PKGS="$SPECIFIC"
+            # Support multiple packages dipisah spasi atau koma
+            PKGS=$(echo "$SPECIFIC" | tr ',' ' ')
+            for _pkg in $PKGS; do
+              [[ -f "packages/$_pkg/build.sh" ]] || { echo "Package '$_pkg' not found"; exit 1; }
+            done
           elif [[ "$FORCE" == "true" || "$TRIGGER" == "schedule" ]]; then
             PKGS=$(ls packages/ 2>/dev/null | tr '\n' ' ')
           else
@@ -100,7 +103,7 @@ jobs:
 
       - name: Set up QEMU for aarch64 emulation
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
-        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a  # v4
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392  # v3.6.0
         with:
           platforms: arm64
 
