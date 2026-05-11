@@ -16,6 +16,7 @@ and this project adheres to semantic versioning.
 
 ### Update
 - Package `termstyle` v1.0.0 → v2.0.0
+- Package `bashxt` v2.2 → v3.0
 
 ### Changed
 - Package `zoracrypter` v1.0.0 - Updated metadata
