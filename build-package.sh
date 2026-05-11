@@ -837,6 +837,7 @@ EOF
 
 elif declare -f termux_step_make_install > /dev/null 2>&1; then
   _step "Mode: Custom termux_step_make_install()"
+  touch "$WORK_DIR/.pip_bin_before"
   export TERMUX_PREFIX="$PREFIX"
   export TERMUX_PKG_SRCDIR="$SRC_ROOT"
   export PATH="$PREFIX/bin:$PATH"
@@ -960,6 +961,16 @@ elif declare -f termux_step_make_install > /dev/null 2>&1; then
   if [[ -f "$PREFIX/bin/$PACKAGE" ]]; then
     install -Dm755 "$PREFIX/bin/$PACKAGE" "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
     _detail "Staged bin:" "$PREFIX/bin/$PACKAGE"
+  fi
+
+  if [[ -f "$WORK_DIR/.pip_bin_before" ]]; then
+    while IFS= read -r _new_bin; do
+      _bin_name=$(basename "$_new_bin")
+      if [[ ! -f "$WORK_DIR/pkg$PREFIX/bin/$_bin_name" ]]; then
+        install -Dm755 "$_new_bin" "$WORK_DIR/pkg$PREFIX/bin/$_bin_name"
+        _detail "Staged new bin:" "$_new_bin"
+      fi
+    done < <(find "$PREFIX/bin" -type f -newer "$WORK_DIR/.pip_bin_before" 2>/dev/null || true)
   fi
 
   _PY_SITE_CANDIDATES=()
