@@ -62,17 +62,35 @@ case "$COMMAND" in
         exec "$BASE_DIR/termux-build-init.sh" "$@"
         ;;
 
+    create-index|-ci|-index)
+        shift
+        exec "$BASE_DIR/termux-build-create-index.sh" "$@"
+        ;;
+
     *)
         echo -e "${BOLD_RED}Usage:${RESET}"
-        echo -e "  ${GREEN}./termux-build create <package>${RESET}"
-        echo -e "  ${GREEN}./termux-build init <repo-url>${RESET}"
-        echo -e "  ${GREEN}./termux-build lint <path | package-name>${RESET}"
-        echo -e "  ${GREEN}./termux-build check-pr <package>${RESET}"
-        echo -e "  ${GREEN}./termux-build doctor${RESET}"
-        echo -e "  ${GREEN}./termux-build suggest <package>${RESET}"
-        echo -e "  ${GREEN}./termux-build explain <package>${RESET}"
-        echo -e "  ${GREEN}./termux-build template${RESET}"
-        echo -e "  ${GREEN}./termux-build guide${RESET}"
+        echo -e "  ${GREEN}./termux-build create <package>           (For create)${RESET}"
+        echo -e "  ${GREEN}./termux-build init <repo-url>            (For auto-create)${RESET}"
+        echo -e "  ${GREEN}./termux-build create-index <package>     (For create index)${RESET}"
+        echo -e "  ${GREEN}./termux-build lint <path | package-name> (For linting/validation)${RESET}"
+        echo -e "  ${GREEN}./termux-build check-pr <package>         (For Check PR)${RESET}"
+        echo -e "  ${GREEN}./termux-build doctor                     (For Doctor Analyst)${RESET}"
+        echo -e "  ${GREEN}./termux-build suggest <package>          (For Check package)${RESET}"
+        echo -e "  ${GREEN}./termux-build explain <package>          (For analyst package)${RESET}"
+        echo -e "  ${GREEN}./termux-build template                   (For build.sh template)${RESET}"
+        echo -e "  ${GREEN}./termux-build guide                      (For guide)${RESET}"
+        echo -e "\n\n"
+        echo -e "${BOLD_RED}Simple Command Usage:${RESET}"
+        echo -e "  ${GREEN}./termux-build -c or -C <package>             (For create)${RESET}"
+        echo -e "  ${GREEN}./termux-build -i or -i <repo-url>            (For auto-create)${RESET}"
+        echo -e "  ${GREEN}./termux-build -ci or -index <package>        (For create index)${RESET}"
+        echo -e "  ${GREEN}./termux-build -l or -L <path | package-name> (For linting/validation)${RESET}"
+        echo -e "  ${GREEN}./termux-build -cpr or -pr <package>          (For Check PR)${RESET}"
+        echo -e "  ${GREEN}./termux-build -d or -D                       (For Doctor Analyst)${RESET}"
+        echo -e "  ${GREEN}./termux-build -s or -S <package>             (For Check package)${RESET}"
+        echo -e "  ${GREEN}./termux-build -e or -E or -ex <package>      (For analyst package)${RESET}"
+        echo -e "  ${GREEN}./termux-build -t or -T                       (For build.sh template)${RESET}"
+        echo -e "  ${GREEN}./termux-build -g or -G                       (For guide)${RESET}"
         exit 1
         ;;
 esac
