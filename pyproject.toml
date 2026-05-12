@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "termux-app-store"
-version = "0.3.0"
+version = "0.4.0"
 description = "The first offline-first, source-based TUI package manager built natively for Termux"
 readme = "README.md"
 license = "MIT"
@@ -46,6 +46,7 @@ Repository = "https://github.com/djunekz/termux-app-store"
 
 [project.scripts]
 termux-app-store = "termux_app_store.main:main"
+tas = "termux_app_store.main:tas"
 
 [tool.termux-app-store]
 tasctl-install-note = "Install tasctl via: bash install.sh  OR  tasctl self-update"
