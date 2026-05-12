@@ -503,9 +503,6 @@ def _get_arch() -> str:
         return "aarch64"
 
 
-_GHPAGES_BASE = f"https://djunekz.github.io/termux-app-store"
-
-
 def _direct_deb_install(name: str, version: str, pkg_info: Optional[dict] = None, log_fn=None) -> bool:
     def _log(msg):
         if log_fn:
@@ -593,6 +590,8 @@ def cmd_install(app_root: Path, packages_dir: Path, name: str, silent: bool = Fa
     print(f"  {B}  Installing {CYAN}{name}{R}{B}  {DIM}v{p['version']}{R}")
     print(f"  {DIM}{'─'*46}{R}\n")
 
+    success = False
+
     if _BINARY_CACHE_AVAILABLE and not force_source:
         print(f"  {DIM}Trying Binary Cache + Fast Install...{R}")
         try:
@@ -602,7 +601,7 @@ def cmd_install(app_root: Path, packages_dir: Path, name: str, silent: bool = Fa
         except Exception as e:
             print(f"  {YELLOW}Binary cache failed: {e}{R}")
 
-    if _FAST_INSTALL_AVAILABLE:
+    if not success and _FAST_INSTALL_AVAILABLE:
         _last_pct = [0]
 
         def _log(msg):
