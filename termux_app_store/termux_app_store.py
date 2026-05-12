@@ -48,7 +48,6 @@ except ImportError:
         class Pressed: pass
         class Changed: pass
         class Highlighted: pass
-    class _Stub: pass
     Header = Input = ListView = ListItem = Label = _Stub
     Static = Button = ProgressBar = _Stub
     Horizontal = Vertical = VerticalScroll = _Stub
@@ -781,20 +780,6 @@ class TermuxAppStore(App):
         self.call_from_thread(lambda: setattr(self.progress, "progress", 95))
         return proc.returncode == 0
 
-    def update_log(self, text: str):
-        if not text:
-            return
-        self.log_buffer.append(text)
-        if len(self.log_buffer) > 800:
-            self.log_buffer = self.log_buffer[-800:]
-
-        self.call_from_thread(
-            lambda: self.log_view.update("\n".join(self.log_buffer))
-        )
-        self.call_from_thread(
-            lambda: self.log_container.scroll_end(animate=False)
-        )
-
     def _build_from_source(self, name: str):
         app_root = get_app_root()
         build_sh = app_root / "build-package.sh"
@@ -817,11 +802,6 @@ class TermuxAppStore(App):
 
         proc.wait()
         return proc.returncode == 0
-
-    def action_install_selected(self):
-        if self.current_item and not self.installing:
-            name = self.current_item.pkg["name"]
-            asyncio.create_task(self.run_install(name))
 
     def compose(self) -> ComposeResult: # pragma: no cover
         yield Header()

@@ -625,9 +625,8 @@ def cmd_install(app_root: Path, packages_dir: Path, name: str, silent: bool = Fa
         if not success:
             print(f"  {DIM}Fast install failed — trying direct .deb from pool...{R}")
             success = _direct_deb_install(name, p["version"], pkg_info=p)
-            if _FAST_INSTALL_AVAILABLE:
-                success = fast_install(name, log_fn=print)
-            else:
+
+        if not success:
                 if not ensure_package_files(packages_dir, name, force_update):
                     print(f"{RED}[✗] Failed to prepare package files.{R}")
                     return False
