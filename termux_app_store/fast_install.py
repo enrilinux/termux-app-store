@@ -41,6 +41,12 @@ MIRRORS = [
         "base_url": "https://cdn.jsdelivr.net/gh/djunekz/termux-app-store@gh-pages",
         "priority": 3,
     },
+    {
+        "id":       "raw-github",
+        "name":     "GitHub Raw",
+        "base_url": "https://raw.githubusercontent.com/djunekz/termux-app-store/gh-pages",
+        "priority": 4,
+    },
 ]
 
 DEB_PATH_PATTERN = "pool/main/{pkg}_{version}_{arch}.deb"

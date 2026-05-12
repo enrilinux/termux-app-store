@@ -49,7 +49,7 @@ except ImportError:
             {"name": "GitHub Pages",  "base_url": "https://djunekz.github.io/termux-app-store"},
             {"name": "Cloudflare CDN","base_url": "https://termux-app-store.pages.dev"},
             {"name": "jsDelivr CDN",  "base_url": "https://cdn.jsdelivr.net/gh/djunekz/termux-app-store@gh-pages"},
-            {"name": "Github Raw",    "base_url": "https://raw.githubusercontent.com/djunekz/termux-app-store/gh-pages"},
+            {"name": "GitHub Raw",    "base_url": "https://raw.githubusercontent.com/djunekz/termux-app-store/gh-pages"},
         ]
 
 CACHE_FILE = (
