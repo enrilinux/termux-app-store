@@ -320,12 +320,15 @@ def fast_install(pkg_name: str,
         return False
 
     version = pkg_info.get("version", "")
-    sha256  = pkg_info.get("sha256", "")
+
+    sha256_by_arch = pkg_info.get("sha256_by_arch", {})
+    deb_sha256 = sha256_by_arch.get(arch, "")
+
     _log(f"  Version: {version}")
     _progress(5)
 
     _log("Checking local cache...")
-    cached = get_cached_deb(pkg_name, version, arch, sha256 or None)
+    cached = get_cached_deb(pkg_name, version, arch)
 
     if cached:
         elapsed = time.time() - start_time
@@ -336,6 +339,10 @@ def fast_install(pkg_name: str,
         if ok:
             elapsed = time.time() - start_time
             _log(f"✔ Installed from cache in {elapsed:.1f}s!")
+        else:
+            _log(f"✗ Cached .deb appears corrupt — removing from cache")
+            cached.unlink(missing_ok=True)
+            _log(f"  → Run: tas --fix-install {pkg_name}  (force rebuild from source)")
         return ok
 
     _log("  Cache miss — will download")
@@ -354,16 +361,16 @@ def fast_install(pkg_name: str,
         )
 
         if downloaded:
-            if sha256:
+            if deb_sha256:
                 _log("Verifying checksum...")
                 h = hashlib.sha256()
                 with open(deb_dest, "rb") as f:
                     while chunk := f.read(65536):
                         h.update(chunk)
                 actual = h.hexdigest()
-                if actual != sha256:
-                    _log(f"✗ SHA256 mismatch!")
-                    _log(f"  Expected: {sha256[:32]}...")
+                if actual != deb_sha256:
+                    _log(f"✗ SHA256 mismatch — file corrupt")
+                    _log(f"  Expected: {deb_sha256[:32]}...")
                     _log(f"  Got:      {actual[:32]}...")
                     downloaded = False
                 else:

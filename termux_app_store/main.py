@@ -28,6 +28,11 @@ def main():
     else:
         run_tui()
 
+def tas():
+    if len(sys.argv) > 1:
+        run_cli()
+    else:
+        run_tui()
 
 if __name__ == "__main__":
     main()

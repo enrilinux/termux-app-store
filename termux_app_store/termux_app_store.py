@@ -9,6 +9,23 @@ import urllib.request
 from pathlib import Path
 
 try:
+    from termux_app_store.fast_install import FastInstaller
+    from termux_app_store.core.package import Package
+    _BINARY_CACHE_AVAILABLE = True
+except ImportError:
+    _BINARY_CACHE_AVAILABLE = False
+
+try:
+    from termux_app_store.fast_install import fast_install, check_mirrors, cache_info, clear_deb_cache
+    _FAST_INSTALL_AVAILABLE = True
+except ImportError:
+    try:
+        from fast_install import fast_install, check_mirrors, cache_info, clear_deb_cache
+        _FAST_INSTALL_AVAILABLE = True
+    except ImportError:
+        _FAST_INSTALL_AVAILABLE = False
+
+try:
     from textual.app import App, ComposeResult, SystemCommand
     from textual.widgets import (
         Header,
@@ -31,7 +48,7 @@ except ImportError:
         class Pressed: pass
         class Changed: pass
         class Highlighted: pass
-
+    class _Stub: pass
     Header = Input = ListView = ListItem = Label = _Stub
     Static = Button = ProgressBar = _Stub
     Horizontal = Vertical = VerticalScroll = _Stub
@@ -278,13 +295,18 @@ def normalize_pkg(raw: dict) -> dict:
     deps = raw.get("depends", [])
     if isinstance(deps, str):
         deps = [d.strip() for d in deps.split(",") if d.strip()]
-    return {
+    result = {
         "name":       raw.get("package", raw.get("name", "?")),
         "desc":       raw.get("description", raw.get("desc", "-")),
         "version":    raw.get("version", "?"),
         "deps":       deps,
         "maintainer": raw.get("maintainer", "-"),
     }
+    if "sha256" in raw:
+        result["sha256"] = raw["sha256"]
+    if "sha256_by_arch" in raw:
+        result["sha256_by_arch"] = raw["sha256_by_arch"]
+    return result
 
 def get_packages(packages_dir: Path, online: bool = True) -> list:
     if online:
@@ -666,6 +688,8 @@ class TermuxAppStore(App):
 
         self.run_worker(self._fetch_online_worker(), exclusive=False)
 
+        self.binary_installer = FastInstaller() if _BINARY_CACHE_AVAILABLE else None
+
     async def _fetch_online_worker(self): # pragma: no cover
         try:
             raw = await asyncio.to_thread(fetch_index_from_github)
@@ -675,6 +699,129 @@ class TermuxAppStore(App):
                 self.refresh_list()
         except Exception:
             pass
+
+    async def run_install(self, name: str):
+        if self.installing:
+            return
+
+        self.installing = True
+        self.call_from_thread(lambda: setattr(self.install_btn, "disabled", True))
+        self.call_from_thread(lambda: setattr(self.uninstall_btn, "disabled", True))
+
+        self.log_buffer.clear()
+        self.call_from_thread(lambda: self.update_log(f"Starting installation: {name}\n"))
+        self.call_from_thread(lambda: setattr(self.progress, "progress", 5))  # mulai dari 5%
+
+        success = False
+
+        try:
+            if _BINARY_CACHE_AVAILABLE:
+                self.call_from_thread(lambda: self.update_log("Checking Binary Cache...\n"))
+
+                installer = FastInstaller()
+                success = await installer.install(
+                    name,
+                    force_source=getattr(self, 'force_source', False)
+                )
+
+            if not success and _FAST_INSTALL_AVAILABLE:
+                self.call_from_thread(lambda: self.update_log("⚙Using Fast Install...\n"))
+                success = fast_install(
+                    pkg_name=name,
+                    log_fn=self.update_log,
+                    progress_fn=lambda p: self.call_from_thread(
+                        lambda val=p: setattr(self.progress, "progress", val)
+                    )
+                )
+
+            if not success:
+                self.call_from_thread(lambda: self.update_log("Building from source...\n"))
+                success = await asyncio.to_thread(self._build_from_source_with_progress, name)
+
+        except Exception as e:
+            self.call_from_thread(lambda e=e: self.update_log(f"❌ Error: {e}\n"))
+
+        if success:
+            self.call_from_thread(lambda: setattr(self.progress, "progress", 100))
+            self.call_from_thread(lambda: self.update_log(f"\n✅ {name} installed successfully!"))
+        else:
+            self.call_from_thread(lambda: self.update_log(f"\n❌ Failed to install {name}"))
+
+        self.installing = False
+        self.call_from_thread(lambda: setattr(self.install_btn, "disabled", False))
+        self.call_from_thread(lambda: setattr(self.uninstall_btn, "disabled", False))
+        self.status_cache.clear()
+        self.call_from_thread(self.refresh_list)
+
+    def _build_from_source_with_progress(self, name: str) -> bool:
+        app_root = get_app_root()
+        build_sh = app_root / "build-package.sh"
+
+        if not build_sh.exists():
+            self.update_log("build-package.sh not found!")
+            return False
+
+        proc = subprocess.Popen(
+            ["bash", str(build_sh), name],
+            cwd=str(app_root),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+        for line in iter(proc.stdout.readline, b""):
+            clean = strip_ansi(line.decode(errors="ignore").rstrip())
+            if clean:
+                self.update_log(clean)
+                if "Installing" in clean or "Extracting" in clean:
+                    self.call_from_thread(lambda: setattr(self.progress, "progress", 60))
+                elif "Building" in clean or "make" in clean.lower():
+                    self.call_from_thread(lambda: setattr(self.progress, "progress", 80))
+
+        proc.wait()
+        self.call_from_thread(lambda: setattr(self.progress, "progress", 95))
+        return proc.returncode == 0
+
+    def update_log(self, text: str):
+        if not text:
+            return
+        self.log_buffer.append(text)
+        if len(self.log_buffer) > 800:
+            self.log_buffer = self.log_buffer[-800:]
+
+        self.call_from_thread(
+            lambda: self.log_view.update("\n".join(self.log_buffer))
+        )
+        self.call_from_thread(
+            lambda: self.log_container.scroll_end(animate=False)
+        )
+
+    def _build_from_source(self, name: str):
+        app_root = get_app_root()
+        build_sh = app_root / "build-package.sh"
+
+        if not build_sh.exists():
+            self.update_log("build-package.sh not found!")
+            return False
+
+        proc = subprocess.Popen(
+            ["bash", str(build_sh), name],
+            cwd=str(app_root),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+        for line in iter(proc.stdout.readline, b""):
+            clean = strip_ansi(line.decode(errors="ignore").rstrip())
+            if clean:
+                self.update_log(clean)
+
+        proc.wait()
+        return proc.returncode == 0
+
+    def action_install_selected(self):
+        if self.current_item and not self.installing:
+            name = self.current_item.pkg["name"]
+            asyncio.create_task(self.run_install(name))
 
     def compose(self) -> ComposeResult: # pragma: no cover
         yield Header()
@@ -823,41 +970,58 @@ class TermuxAppStore(App):
         self.call_from_thread(lambda: setattr(self.progress, "progress", 0))
         self.call_from_thread(lambda: self.update_log(f"Installing {name}...\n"))
 
-        if not ensure_package_files(name):
-            self.call_from_thread(lambda: self.update_log(f"\n✗ Failed to download build files for {name}."))
-            self.installing = False
-            self.call_from_thread(lambda: setattr(self.install_btn, "disabled", False))
-            self.call_from_thread(lambda: setattr(self.uninstall_btn, "disabled", False))
-            return
+        success = False
 
-        if not ensure_build_package_sh():
-            self.call_from_thread(lambda: self.update_log("\n✗ Failed to download build-package.sh."))
-            self.installing = False
-            self.call_from_thread(lambda: setattr(self.install_btn, "disabled", False))
-            self.call_from_thread(lambda: setattr(self.uninstall_btn, "disabled", False))
-            return
+        if _FAST_INSTALL_AVAILABLE:
+            def _log(msg):
+                self.call_from_thread(lambda t=msg: self.update_log(t))
 
-        proc = subprocess.Popen(
-            ["bash", "build-package.sh", name],
-            cwd=str(get_app_root()),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-
-        for line in iter(proc.stdout.readline, b""):
-            clean_line = strip_ansi(line.decode(errors="ignore").rstrip())
-            if clean_line:
+            def _progress(pct):
                 self.call_from_thread(
-                    lambda t=clean_line: self.update_log(t)
+                    lambda p=pct: setattr(self.progress, "progress", p)
                 )
 
-        proc.wait()
-
-        if proc.returncode == 0:
-            self.call_from_thread(lambda: setattr(self.progress, "progress", 100))
-            self.call_from_thread(lambda: self.update_log("\n✔ Installation completed successfully!"))
+            success = fast_install(
+                pkg_name=name,
+                log_fn=_log,
+                progress_fn=_progress,
+            )
         else:
-            self.call_from_thread(lambda: self.update_log(f"\n✗ Installation failed (exit code {proc.returncode})"))
+            self.call_from_thread(lambda: self.update_log(
+                "Fast install unavailable — building from source...\n"
+            ))
+
+            if not ensure_package_files(name):
+                self.call_from_thread(
+                    lambda: self.update_log(f"\n✗ Failed to download build files for {name}.")
+                )
+            elif not ensure_build_package_sh():
+                self.call_from_thread(
+                    lambda: self.update_log("\n✗ Failed to download build-package.sh.")
+                )
+            else:
+                proc = subprocess.Popen(
+                    ["bash", "build-package.sh", name],
+                    cwd=str(get_app_root()),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                )
+                for line in iter(proc.stdout.readline, b""):
+                    clean_line = strip_ansi(line.decode(errors="ignore").rstrip())
+                    if clean_line:
+                        self.call_from_thread(lambda t=clean_line: self.update_log(t))
+                proc.wait()
+                success = proc.returncode == 0
+
+        if success:
+            self.call_from_thread(lambda: setattr(self.progress, "progress", 100))
+            self.call_from_thread(
+                lambda: self.update_log("\n✔ Installation completed successfully!")
+            )
+        else:
+            self.call_from_thread(
+                lambda: self.update_log("\n✗ Installation failed.")
+            )
 
         self.installing = False
         self.status_cache.clear()
@@ -920,6 +1084,31 @@ class TermuxAppStore(App):
             self.log_buffer = self.log_buffer[-500:]
         self.log_view.update("\n".join(self.log_buffer))
         self.log_container.scroll_end(animate=False)
+
+    def action_check_mirrors(self):  # pragma: no cover
+        if not _FAST_INSTALL_AVAILABLE:
+            self.status_bar.update("Fast install not available.")
+            return
+        self.log_buffer.clear()
+        self.update_log("Checking mirrors...\n")
+        def _run():
+            check_mirrors(log_fn=lambda m: self.call_from_thread(lambda t=m: self.update_log(t)))
+        import threading
+        threading.Thread(target=_run, daemon=True).start()
+
+    def action_cache_info(self):  # pragma: no cover
+        if not _FAST_INSTALL_AVAILABLE:
+            self.status_bar.update("Fast install not available.")
+            return
+        self.log_buffer.clear()
+        cache_info(log_fn=lambda m: self.update_log(m))
+
+    def action_clear_cache(self):  # pragma: no cover
+        if not _FAST_INSTALL_AVAILABLE:
+            self.status_bar.update("Fast install not available.")
+            return
+        clear_deb_cache(log_fn=lambda m: self.update_log(m))
+        self.status_bar.update("Cache cleared.")
 
     def action_refresh(self):  # pragma: no cover
         self.status_bar.update("🔄 Refreshing package list...")
@@ -987,6 +1176,21 @@ class TermuxAppStore(App):
             self.worker_queue.put_nowait(("install", name))
 
     def get_system_commands(self, screen):  # pragma: no cover
+        yield SystemCommand(
+            "Check mirrors",
+            "Check speed of all download mirrors",
+            self.action_check_mirrors,
+        )
+        yield SystemCommand(
+            "Cache info",
+            "Show downloaded .deb cache info",
+            self.action_cache_info,
+        )
+        yield SystemCommand(
+            "Clear cache",
+            "Delete all cached .deb files",
+            self.action_clear_cache,
+        )
         yield SystemCommand(
             "Refresh packages",
             "Fetch the latest package list from GitHub",
