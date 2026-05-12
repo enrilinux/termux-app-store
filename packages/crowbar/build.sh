@@ -27,5 +27,11 @@ termux_step_make_install() {
         fi
     done
 
-
+    cat > "$TERMUX_PREFIX/bin/crowbar" <<'WRAPPER'
+#!/usr/bin/env bash
+cd "${TERMUX_PREFIX}/lib/crowbar" || exit 1
+exec python3 "${TERMUX_PREFIX}/lib/crowbar/crowbar.py" "$@"
+WRAPPER
+    sed -i "s|\${TERMUX_PREFIX}|/data/data/com.termux/files/usr|g" "$TERMUX_PREFIX/bin/crowbar"
+    chmod 0755 "$TERMUX_PREFIX/bin/crowbar"
 }

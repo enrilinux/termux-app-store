@@ -23,12 +23,10 @@ termux_step_make_install() {
         fi
     done
 
-
-
     cat > "$TERMUX_PREFIX/bin/termux-tui" <<'WRAPPER'
 #!/usr/bin/env bash
 cd "${TERMUX_PREFIX}/lib/termux-tui" || exit 1
-exec python3 "${TERMUX_PREFIX}/lib/termux-tui/app.py" "$@"
+exec python3 "${TERMUX_PREFIX}/lib/termux-tui/main.py" "$@"
 WRAPPER
     sed -i "s|\${TERMUX_PREFIX}|/data/data/com.termux/files/usr|g" "$TERMUX_PREFIX/bin/termux-tui"
     chmod 0755 "$TERMUX_PREFIX/bin/termux-tui"
