@@ -9,20 +9,88 @@ and this project adheres to semantic versioning.
 ## [Unreleased]
 
 ### Added
+- `fast_install.py` — new fast install engine: download pre-built `.deb` directly from mirror pool instead of compiling from source; supports mirror fallback, local `.deb` cache (TTL 7 days), progress callback, and SHA256 verification via `sha256_by_arch`
+- `fast_install.py` — `_is_prebuilt_deb()`: detects package type from `SRCURL`; packages with `.deb` SRCURL (e.g. `basic`) are downloaded directly from developer's official release URL with SHA256 verification; source packages download from pool mirror
+- `fast_install.py` — `_resolve_srcurl()`: expands `${TERMUX_PKG_VERSION}` variable in SRCURL so download URLs are always resolved correctly
+- `tools/mirrors.json` — new mirror registry: defines primary (GitHub Pages), Cloudflare CDN, jsDelivr CDN, and raw GitHub as fallback mirrors; also stores `binary_cache` and `incremental_build` config
+- `termux_app_store_cli.py` — `cmd_search <query>` / `find <query>`: search packages by name or description, shows version + install status per result
+- `termux_app_store_cli.py` — `fix-install <pkg>` / `--fix-install <pkg>`: force install using `build-package.sh` from source, bypassing fast install and cache
+- `termux_app_store_cli.py` — multi-package install: `install` now accepts multiple package names (`tas install tdoc pymaker baxter`), installs sequentially, prints summary
+- `termux_app_store_cli.py` — multi-package uninstall: `uninstall` / `remove` now accepts multiple package names, uninstalls sequentially, prints summary
+- `termux_app_store.py` — TUI system commands added: `Check mirrors`, `Cache info`, `Clear cache` accessible from Command Palette
+- `termux_app_store.py` — `run_build_sync()` replaced with fast install engine: install button now downloads pre-built `.deb` from mirror instead of compiling
+- `core/binary_core.py` — `BinaryCache` class: manages local `.deb` cache, downloads from mirrors, verifies SHA256, cleans expired entries; uses only stdlib (no aiohttp)
+- `core/mirrors.py` — `MirrorManager` + `Mirror` dataclass: loads mirror list from `tools/mirrors.json`, provides `get_best_mirror()` and `get_enabled_mirrors()`
+- `core/package.py` — `Package` dataclass for structured package metadata
+- `core/validator.py` — `PackageValidator` + `validate_package()`: validates package metadata completeness
+- `core//__init__.py` — new subpackage init exposing `BinaryCache`, `MirrorManager`, `Mirror`, `Package`, `PackageValidator`
+- `utils/__init__.py` — new subpackage init exposing `install_from_binary`, `install_from_source`
+- `utils/installer.py` — `install_from_binary()` and `install_from_source()` helpers
+- `termux_app_store/__init__.py` — fixed to import from `core.binary_core` (was `binary_cache` — module did not exist)
+- `build-packages-debs.yml` — new workflow: builds pre-built `.deb` for all packages using **QEMU aarch64 emulation** (`uraimo/run-on-arch-action`), producing native aarch64 binaries that actually run on Android/Termux; publishes to `gh-pages/pool/main/`
+- `build-packages-debs.yml` — `Update index.json with .deb SHA256 hashes` step: writes `sha256_by_arch` field per package into `gh-pages/tools/index.json` so `fast_install.py` can verify `.deb` integrity per arch
+- `update_index.yml` — new step `Trigger build-packages-debs`: after `index.json` is updated, automatically dispatches `build-packages-debs.yml` via GitHub API for changed packages; prevents `[skip ci]` from blocking the build trigger
+- `install.sh` — official source protection now uses `/repos/{owner}/{repo}` endpoint instead of `/releases/latest` (which has no `full_name` field); verification now works correctly
+- `install.sh` — `check_existing()` pipe-safe: detects `curl | bash` execution via `[ -t 0 ]`, auto-overwrites existing install instead of hanging on `read`
+- `tasctl` — `verify_official_source()` protection added: blocks all commands (`install`, `update`, `doctor`, etc.) if run from a fork or renamed copy; only `help` is exempt
+- `termux-build/tools/termux-build-create-index.sh` — per-package `index.json` now outputs `"package"` field (consistent with `fast_install.py`), `srcurl`, `sha256`, and correct `source.url` from `TERMUX_PKG_SRCURL` instead of homepage
+- GitHub Issue templates: `package-request.md`, `package-request.yml`, `package-submission.md`, `package-submission.yml`
+- `build-packages-debs.yml` — `build-packages-debs.yml` — `cmd_search`, `fix-install`, multi install/uninstall added to `CMD_ALIASES`
+- `build-packages-debs.yml` — `Purge old .deb files from pool` step: when `force=true`, removes old `.deb` for specific package or all packages before rebuild
 - Package `fuckshitup` v1.0.0 - php-cli vulnerability scanner
-- Package `get` v1.0.0 - Get is a simple script to retrieve an ip from hostname or vice-versa .
+- Package `get` v1.0.0 - Simple script to retrieve IP from hostname or vice-versa
 - Package `gobuster` v3.8.2 - Directory/File, DNS and VHost busting tool written in Go
-- Package `killchain` v1.0.0 - killchain — auto-packaged by termux-build-init
+- Package `killchain` v1.0.0 - auto-packaged by termux-build-init
+- `tas` command — shorthand entry point for `termux-app-store`; `tas` opens TUI, `tas <args>` runs CLI
+
+### Changed
+- `termux_app_store_cli.py` — `cmd_install` fully refactored: now **only** uses `fast_install.py`; all fallback to `build-package.sh` removed from install path; if fast install fails, user is directed to `fix-install` instead
+- `termux_app_store_cli.py` — `cmd_install_multi` / `cmd_uninstall_multi`: wraps single install/uninstall with sequential loop and summary output
+- `termux_app_store_cli.py` — `cmd_help` updated: documents `search`, `fix-install`, multi install/uninstall, `mirrors`, `cache info/clear`
+- `termux_app_store_cli.py` — `CMD_ALIASES` updated: `search`/`find`, `fix-install`/`--fix-install`, `remove` (alias for uninstall) added
+- `termux_app_store_cli.py` — SHA256 verification now only uses `sha256_by_arch.get(arch)` (`.deb` hash per arch); never falls back to `sha256` field (source tarball hash), preventing false mismatch on every CDN download
+- `fast_install.py` — `get_cached_deb()`: SHA256 parameter is now optional; if not provided, only TTL is checked; prevents false cache invalidation when `sha256_by_arch` is absent
+- `build-termux-repo.yml` — `Regenerate Packages index` and `Release` steps rewritten in Python (inline `<<'EOF'`); removes bash heredoc `{ echo ... }` that caused YAML parse errors and `unexpected end of file`
+- `build-packages-debs.yml` — prebuilt `.deb` packages (SRCURL ends in `.deb`) now download official `.deb` from developer, extract contents, repackage per-arch with correct control file; no longer passed through compile pipeline
+- `build-packages-debs.yml` — `TERMUX_PKG_SRCURL` variable expansion now correctly resolves `${TERMUX_PKG_VERSION}` before download; previously URLs contained literal `${TERMUX_PKG_VERSION}` causing 404
+- `update_index.yml` — commit message remains `[skip ci]` to prevent infinite loop; build trigger moved to explicit API dispatch instead of push trigger
+- `termux-build/termux-build` — removed duplicate `Usage:` block in `*)` case that printed usage twice
+- `termux-build/tools/termux-build-create.sh` — fixed typo `build-packages.sh` → `build-package.sh`
+- `termux-build/tools/termux-build-init.sh` — `set -uo pipefail` → `set -euo pipefail` so errors in subcommands are caught
+- Cloudflare deployment — migrated from Workers (which required `wrangler deploy` and failed with missing config) to **Cloudflare Pages** serving static `gh-pages` branch directly; `index.html` now live at `termux-app-store.pages.dev`
+
+### Fixed
+- `install.sh` — `verify_official_release()` used `/releases/latest` endpoint which has no `full_name` field; `grep '"full_name"'` always returned empty → verification always failed with "UNOFFICIAL SOURCE" block even on official repo; fixed by switching to `/repos/{owner}/{repo}` endpoint
+- `install.sh` — `check_existing()` hung indefinitely when run via `curl | bash` because `read -r resp` got EOF from pipe stdin; fixed with `[ -t 0 ]` guard and `read -r resp </dev/tty`
+- `fast_install.py` — SHA256 mismatch on every download: `sha256` field in `index.json` is the source tarball hash (used by `build-package.sh`), not the `.deb` hash; comparing against it always failed; fixed to only verify when `sha256_by_arch` is present
+- `fast_install.py` — `ttyper` installed but `Exec format error`: QEMU-built `.deb` had x86_64 binary repackaged as aarch64 by only changing `Architecture:` field in control file; fixed in workflow — no more repackaging, binary must be native
+- `fast_install.py` — `tdoc` installed but command not found: launcher was missing from `.deb` because `termux_step_make_install()` did not create `/usr/bin/tdoc`; fixed in `build-package.sh`
+- `fast_install.py` — corrupt `.deb` from HTTP 403 returning HTML left in cache; subsequent runs got cache HIT on corrupt file; fixed by deleting cached file on `dpkg -i` failure
+- `core/binary_core.py` — imported `aiohttp` (not available in Termux without extra install) and `utils.logger`/`utils.verifier` (modules that do not exist); replaced with stdlib `urllib.request` and `logging`
+- `core/mirrors.py` — imported `utils.logger` (does not exist); replaced with `logging.getLogger(__name__)`; also fixed path `\~` → `~` (backslash caused `Path.expanduser()` to fail)
+- `core/validator.py` — imported `utils.logger`; replaced with stdlib `logging`; `logger.success()` replaced with `logger.info()` (not a stdlib method)
+- `utils/installer.py` — imported `logger` from relative `.logger` module (does not exist); replaced with stdlib `logging`
+- `termux_app_store/__init__.py` — imported `binary_cache` module (does not exist); corrected to `core.binary_core`
+- `core/__init__.py` — file did not exist; Python subpackage was not importable
+- `utils/__init__.py` — file did not exist; Python subpackage was not importable
+- `build-packages-debs.yml` — `Regenerate Packages index` step: bash heredoc `{ echo ... }` caused `unexpected end of file` at line 40 due to YAML/shell conflict; rewritten in Python
+- `build-packages-debs.yml` — QEMU container did not create Termux prefix tree (`/data/data/com.termux/files/usr/bin`, `lib`, etc.); `termux_step_make_install()` failed writing to `$TERMUX_PREFIX/bin`; full prefix tree + tool symlinks now created before build
+- `build-packages-debs.yml` — permission denied on `*.deb.sha256` files: SHA256 generated inside QEMU container (root), host runner could not write; fixed by generating SHA256 inside QEMU and running `chmod -R 777 output/` before exiting container
+- `build-packages-debs.yml` — `TERMUX_PKG_SRCURL` variable not expanded: URLs containing `${TERMUX_PKG_VERSION}` were passed as-is to `curl`, resulting in 404; added bash string replacement to expand variable before download
+- `build-packages-debs.yml` — `docker/setup-qemu-action` and `uraimo/run-on-arch-action` pinned to invalid commit hashes; replaced with valid version tags `@v3` and `@v2`
+- `packages/crowbar/build.sh` — `termux_step_make_install()` copied all files to `lib/crowbar/` but never created `/usr/bin/crowbar` launcher; added launcher: `exec python3 .../crowbar.py`
+- `packages/termux-tui/build.sh` — launcher called `app.py` which does not exist; actual entrypoint is `main.py`; fixed launcher path
+- `packages/bower/build.sh` — `npm install` ran after `cp` to dest, so `node_modules` was inside dest (not staged for `.deb`); reordered to run `npm install` in source dir first, then `cp -r source/. dest/` so `node_modules` is included in `.deb`
+- `termux-build-create-index.sh` — typo in error message: `'\( pkg_name' \)'` → `'$pkg_name'`
+- `termux-build-create-index.sh` — `source.url` used `$homepage` instead of `TERMUX_PKG_SRCURL`; fixed to extract and use correct source URL
 
 ### Update
 - Package `termstyle` v1.0.0 → v2.0.0
 - Package `bashxt` v2.2 → v3.0
-
-### Changed
 - Package `zoracrypter` v1.0.0 - Updated metadata
-- Package `bashxt` v3.0 - Updated metadata
 
 ---
+
 
 ## [v0.3.0] - 2026-05-08 
 
