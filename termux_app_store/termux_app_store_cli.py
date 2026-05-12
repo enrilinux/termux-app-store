@@ -1354,7 +1354,7 @@ def run_cli():
             from termux_app_store.termux_app_store import run_tui
             run_tui()
         except ImportError:
-            print(f"{RED}[!] commamd not found.{R}")
+            print(f"{RED}[!] command not found.{R}")
             print(f"{RED}[!] Usage: termux-app-store help")
             cmd_help()
         return
