@@ -572,7 +572,7 @@ def _direct_deb_install(name: str, version: str, pkg_info: Optional[dict] = None
     return False
 
 
-def cmd_install(app_root: Path, packages_dir: Path, name: str, silent: bool = False, force_update: bool = False) -> bool:
+def cmd_install(app_root: Path, packages_dir: Path, name: str, silent: bool = False, force_update: bool = False, force_source: bool = False) -> bool:
     pkgs = load_all_packages(packages_dir)
     p = next((x for x in pkgs if x["name"] == name), None)
 
@@ -908,7 +908,7 @@ def cmd_self_update(silent: bool = False) -> bool:
                 new_ver = None
 
             if new_ver:
-                sentinel = INSTALL_DIR / ".installed"
+                sentinel = _INSTALL_DIR / ".installed"
                 if sentinel.exists():
                     try:
                         lines = sentinel.read_text().splitlines()

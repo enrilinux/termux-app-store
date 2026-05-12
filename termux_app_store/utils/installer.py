@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 
 async def install_from_binary(binary_path: Path, package: Package) -> bool:
     try:
-        logger.info(f"Extracting binary: {binary_path.name}")
+        logger.info(f"Installing binary: {binary_path.name}")
 
-        cmd = ["tar", "-xJf", str(binary_path), "-C", "/"]
+        cmd = ["dpkg", "-i", str(binary_path)]
 
         result = subprocess.run(cmd, capture_output=True, text=True)
 
@@ -20,11 +20,17 @@ async def install_from_binary(binary_path: Path, package: Package) -> bool:
             logger.info(f"✅ Successfully installed {package.name} from binary cache")
             return True
         else:
-            logger.error(f"Extraction failed:\n{result.stderr}")
-            return False
+            logger.error(f"dpkg install failed:\n{result.stderr}")
+            # Try to fix broken dependencies
+            subprocess.run(
+                ["apt-get", "install", "-f", "-y"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return result.returncode == 0
 
     except FileNotFoundError:
-        logger.error("tar command not found")
+        logger.error("dpkg command not found")
         return False
     except Exception as e:
         logger.error(f"Binary installation error: {e}")

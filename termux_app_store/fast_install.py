@@ -499,6 +499,29 @@ def cache_info(log_fn: Optional[Callable] = None):
         age_h = int((time.time() - deb.stat().st_mtime) / 3600)
         _log(f"  • {deb.name} ({age_h}h ago)")
 
+class FastInstaller:
+    """Wrapper class around fast_install() for compatibility with code that
+    expects a FastInstaller object with an .install() method."""
+
+    async def install(
+        self,
+        pkg_name: str,
+        force_source: bool = False,
+        log_fn: Optional[Callable] = None,
+        progress_fn: Optional[Callable] = None,
+    ) -> bool:
+        import asyncio
+
+        if force_source:
+            return await asyncio.to_thread(
+                _fallback_build_from_source, pkg_name,
+                log_fn, progress_fn
+            )
+        return await asyncio.to_thread(
+            fast_install, pkg_name, log_fn, progress_fn
+        )
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Termux App Store - Fast Install Engine")

@@ -1,7 +1,7 @@
-from .binary_cache import BinaryCache
-from .mirrors import MirrorManager
-from .package import Package
-from .validator import PackageValidator, validate_package
+from .core.binary_core import BinaryCache
+from .core.mirrors import MirrorManager
+from .core.package import Package
+from .core.validator import PackageValidator, validate_package
 from termux_app_store.termux_app_store import run_tui
 from termux_app_store.termux_app_store_cli import run_cli
 
