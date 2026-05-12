@@ -1242,6 +1242,7 @@ CMD_ALIASES = {
     "-fi":          "fix-install",
     "show":         "show",
     "update":       "update",
+    "up":           "update",
     "upgrade":      "upgrade",
     "version":      "version",
     "-v":           "version",
