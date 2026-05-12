@@ -8,11 +8,20 @@ TERMUX_PKG_SHA256=d54d92c4a12c674e79ed38742bd82b797098c24e67391c963555cf4a23855e
 TERMUX_PKG_DEPENDS="nodejs"
 
 termux_step_make_install() {
+    local src="${TERMUX_PKG_SRCDIR:-$PWD}"
     local dest="$TERMUX_PREFIX/lib/node_modules/bower"
+
+    cd "$src"
+    npm install --production --no-optional 2>&1 || {
+        echo "npm install failed — trying with legacy-peer-deps"
+        npm install --production --legacy-peer-deps 2>&1 || true
+    }
+
+    npm install q --save 2>&1 || true
+
     rm -rf "$dest"
-    cp -r "${TERMUX_PKG_SRCDIR:-$PWD}" "$dest"
-    cd "$dest"
-    npm install --production 2>/dev/null || true
+    mkdir -p "$dest"
+    cp -r "$src/." "$dest/"
 
     mkdir -p "$TERMUX_PREFIX/bin"
     cat > "$TERMUX_PREFIX/bin/bower" <<'EOF'
