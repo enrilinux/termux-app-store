@@ -59,7 +59,7 @@ echo -e "  ${BOLD_CYAN}- Edit file build.sh: ${BOLD_GREEN}nano packages/$PKG/bui
 
 echo -e "${BOLD_YELLOW}Step 1:${RESET}"
 echo -e "  ${BOLD_YELLOW}Check installing your package:${RESET}"
-echo -e "     - Run: ${BOLD_GREEN}bash build-packages.sh $PKG${RESET}"
+echo -e "     - Run: ${BOLD_GREEN}bash build-package.sh $PKG${RESET}"
 echo -e "     - Run: ${BOLD_GREEN}$PKG${RESET}"
 
 echo -e "${BOLD_YELLOW}Step 2:${RESET}"

@@ -4,7 +4,7 @@
 #   Auto create & build GitHub repo as a Termux .deb package
 #   github.com/djunekz/termux-app-store
 # =============================================================================
-set -uo pipefail
+set -euo pipefail
 
 _SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [[ "$(basename "$_SELF_DIR")" == "tools" ]]; then
