@@ -1050,6 +1050,14 @@ elif declare -f termux_step_make_install > /dev/null 2>&1; then
     _detail "Staged lib:" "$PREFIX/lib/$PACKAGE"
   fi
 
+  if [[ -n "${PKG_NAME_ORIGINAL:-}" && "$PKG_NAME_ORIGINAL" != "$PACKAGE" ]]; then
+    if [[ -d "$PREFIX/lib/$PKG_NAME_ORIGINAL" ]]; then
+      mkdir -p "$WORK_DIR/pkg$PREFIX/lib"
+      cp -r "$PREFIX/lib/$PKG_NAME_ORIGINAL" "$WORK_DIR/pkg$PREFIX/lib/"
+      _detail "Staged lib (original name):" "$PREFIX/lib/$PKG_NAME_ORIGINAL"
+    fi
+  fi
+
   if [[ -d "$PREFIX/lib/node_modules/$PACKAGE" ]]; then
     mkdir -p "$WORK_DIR/pkg$PREFIX/lib/node_modules"
     cp -r "$PREFIX/lib/node_modules/$PACKAGE" "$WORK_DIR/pkg$PREFIX/lib/node_modules/"
@@ -1209,6 +1217,32 @@ else
       mkdir -p "$WORK_DIR/pkg$PREFIX/lib/node_modules"
       cp -r "$_NPM_LIB" "$WORK_DIR/pkg$PREFIX/lib/node_modules/"
       _detail "Lib:" "$_NPM_LIB"
+
+      if [[ -d "$PREFIX/lib/node_modules" ]]; then
+        _PKG_DEP_FILE="$_NPM_LIB/package.json"
+        if [[ -f "$_PKG_DEP_FILE" ]]; then
+          _PKG_DEPS=$(python3 -c "
+import json, sys
+try:
+    d = json.load(open('$_PKG_DEP_FILE'))
+    deps = list(d.get('dependencies', {}).keys())
+    print(' '.join(deps))
+except:
+    print('')
+" 2>/dev/null || echo "")
+          if [[ -n "$_PKG_DEPS" ]]; then
+            _progress "Staging npm peer dependencies..."
+            for _dep in $_PKG_DEPS; do
+              _dep_path="$PREFIX/lib/node_modules/$_dep"
+              if [[ -d "$_dep_path" ]]; then
+                cp -r "$_dep_path" "$WORK_DIR/pkg$PREFIX/lib/node_modules/" 2>/dev/null || true
+                _detail "Staged dep:" "$_dep"
+              fi
+            done
+            _ok "npm peer dependencies staged"
+          fi
+        fi
+      fi
     fi
 
   else
@@ -1303,7 +1337,31 @@ EOF
     fi
   else
     _warn "No executable/main file found in $SRC_ROOT"
-    _skip "Skipping install step"
+
+    if [[ -f "$PREFIX/bin/$PACKAGE" ]]; then
+      mkdir -p "$WORK_DIR/pkg$PREFIX/bin"
+      install -Dm755 "$PREFIX/bin/$PACKAGE" "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
+      _ok "Fallback: binary found in \$PREFIX/bin — staged"
+      _detail "Staged bin:" "$PREFIX/bin/$PACKAGE"
+
+      _PY_SITE_FALLBACK=$(python3 -c "import site; print(site.getsitepackages()[0])" 2>/dev/null || true)
+      if [[ -n "$_PY_SITE_FALLBACK" ]]; then
+        _PY_PKG_DIR=$(find "$_PY_SITE_FALLBACK" -maxdepth 1 -type d \
+          \( -iname "${PACKAGE}" -o -iname "${PACKAGE}-*" \) 2>/dev/null | \
+          grep -v "dist-info\|egg-info" | head -1 || true)
+        if [[ -n "$_PY_PKG_DIR" ]]; then
+          _PY_SITE_DEST="$WORK_DIR/pkg$_PY_SITE_FALLBACK"
+          mkdir -p "$_PY_SITE_DEST"
+          cp -r "$_PY_PKG_DIR" "$_PY_SITE_DEST/"
+          find "$_PY_SITE_FALLBACK" -maxdepth 1 \
+            \( -iname "${PACKAGE}-*.dist-info" -o -iname "${PACKAGE}-*.egg-info" \) \
+            -exec cp -r {} "$_PY_SITE_DEST/" \; 2>/dev/null || true
+          _detail "Staged pip pkg:" "$_PY_PKG_DIR"
+        fi
+      fi
+    else
+      _skip "Skipping install step"
+    fi
   fi
 
   fi

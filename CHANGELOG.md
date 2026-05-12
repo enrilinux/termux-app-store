@@ -8,6 +8,11 @@ and this project adheres to semantic versioning.
 
 ## [Unreleased]
 
+---
+
+
+## [v0.4.0] - 2026-05-12
+
 ### Added
 - `fast_install.py` — new fast install engine: download pre-built `.deb` directly from mirror pool instead of compiling from source; supports mirror fallback, local `.deb` cache (TTL 7 days), progress callback, and SHA256 verification via `sha256_by_arch`
 - `fast_install.py` — `_is_prebuilt_deb()`: detects package type from `SRCURL`; packages with `.deb` SRCURL (e.g. `basic`) are downloaded directly from developer's official release URL with SHA256 verification; source packages download from pool mirror
