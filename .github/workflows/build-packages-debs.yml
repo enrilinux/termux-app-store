@@ -41,7 +41,6 @@ jobs:
           TRIGGER="${{ github.event_name }}"
 
           if [[ -n "$SPECIFIC" ]]; then
-            # Support multiple packages dipisah spasi atau koma
             PKGS=$(echo "$SPECIFIC" | tr ',' ' ')
             for _pkg in $PKGS; do
               [[ -f "packages/$_pkg/build.sh" ]] || { echo "Package '$_pkg' not found"; exit 1; }
@@ -112,7 +111,6 @@ jobs:
         run: |
           mkdir -p output
 
-          # Siapkan working directory yang writable di luar repo
           WORK_DIR=$(mktemp -d)
           chmod 777 "$WORK_DIR"
           cp -r . "$WORK_DIR/"
@@ -142,11 +140,9 @@ jobs:
               ls output/ 2>/dev/null || echo "(no output)"
             '
 
-          # Copy hasil dari working dir ke output
           ls "$WORK_DIR/output/"*.deb 2>/dev/null && \
             cp "$WORK_DIR/output/"*.deb output/ || true
 
-          # Cleanup — gunakan sudo karena file dibuat sebagai root di dalam container
           sudo rm -rf "$WORK_DIR" 2>/dev/null || rm -rf "$WORK_DIR" 2>/dev/null || true
 
       - name: Repackage for all architectures
@@ -163,7 +159,30 @@ jobs:
           BUILT_VERSION=$(dpkg-deb -f "$BUILT" Version 2>/dev/null || echo "${{ matrix.version }}")
           echo "Repackaging from: $(basename $BUILT) (v$BUILT_VERSION)"
 
-          # aarch64 sudah ada — repackage untuk arch lain
+          TMPCHECK="repack_tmp/${PKG}_check"
+          mkdir -p "$TMPCHECK"
+          dpkg-deb -x "$BUILT" "$TMPCHECK/"
+
+          HAS_ELF=false
+          while IFS= read -r -d '' f; do
+            magic=$(file -b "$f" 2>/dev/null || true)
+            if echo "$magic" | grep -qi "^ELF"; then
+              echo "  [ELF detected] $(basename $f) — skipping multi-arch repackage"
+              HAS_ELF=true
+              break
+            fi
+          done < <(find "$TMPCHECK" -type f -not -path "*/DEBIAN/*" -print0)
+          rm -rf "$TMPCHECK"
+
+          if [[ "$HAS_ELF" == "true" ]]; then
+            echo "  Package contains ELF binary — only aarch64 .deb will be published"
+            echo "  Other architectures must be built natively"
+            ls -lh output/ || true
+            exit 0
+          fi
+
+          echo "  No ELF binaries found — safe to repackage for all architectures"
+
           for ARCH in arm x86_64 i686; do
             TARGET="output/${PKG}_${BUILT_VERSION}_${ARCH}.deb"
             [[ -f "$TARGET" ]] && { echo "  [$ARCH] already exists"; continue; }

@@ -767,33 +767,42 @@ elif [[ -n "$PREBUILT_DEB" ]]; then
     fi
 
     if [[ "$_IS_SCRIPT" -eq 1 ]]; then
-      cp "$BIN_FILE" "$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)"
-      chmod 644 "$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)"
-      mkdir -p "$PREFIX/bin"
-      cat > "$PREFIX/bin/$PACKAGE" <<EOF
+      mkdir -p "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE" "$WORK_DIR/pkg$PREFIX/bin"
+      cp "$BIN_FILE" "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)"
+      chmod 644 "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)"
+      if echo "$_SCRIPT_INTERPRETER" | grep -q "python"; then
+        cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
+#!/data/data/com.termux/files/usr/bin/bash
+export PYTHONPATH="$PREFIX/lib/$PACKAGE\${PYTHONPATH:+:\$PYTHONPATH}"
+exec $_SCRIPT_INTERPRETER "$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)" "\$@"
+EOF
+      else
+        cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 exec $_SCRIPT_INTERPRETER "$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)" "\$@"
 EOF
-      chmod +x "$PREFIX/bin/$PACKAGE"
-      _ok "Script installed"
+      fi
+      chmod +x "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
+      _ok "Script staged into .deb"
       _detail "Script:" "$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)"
       _detail "Interpreter:" "$_SCRIPT_INTERPRETER"
       _detail "Bin:" "$PREFIX/bin/$PACKAGE"
     else
-      mv "$BIN_FILE" "$PREFIX/lib/$PACKAGE/$PACKAGE"
-      chmod +x "$PREFIX/lib/$PACKAGE/$PACKAGE"
+      mkdir -p "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE" "$WORK_DIR/pkg$PREFIX/bin"
+      mv "$BIN_FILE" "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$PACKAGE"
+      chmod +x "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$PACKAGE"
 
     _LINKED_PYTHON=""
     if command -v readelf &>/dev/null; then
-      _LINKED_PYTHON=$(readelf -d "$PREFIX/lib/$PACKAGE/$PACKAGE" 2>/dev/null         | grep -oP "libpython[0-9]+\.[0-9]+[^]]*" | head -n1 || true)
+      _LINKED_PYTHON=$(readelf -d "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$PACKAGE" 2>/dev/null \
+        | grep -oP "libpython[0-9]+\.[0-9]+[^]]*" | head -n1 || true)
     elif command -v objdump &>/dev/null; then
-      _LINKED_PYTHON=$(objdump -p "$PREFIX/lib/$PACKAGE/$PACKAGE" 2>/dev/null         | grep -oP "libpython[0-9]+\.[0-9]+[^[:space:]]*" | head -n1 || true)
+      _LINKED_PYTHON=$(objdump -p "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$PACKAGE" 2>/dev/null \
+        | grep -oP "libpython[0-9]+\.[0-9]+[^[:space:]]*" | head -n1 || true)
     fi
 
     if [[ -n "$_LINKED_PYTHON" ]]; then
-
       _PY_VER=$(echo "$_LINKED_PYTHON" | grep -oP "[0-9]+\.[0-9]+" | head -n1 || true)
-
       _LIB_NEEDED="$PREFIX/lib/libpython${_PY_VER}.so.1.0"
       _LIB_EXISTS=0
       find "$PREFIX/lib" -name "libpython${_PY_VER}*.so*" 2>/dev/null | grep -q . && _LIB_EXISTS=1
@@ -801,7 +810,6 @@ EOF
       if [[ "$_LIB_EXISTS" -eq 0 && -n "$_PY_VER" ]]; then
         _INSTALLED_LIBPY=$(find "$PREFIX/lib" -maxdepth 1 -name "libpython*.so.1.0" \
           2>/dev/null | head -n1 || true)
-
         if [[ -n "$_INSTALLED_LIBPY" ]]; then
           ln -sf "$_INSTALLED_LIBPY" "$_LIB_NEEDED" 2>/dev/null && {
             _ok "Symlinked: libpython${_PY_VER}.so.1.0 → $(basename $_INSTALLED_LIBPY)"
@@ -815,7 +823,7 @@ EOF
         [[ "$_LIB_EXISTS" -eq 1 ]] && _ok "libpython${_PY_VER} already present"
       fi
 
-      cat > "$PREFIX/bin/$PACKAGE" <<EOF
+      cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 export LD_LIBRARY_PATH="$PREFIX/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 exec "$PREFIX/lib/$PACKAGE/$PACKAGE" "\$@"
@@ -823,14 +831,14 @@ EOF
       _detail "Linked Python:" "$_LINKED_PYTHON"
       _detail "LD_LIB path  :" "$PREFIX/lib"
     else
-      cat > "$PREFIX/bin/$PACKAGE" <<EOF
+      cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 exec "$PREFIX/lib/$PACKAGE/$PACKAGE" "\$@"
 EOF
     fi
 
-    chmod +x "$PREFIX/bin/$PACKAGE"
-    _ok "Binary installed"
+    chmod +x "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
+    _ok "Binary staged into .deb"
     _detail "Bin:" "$PREFIX/bin/$PACKAGE"
     fi
   fi
@@ -1222,7 +1230,7 @@ else
 
     _file_magic=$(file -b "$MAIN_FILE" 2>/dev/null || echo "unknown")
     _is_elf=0
-    if echo "$_file_magic" | grep -qi "ELF.*executable"; then
+    if echo "$_file_magic" | grep -qi "ELF"; then
       _is_elf=1
     fi
 
@@ -1248,40 +1256,49 @@ else
       MAIN_REL="${MAIN_FILE#$SRC_ROOT/}"
       chmod +x "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$MAIN_REL" 2>/dev/null || true
 
-      FIRST_LINE="$(head -n1 "$MAIN_FILE" 2>/dev/null || true)"
-      if [[ "$FIRST_LINE" =~ ^#! ]]; then
-        INTERPRETER=$(echo "$FIRST_LINE" | sed 's|^#!||' | awk '{print $1}')
-        if [[ "$INTERPRETER" == */env ]]; then
-          INTERPRETER=$(echo "$FIRST_LINE" | awk '{print $2}')
-        fi
-      elif [[ "$MAIN_FILE" == *.py ]]; then
-        INTERPRETER="python3"
-      elif [[ "$MAIN_FILE" == *.sh ]]; then
-        INTERPRETER="bash"
+      _staged_magic=$(file -b "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$MAIN_REL" 2>/dev/null || echo "")
+      INTERPRETER=""
+      if echo "$_staged_magic" | grep -qi "ELF"; then
+        mkdir -p "$WORK_DIR/pkg$PREFIX/bin"
+        install -m755 "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$MAIN_REL" "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
+        rm -f "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$MAIN_REL"
+        _ok "ELF binary staged to bin/"
+        _detail "File   :" "$MAIN_FILE"
+        _detail "Install:" "$PREFIX/bin/$PACKAGE"
       else
-        _ftype=$(file -b "$MAIN_FILE" 2>/dev/null || echo "")
-        if echo "$_ftype" | grep -qi "^ELF"; then
-          INTERPRETER=""
+        FIRST_LINE="$(head -n1 "$MAIN_FILE" 2>/dev/null || true)"
+        if [[ "$FIRST_LINE" =~ ^#! ]]; then
+          INTERPRETER=$(echo "$FIRST_LINE" | sed 's|^#!||' | awk '{print $1}')
+          if [[ "$INTERPRETER" == */env ]]; then
+            INTERPRETER=$(echo "$FIRST_LINE" | awk '{print $2}')
+          fi
+        elif [[ "$MAIN_FILE" == *.py ]]; then
+          INTERPRETER="python3"
+        elif [[ "$MAIN_FILE" == *.sh ]]; then
+          INTERPRETER="bash"
         else
           INTERPRETER="bash"
         fi
-      fi
 
-      mkdir -p "$WORK_DIR/pkg$PREFIX/bin"
-      if [[ -z "$INTERPRETER" ]]; then
-        install -m755 "$MAIN_FILE" "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
-        _ok "ELF binary staged directly to bin/"
-      else
-        cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
+        mkdir -p "$WORK_DIR/pkg$PREFIX/bin"
+        if echo "$INTERPRETER" | grep -q "python"; then
+          cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
+#!/data/data/com.termux/files/usr/bin/bash
+export PYTHONPATH="$PREFIX/lib/$PACKAGE\${PYTHONPATH:+:\$PYTHONPATH}"
+exec $INTERPRETER "$PREFIX/lib/$PACKAGE/$MAIN_REL" "\$@"
+EOF
+        else
+          cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 exec $INTERPRETER "$PREFIX/lib/$PACKAGE/$MAIN_REL" "\$@"
 EOF
+        fi
         chmod +x "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
 
-      _ok "Main file detected"
-      _detail "File:"        "$MAIN_FILE"
-      _detail "Interpreter:" "$INTERPRETER"
-      _detail "Wrapper:"     "$PREFIX/bin/$PACKAGE"
+        _ok "Main file detected"
+        _detail "File:"        "$MAIN_FILE"
+        _detail "Interpreter:" "$INTERPRETER"
+        _detail "Wrapper:"     "$PREFIX/bin/$PACKAGE"
       fi
     fi
   else
