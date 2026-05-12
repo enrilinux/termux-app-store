@@ -142,11 +142,15 @@ jobs:
         id: changelog
         run: |
           VERSION="${{ steps.version.outputs.version }}"
+          
           VERSION_BARE="${VERSION#v}"
+          
           NOTES=$(awk "/^## \[${VERSION_BARE}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+         
           if [[ -z "$NOTES" ]]; then
-            NOTES="See CHANGELOG.md for details."
+            NOTES="See [CHANGELOG](CHANGELOG.md) for details update."
           fi
+          
           echo "$NOTES" > release_notes.txt
 
       - name: Create GitHub Release
