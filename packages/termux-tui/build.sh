@@ -6,7 +6,7 @@ TERMUX_PKG_VERSION=2.7.0
 TERMUX_PKG_SRCURL=https://github.com/opsonusdh/Termux-TUI/archive/refs/tags/v${TERMUX_PKG_VERSION}.zip
 TERMUX_PKG_SHA256=21098039474f7947f054b96a236f3449c40f9ebc6d57ded919f7fd23b3e87be5
 
-TERMUX_PKG_DEPENDS="python, python-pip, python-setuptools"
+TERMUX_PKG_DEPENDS="python, python-pip, python-setuptools, python-yt-dlp"
 TERMUX_PKG_BUILD_IN_SRC=true
 
 termux_step_make_install() {
