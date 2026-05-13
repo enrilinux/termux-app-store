@@ -11,6 +11,9 @@ and this project adheres to semantic versioning.
 ### Update
 - Package `termux-tui` v1.0.2 → v2.4.0
 
+### Changed
+- Package `termux-tui` v2.7.0 - Updated metadata
+
 ---
 
 
