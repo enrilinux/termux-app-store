@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-13T16:48:37.657158+00:00",
+  "generated_at": "2026-05-13T18:00:24.413560+00:00",
   "total": 88,
   "packages": [
     {
@@ -1260,7 +1260,8 @@
       "depends": [
         "python",
         "python-pip",
-        "python-setuptools"
+        "python-setuptools",
+        "python-yt-dlp"
       ]
     },
     {
