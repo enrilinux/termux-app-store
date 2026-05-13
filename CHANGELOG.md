@@ -8,6 +8,9 @@ and this project adheres to semantic versioning.
 
 ## [Unreleased]
 
+### Update
+- Package `termux-tui` v1.0.2 → v2.4.0
+
 ---
 
 
