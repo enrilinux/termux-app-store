@@ -5,17 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to semantic versioning.
 
-
 ## [Unreleased]
+
+### Fixed
+- `termux_app_store.py` — `consume_worker_queue()` was calling `asyncio.to_thread(self.run_build_sync, name)` which bypassed the Binary Cache and Fast Install pipeline entirely, going straight to source build; fixed to `await self.run_install(name)` so the correct install pipeline is used
+- `termux_app_store.py` — `run_install()` was full of `call_from_thread()` calls but runs on the main async loop (not a worker thread); Textual raised `RuntimeError: call_from_thread must run in a different thread`; fixed by replacing all `call_from_thread(lambda: setattr(...))` with direct attribute assignment and direct method calls
+- `termux_app_store.py` — `fast_install()` inside `run_install()` was previously called synchronously, blocking the event loop; wrapped in `await asyncio.to_thread(...)` so it runs in a worker thread without freezing the UI
+- `termux_app_store.py` — `_build_from_source_with_progress()` used keyword-based progress heuristic (`"Installing"` → 60, `"Building"` → 80) but the actual build log order is `Building` before `Installing Files`, causing progress to go **80% → 60%** (backwards); replaced with an ordered stage map so progress only ever moves forward
+- `termux_app_store.py` — duplicate install path: `run_install()` had both a `FastInstaller.install()` branch and a `fast_install()` branch; the first branch ran without `progress_fn` or `eta_fn`, causing progress to reset when falling through to the second branch; removed the `FastInstaller` branch and unified to a single `fast_install()` call with all callbacks wired
+- `fast_install.py` — `_progress()` inside `fast_install()` had no monotonic guard; `install_deb()` hardcodes progress to 85 then `_fallback_build_from_source()` reset it back to 10, causing visible up-and-down jumps; added `_current_pct` guard so progress can only increase
+- `fast_install.py` — fallback to source build called `_progress(10)` unconditionally after download failure, resetting a value that may already be higher; removed the reset
+
+### Added
+- `termux_app_store.py` — `SimpleProgressBar` widget: replaces Textual's built-in `ProgressBar` which had a broken ETA timer displaying `00:0` (seconds not zero-padded) on the Textual version shipped with Termux; custom widget renders `━━━── 80% 01:23` with a proper `MM:SS` countdown
+- `termux_app_store.py` — `SimpleProgressBar.set_eta(seconds)`: accepts remaining time in seconds, records a start timestamp, and counts down in real time via `get_remaining()`; timer only ticks when ETA is active, no unnecessary refreshes at idle
+- `fast_install.py` — `eta_fn` callback parameter added to `fast_install()` and `download_deb()`; during download, ETA is calculated from real measured speed (`remaining_bytes / speed`) plus a fixed install-phase estimate (`file_size / 500 KB/s`); on cache hit, ETA is estimated from cached file size
+- `termux_app_store.py` — `_build_from_source_with_progress()`: ETA set to 180 seconds at start of source build as a baseline estimate; progress mapped to 16 ordered build stage keywords (`Downloading`, `Extracting`, `termux_step_make`, `Building .deb`, `Unpacking`, `Setting up`, etc.)
+
+### Changed
+- Package `termux-tui` v2.7.0 - Updated metadata
+- `termux_app_store.py` — `_fetch_online_worker()`: previously called `refresh_list()` unconditionally after every online fetch, causing the package list to flicker and reset cursor on every TUI open; now compares fetched package names against the current list and skips refresh if nothing changed
+- `termux_app_store.py` — `refresh_list()`: added `preserve_selection=True` mode; when called after an online sync, restores the previously highlighted package instead of jumping back to the first item
+- `termux_app_store.py` — `SimpleProgressBar` interval: previously refreshed every 1 second unconditionally even when no install was running, contributing to TUI flicker; now only triggers a repaint when ETA is actively counting down
 
 ### Update
 - Package `termux-tui` v1.0.2 → v2.4.0
 
-### Changed
-- Package `termux-tui` v2.7.0 - Updated metadata
-
 ---
-
 
 ## [v0.4.0] - 2026-05-12
 
