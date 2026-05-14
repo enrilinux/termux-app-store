@@ -124,7 +124,7 @@ curl -fsSL https://raw.githubusercontent.com/djunekz/termux-app-store/master/tas
 hoặc
 
 ```bash
-git clone https://github.com/djunekz/termux-app-store
+git clone --single-branch --branch master https://github.com/djunekz/termux-app-store
 cd termux-app-store
 bash install.sh
 ```

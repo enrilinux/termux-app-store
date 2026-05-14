@@ -132,7 +132,7 @@ or
 
 > With git clone (For download full files repository)
 ```bash
-git clone https://github.com/djunekz/termux-app-store
+git clone --single-branch --branch master https://github.com/djunekz/termux-app-store
 cd termux-app-store
 bash install.sh
 ```
