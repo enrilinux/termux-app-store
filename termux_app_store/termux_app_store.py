@@ -38,6 +38,61 @@ try:
         ProgressBar,
     )
     from textual.containers import Horizontal, Vertical, VerticalScroll
+    from textual.reactive import reactive
+    from textual.widget import Widget
+
+    class SimpleProgressBar(Widget):
+        DEFAULT_CSS = """
+        SimpleProgressBar {
+            height: 1;
+            margin-top: 1;
+        }
+        """
+        progress: reactive[float] = reactive(0.0)
+
+        def __init__(self, total: float = 100, **kwargs):
+            super().__init__(**kwargs)
+            self.total = total
+            self._eta_seconds: float = 0.0
+            self._start_time: float = 0.0
+            self._last_pct: float = 0.0
+
+        def on_mount(self):
+            def _tick():
+                if self._eta_seconds > 0 and self.get_remaining() > 0:
+                    self.refresh()
+            self.set_interval(1.0, _tick)
+
+        def set_eta(self, seconds: float):
+            self._eta_seconds = max(0.0, seconds)
+            self._start_time = __import__("time").monotonic()
+            self._last_pct = self.progress
+
+        def get_remaining(self) -> float:
+            if self._eta_seconds <= 0:
+                return 0.0
+            elapsed = __import__("time").monotonic() - self._start_time
+            return max(0.0, self._eta_seconds - elapsed)
+
+        def render(self):
+            pct = min(100, max(0, int(self.progress / self.total * 100)))
+            remaining = self.get_remaining()
+
+            if remaining > 0 and pct < 100:
+                mins = int(remaining) // 60
+                secs = int(remaining) % 60
+                eta_str = f"{mins:02d}:{secs:02d}"
+            else:
+                eta_str = "--:--"
+
+            suffix = f" {pct:3d}% {eta_str}"
+            width = self.size.width - len(suffix)
+            if width < 1:
+                width = 1
+            filled = int(width * pct / 100)
+            bar = "━" * filled + "─" * (width - filled)
+            return f"{bar}{suffix}"
+
     _TEXTUAL_AVAILABLE = True
 except ImportError:
     App = object  # type: ignore
@@ -49,7 +104,7 @@ except ImportError:
         class Changed: pass
         class Highlighted: pass
     Header = Input = ListView = ListItem = Label = _Stub
-    Static = Button = ProgressBar = _Stub
+    Static = Button = ProgressBar = SimpleProgressBar = _Stub
     Horizontal = Vertical = VerticalScroll = _Stub
 
 CACHE_FILE = (
@@ -660,7 +715,6 @@ class TermuxAppStore(App):
         layout: vertical;
     }
     ListItem.--highlight { background: #44475a; color: #50fa7b; }
-    ProgressBar { height: 1; margin-top: 1; }
     #footer { height: 1; content-align: center middle; color: #6272a4; }
     #log-scroll { height: 1fr; border: solid #6272a4; margin-top: 1; }
     #btn-row { height: auto; margin-top: 1; }
@@ -692,10 +746,19 @@ class TermuxAppStore(App):
     async def _fetch_online_worker(self): # pragma: no cover
         try:
             raw = await asyncio.to_thread(fetch_index_from_github)
-            if raw:
-                self.packages = [normalize_pkg(p) for p in raw]
-                self.status_cache.clear()
-                self.refresh_list()
+            if not raw:
+                return
+
+            new_packages = [normalize_pkg(p) for p in raw]
+
+            old_names = {p["name"] for p in self.packages}
+            new_names = {p["name"] for p in new_packages}
+            if old_names == new_names:
+                return
+
+            self.packages = new_packages
+            self.status_cache.clear()
+            self.refresh_list(preserve_selection=True)
         except Exception:
             pass
 
@@ -704,53 +767,52 @@ class TermuxAppStore(App):
             return
 
         self.installing = True
-        self.call_from_thread(lambda: setattr(self.install_btn, "disabled", True))
-        self.call_from_thread(lambda: setattr(self.uninstall_btn, "disabled", True))
+        self.install_btn.disabled = True
+        self.uninstall_btn.disabled = True
 
         self.log_buffer.clear()
-        self.call_from_thread(lambda: self.update_log(f"Starting installation: {name}\n"))
-        self.call_from_thread(lambda: setattr(self.progress, "progress", 5))  # mulai dari 5%
+        self.update_log(f"Starting installation: {name}\n")
+        self.progress.progress = 5
+        self.progress.set_eta(0)
 
         success = False
 
+        def _progress(p):
+            self.progress.progress = p
+
+        def _eta(seconds):
+            self.progress.set_eta(seconds)
+
         try:
-            if _BINARY_CACHE_AVAILABLE:
-                self.call_from_thread(lambda: self.update_log("Checking Binary Cache...\n"))
-
-                installer = FastInstaller()
-                success = await installer.install(
+            if _FAST_INSTALL_AVAILABLE:
+                self.update_log("⚙ Fast Install...\n")
+                success = await asyncio.to_thread(
+                    fast_install,
                     name,
-                    force_source=getattr(self, 'force_source', False)
-                )
-
-            if not success and _FAST_INSTALL_AVAILABLE:
-                self.call_from_thread(lambda: self.update_log("⚙Using Fast Install...\n"))
-                success = fast_install(
-                    pkg_name=name,
-                    log_fn=self.update_log,
-                    progress_fn=lambda p: self.call_from_thread(
-                        lambda val=p: setattr(self.progress, "progress", val)
-                    )
+                    self.update_log,
+                    _progress,
+                    _eta,
                 )
 
             if not success:
-                self.call_from_thread(lambda: self.update_log("Building from source...\n"))
+                self.update_log("Building from source...\n")
                 success = await asyncio.to_thread(self._build_from_source_with_progress, name)
 
         except Exception as e:
-            self.call_from_thread(lambda e=e: self.update_log(f"❌ Error: {e}\n"))
+            self.update_log(f"❌ Error: {e}\n")
 
         if success:
-            self.call_from_thread(lambda: setattr(self.progress, "progress", 100))
-            self.call_from_thread(lambda: self.update_log(f"\n✅ {name} installed successfully!"))
+            self.progress.progress = 100
+            self.progress.set_eta(0)
+            self.update_log(f"\n✅ {name} installed successfully!")
         else:
-            self.call_from_thread(lambda: self.update_log(f"\n❌ Failed to install {name}"))
+            self.update_log(f"\n❌ Failed to install {name}")
 
         self.installing = False
-        self.call_from_thread(lambda: setattr(self.install_btn, "disabled", False))
-        self.call_from_thread(lambda: setattr(self.uninstall_btn, "disabled", False))
+        self.install_btn.disabled = False
+        self.uninstall_btn.disabled = False
         self.status_cache.clear()
-        self.call_from_thread(self.refresh_list)
+        self.refresh_list()
 
     def _build_from_source_with_progress(self, name: str) -> bool:
         app_root = get_app_root()
@@ -759,6 +821,37 @@ class TermuxAppStore(App):
         if not build_sh.exists():
             self.update_log("build-package.sh not found!")
             return False
+
+        STAGE_FLOORS = [
+            ("Downloading",          15),
+            ("Checksum",             20),
+            ("Extracting",           25),
+            ("Source root",          30),
+            ("Installing Files",     40),
+            ("termux_step_make",     50),
+            ("Generating Package",   70),
+            ("Control file",         72),
+            ("Building .deb",        75),
+            ("Running dpkg-deb",     78),
+            ("built successfully",   82),
+            ("Installing Package",   85),
+            ("Running dpkg",         87),
+            ("Selecting previously", 88),
+            ("Unpacking",            90),
+            ("Setting up",           94),
+        ]
+
+        current_pct = [10]
+
+        def _set_progress(pct):
+            if pct > current_pct[0]:
+                current_pct[0] = pct
+                self.call_from_thread(
+                    lambda p=pct: setattr(self.progress, "progress", p)
+                )
+
+        self.call_from_thread(lambda: self.progress.set_eta(180))
+        _set_progress(10)
 
         proc = subprocess.Popen(
             ["bash", str(build_sh), name],
@@ -769,16 +862,18 @@ class TermuxAppStore(App):
 
         for line in iter(proc.stdout.readline, b""):
             clean = strip_ansi(line.decode(errors="ignore").rstrip())
-            if clean:
-                self.update_log(clean)
-                if "Installing" in clean or "Extracting" in clean:
-                    self.call_from_thread(lambda: setattr(self.progress, "progress", 60))
-                elif "Building" in clean or "make" in clean.lower():
-                    self.call_from_thread(lambda: setattr(self.progress, "progress", 80))
+            if not clean:
+                continue
+            self.update_log(clean)
+            for keyword, floor in STAGE_FLOORS:
+                if keyword.lower() in clean.lower():
+                    _set_progress(floor)
+                    break
 
         proc.wait()
-        self.call_from_thread(lambda: setattr(self.progress, "progress", 95))
+        _set_progress(95)
         return proc.returncode == 0
+
 
     def _build_from_source(self, name: str):
         app_root = get_app_root()
@@ -822,7 +917,7 @@ class TermuxAppStore(App):
                     self.log_view = Static("", markup=False)
                     yield self.log_view
 
-                self.progress = ProgressBar(total=100)
+                self.progress = SimpleProgressBar(total=100)
                 yield self.progress
 
                 with Horizontal(id="btn-row"):
@@ -841,19 +936,32 @@ class TermuxAppStore(App):
         self.packages = get_packages(get_packages_dir(), online=online)
         self.status_cache.clear()
 
-    def refresh_list(self):
+    def refresh_list(self, preserve_selection: bool = False):
+        current_name = None
+        if preserve_selection and self.current_item:
+            current_name = self.current_item.pkg.get("name")
+
         self.list_view.clear()
         q = self.search_query
 
+        restored = False
         for pkg in self.packages:
             if q == "" or q in pkg["name"].lower() or q in pkg["desc"].lower():
                 self.list_view.append(PackageItem(pkg))
 
         if self.list_view.children:
-            self.list_view.index = 0
-            first = self.list_view.query(PackageItem).first(PackageItem)
-            if first:
-                self.show_preview(first)
+            if current_name:
+                for i, child in enumerate(self.list_view.children):
+                    if hasattr(child, "pkg") and child.pkg.get("name") == current_name:
+                        self.list_view.index = i
+                        restored = True
+                        break
+
+            if not restored:
+                self.list_view.index = 0
+                first = self.list_view.query(PackageItem).first(PackageItem)
+                if first:
+                    self.show_preview(first)
 
     def on_input_changed(self, message):
         self.search_query = message.value.lower().strip()
@@ -938,7 +1046,7 @@ class TermuxAppStore(App):
             return
         action, name = await self.worker_queue.get()
         if action == "install":
-            await asyncio.to_thread(self.run_build_sync, name)
+            await self.run_install(name)
         elif action == "uninstall":
             await asyncio.to_thread(self.run_uninstall_sync, name)
 

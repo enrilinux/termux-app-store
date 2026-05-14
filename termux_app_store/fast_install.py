@@ -41,12 +41,6 @@ MIRRORS = [
         "base_url": "https://cdn.jsdelivr.net/gh/djunekz/termux-app-store@gh-pages",
         "priority": 3,
     },
-    {
-        "id":       "raw-github",
-        "name":     "GitHub Raw",
-        "base_url": "https://raw.githubusercontent.com/djunekz/termux-app-store/gh-pages",
-        "priority": 4,
-    },
 ]
 
 DEB_PATH_PATTERN = "pool/main/{pkg}_{version}_{arch}.deb"
@@ -193,7 +187,8 @@ def save_deb_cache(src: Path, pkg: str, version: str, arch: str) -> Path:
 def download_deb(pkg: str, version: str, arch: str,
                  dest: Path,
                  log_fn: Optional[Callable] = None,
-                 progress_fn: Optional[Callable] = None) -> bool:
+                 progress_fn: Optional[Callable] = None,
+                 eta_fn: Optional[Callable] = None) -> bool:
     def _log(msg):
         if log_fn:
             log_fn(msg)
@@ -201,6 +196,10 @@ def download_deb(pkg: str, version: str, arch: str,
     def _progress(pct):
         if progress_fn:
             progress_fn(pct)
+
+    def _eta(seconds):
+        if eta_fn:
+            eta_fn(seconds)
 
     mirror = get_best_mirror()
     deb_path = DEB_PATH_PATTERN.format(pkg=pkg, version=version, arch=arch)
@@ -222,6 +221,10 @@ def download_deb(pkg: str, version: str, arch: str,
             with urllib.request.urlopen(req, timeout=30) as resp:
                 total = int(resp.headers.get("Content-Length", 0))
                 downloaded = 0
+                dl_start = time.time()
+
+                if total > 0:
+                    _eta(total / (200 * 1024))
 
                 with open(tmp, "wb") as f:
                     while True:
@@ -233,11 +236,19 @@ def download_deb(pkg: str, version: str, arch: str,
                         if total > 0:
                             pct = 5 + int(downloaded * 75 / total)
                             _progress(pct)
+                            elapsed = time.time() - dl_start
+                            if elapsed > 0.5 and downloaded > 0:
+                                speed = downloaded / elapsed
+                                remaining_bytes = total - downloaded
+                                install_est = total / (500 * 1024)
+                                _eta(remaining_bytes / speed + install_est)
 
             tmp.rename(dest)
             size_kb = dest.stat().st_size // 1024
             _log(f"Downloaded {size_kb}KB")
             _progress(80)
+            file_size = dest.stat().st_size
+            _eta(file_size / (500 * 1024))
             return True
 
         except urllib.error.HTTPError as e:
@@ -302,21 +313,32 @@ def install_deb(deb_path: Path,
 
 def fast_install(pkg_name: str,
                  log_fn:      Optional[Callable] = None,
-                 progress_fn: Optional[Callable] = None) -> bool:
+                 progress_fn: Optional[Callable] = None,
+                 eta_fn:      Optional[Callable] = None) -> bool:
+
+    _current_pct = [0]
 
     def _log(msg):
         if log_fn:
             log_fn(msg)
+
     def _progress(pct):
-        if progress_fn:
-            progress_fn(pct)
+        pct = int(pct)
+        if pct >= _current_pct[0]:
+            _current_pct[0] = pct
+            if progress_fn:
+                progress_fn(pct)
+
+    def _eta(seconds):
+        if eta_fn:
+            eta_fn(seconds)
 
     arch = get_arch()
     start_time = time.time()
 
     _log(f"► Fast Install: {pkg_name}")
     _log(f"  Architecture: {arch}")
-    _progress(2)
+    _progress(5)
 
     _log("Fetching package info...")
     pkg_info = get_pkg_info(pkg_name)
@@ -326,12 +348,11 @@ def fast_install(pkg_name: str,
         return False
 
     version = pkg_info.get("version", "")
-
     sha256_by_arch = pkg_info.get("sha256_by_arch", {})
     deb_sha256 = sha256_by_arch.get(arch, "")
 
     _log(f"  Version: {version}")
-    _progress(5)
+    _progress(8)
 
     _log("Checking local cache...")
     cached = get_cached_deb(pkg_name, version, arch)
@@ -340,8 +361,9 @@ def fast_install(pkg_name: str,
         elapsed = time.time() - start_time
         _log(f"✓ Cache HIT — {cached.name} ({elapsed:.1f}s)")
         _progress(80)
+        _eta(cached.stat().st_size / (500 * 1024))
 
-        ok = install_deb(cached, log_fn=log_fn, progress_fn=progress_fn)
+        ok = install_deb(cached, log_fn=log_fn, progress_fn=_progress)
         if ok:
             elapsed = time.time() - start_time
             _log(f"✔ Installed from cache in {elapsed:.1f}s!")
@@ -363,7 +385,8 @@ def fast_install(pkg_name: str,
             arch=arch,
             dest=deb_dest,
             log_fn=log_fn,
-            progress_fn=progress_fn,
+            progress_fn=_progress,
+            eta_fn=eta_fn,
         )
 
         if downloaded:
@@ -384,8 +407,7 @@ def fast_install(pkg_name: str,
 
             if downloaded:
                 save_deb_cache(deb_dest, pkg_name, version, arch)
-
-                ok = install_deb(deb_dest, log_fn=log_fn, progress_fn=progress_fn)
+                ok = install_deb(deb_dest, log_fn=log_fn, progress_fn=_progress)
                 if ok:
                     elapsed = time.time() - start_time
                     _log(f"✔ Installed in {elapsed:.1f}s!")
@@ -399,9 +421,7 @@ def fast_install(pkg_name: str,
     _log("Falling back to build from source...")
     _log("(This will take longer)")
     _log("")
-    _progress(10)
-
-    return _fallback_build_from_source(pkg_name, log_fn=log_fn, progress_fn=progress_fn)
+    return _fallback_build_from_source(pkg_name, log_fn=log_fn, progress_fn=_progress)
 
 def _fallback_build_from_source(pkg_name: str,
                                   log_fn:      Optional[Callable] = None,
@@ -506,9 +526,6 @@ def cache_info(log_fn: Optional[Callable] = None):
         _log(f"  • {deb.name} ({age_h}h ago)")
 
 class FastInstaller:
-    """Wrapper class around fast_install() for compatibility with code that
-    expects a FastInstaller object with an .install() method."""
-
     async def install(
         self,
         pkg_name: str,

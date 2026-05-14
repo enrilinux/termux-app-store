@@ -49,7 +49,7 @@ except ImportError:
             {"name": "GitHub Pages",  "base_url": "https://djunekz.github.io/termux-app-store"},
             {"name": "Cloudflare CDN","base_url": "https://termux-app-store.pages.dev"},
             {"name": "jsDelivr CDN",  "base_url": "https://cdn.jsdelivr.net/gh/djunekz/termux-app-store@gh-pages"},
-            {"name": "GitHub Raw",    "base_url": "https://raw.githubusercontent.com/djunekz/termux-app-store/gh-pages"},
+            {"name": "Github Raw",    "base_url": "https://raw.githubusercontent.com/djunekz/termux-app-store/gh-pages"},
         ]
 
 CACHE_FILE = (
@@ -1242,7 +1242,6 @@ CMD_ALIASES = {
     "-fi":          "fix-install",
     "show":         "show",
     "update":       "update",
-    "up":           "update",
     "upgrade":      "upgrade",
     "version":      "version",
     "-v":           "version",
@@ -1355,7 +1354,7 @@ def run_cli():
             from termux_app_store.termux_app_store import run_tui
             run_tui()
         except ImportError:
-            print(f"{RED}[!] command not found.{R}")
+            print(f"{RED}[!] commamd not found.{R}")
             print(f"{RED}[!] Usage: termux-app-store help")
             cmd_help()
         return
