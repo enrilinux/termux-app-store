@@ -7,6 +7,10 @@ and this project adheres to semantic versioning.
 
 ## [Unreleased]
 
+---
+
+## [v0.4.1] - 2026-05-16
+
 ### Fixed
 - `termux_app_store.py` — `consume_worker_queue()` was calling `asyncio.to_thread(self.run_build_sync, name)` which bypassed the Binary Cache and Fast Install pipeline entirely, going straight to source build; fixed to `await self.run_install(name)` so the correct install pipeline is used
 - `termux_app_store.py` — `run_install()` was full of `call_from_thread()` calls but runs on the main async loop (not a worker thread); Textual raised `RuntimeError: call_from_thread must run in a different thread`; fixed by replacing all `call_from_thread(lambda: setattr(...))` with direct attribute assignment and direct method calls
