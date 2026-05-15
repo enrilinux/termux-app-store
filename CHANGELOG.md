@@ -9,6 +9,7 @@ and this project adheres to semantic versioning.
 
 ### Update
 - Package `tdoc` v2.1.1 → v2.2.0
+- Package `merlin` v1.0.0 → v1.1.0
 
 ---
 
