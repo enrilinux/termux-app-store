@@ -2,9 +2,9 @@ TERMUX_PKG_HOMEPAGE=https://github.com/djunekz/merlin
 TERMUX_PKG_DESCRIPTION="Analyst website vulnerabillity scanner"
 TERMUX_PKG_LICENSE="MIT"
 TERMUX_PKG_MAINTAINER="@termux-app-store"
-TERMUX_PKG_VERSION=1.0.0
+TERMUX_PKG_VERSION=1.1.0
 TERMUX_PKG_SRCURL=https://github.com/djunekz/merlin/archive/refs/tags/${TERMUX_PKG_VERSION}.tar.gz
-TERMUX_PKG_SHA256=1b43688a1383cda25c03945e877390f530b9acee42b0a2fb34c42f7c9c2f50ee
+TERMUX_PKG_SHA256=b3bbe7d3a893630e6770a92df32dafe0d33acce01fb8688641caab5bd40160eb
 
 TERMUX_PKG_BUILD_IN_SRC=true
 
