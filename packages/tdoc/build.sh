@@ -2,10 +2,10 @@ TERMUX_PKG_HOMEPAGE=https://github.com/djunekz/tdoc
 TERMUX_PKG_DESCRIPTION="TDOC - Diagnostic and repair utility for Termux environment"
 TERMUX_PKG_LICENSE="MIT"
 TERMUX_PKG_MAINTAINER="@djunekz"
-TERMUX_PKG_VERSION=2.1.1
+TERMUX_PKG_VERSION=2.2.0
 
 TERMUX_PKG_SRCURL=https://github.com/djunekz/tdoc/archive/refs/tags/v${TERMUX_PKG_VERSION}.tar.gz
-TERMUX_PKG_SHA256=899848498a7f69b3c67640eb13d0beed82b430e1901722e825df6efe768bd306
+TERMUX_PKG_SHA256=edac3256cdb51cba67b7bacb5d6e32d41390cc7bfc28a0db97a73dedeb7fa543
 
 TERMUX_PKG_PLATFORM_INDEPENDENT=true
 TERMUX_PKG_BUILD_IN_SRC=true
@@ -21,6 +21,7 @@ termux_step_make_install() {
                 "$TERMUX_PKG_SRCDIR/lang" \
 		"$TERMUX_PKG_SRCDIR/data" \
 		"$TERMUX_PKG_SRCDIR/tdoc" \
+                "$TERMUX_PKG_SRCDIR/VERSION" \
 		"$TERMUX_PREFIX/lib/tdoc/"
 
 	install -Dm755 \
