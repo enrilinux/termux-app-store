@@ -56,6 +56,10 @@ def W():  return min(TW(), 78)
 def cls():
 # FIX: 使用subprocess替代os.system
 # os.system("clear" if os.name != "nt" else "cls")
+    subprocess.run(
+        "clear" if os.name != "nt" else "cls",
+        shell=True
+    )
 
 def strip_ansi(text):
     clean, i = "", 0
