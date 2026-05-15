@@ -1,4 +1,4 @@
-![[Termux App Store — TUI Package Manager for Termux](.assets/00.jpeg)](https://github.com/djunekz/termux-app-store/raw/master/.assets/00.jpeg)
+![[Termux App Store — TUI Package Manager for Termux](https://github.com/djunekz/termux-app-store/blob/master/.assets/00.jpeg)](https://github.com/djunekz/termux-app-store/raw/master/.assets/00.jpeg)
 
 # [Termux App Store — TUI & CLI Package Manager for Termux](https://djunekz.github.io/termux-app-store/)
 
@@ -58,14 +58,14 @@ It works as an **alternative package manager for Termux**, letting you install c
 
 <div align="center">
 
-<img src=".assets/0.jpeg" width="74%" alt="Termux App Store — Main View"/>
+<img src="https://github.com/djunekz/termux-app-store/blob/master/.assets/0.jpeg" width="74%" alt="Termux App Store — Main View"/>
 
 <br/><br/>
 <H1>Tui Interface</H1>
 
 | TUI Main Interface | TUI Install Interface | Menu Palette |
 |:---:|:---:|:---:|
-| <img src=".assets/0main.jpg" width="220" alt="TUI Main Interface"/> | <img src=".assets/1install.jpg" width="220" alt="TUI Install Interface"/> | <img src=".assets/2pallete.jpg" width="220" alt="Menu Palette Interface"/> |
+| <img src="https://github.com/djunekz/termux-app-store/blob/master/.assets/0main.jpg" width="220" alt="TUI Main Interface"/> | <img src="https://github.com/djunekz/termux-app-store/blob/master/.assets/1install.jpg" width="220" alt="TUI Install Interface"/> | <img src="https://github.com/djunekz/termux-app-store/blob/master/.assets/2pallete.jpg" width="220" alt="Menu Palette Interface"/> |
 | TUI main menu | Package install process | Command palette |
 
 > TUI User-friendly with full **touchscreen** support
@@ -76,7 +76,7 @@ It works as an **alternative package manager for Termux**, letting you install c
 
 | Other tools support | CLI Install Interface | CLI View Interface |
 |:---:|:---:|:---:|
-| <img src=".assets/0tas-and-termux-build.jpg" width="220" alt="Other tools support"/> | <img src=".assets/0cli-install.jpg" width="220" alt="CLI Install Interface"/> | <img src=".assets/0cli-view.jpg" width="220" alt="CLI View Interface"/> |
+| <img src="https://github.com/djunekz/termux-app-store/blob/master/.assets/0tas-and-termux-build.jpg" width="220" alt="Other tools support"/> | <img src="https://github.com/djunekz/termux-app-store/blob/master/.assets/0cli-install.jpg" width="220" alt="CLI Install Interface"/> | <img src="https://github.com/djunekz/termux-app-store/blob/master/.assets/0cli-view.jpg" width="220" alt="CLI View Interface"/> |
 | tasctl and termux-build | Package install process | CLI help, list and show |
 
 ---
@@ -85,7 +85,7 @@ It works as an **alternative package manager for Termux**, letting you install c
 
 | List menu | Menu about | Menu how to upload |
 |:---:|:---:|:---:|
-| <img src=".assets/0guide-menu.png" width="220" alt="List menu"/> | <img src=".assets/0guide-about.png" width="220" alt="Menu about"/> | <img src=".assets/0guide-upload.png" width="220" alt="Menu how to upload"/> |
+| <img src="https://github.com/djunekz/termux-app-store/blob/master/.assets/0guide-menu.png" width="220" alt="List menu"/> | <img src="https://github.com/djunekz/termux-app-store/blob/master/.assets/0guide-about.png" width="220" alt="Menu about"/> | <img src="https://github.com/djunekz/termux-app-store/blob/master/.assets/0guide-upload.png" width="220" alt="Menu how to upload"/> |
 | GuideBook main menu | Information termux-app-store | Guide how to upload |
 
 > GuideBook is a information, run: `python guidebook.py`
@@ -96,7 +96,7 @@ It works as an **alternative package manager for Termux**, letting you install c
 
 | Record `termux-app-store` TUI, CLI, Other tool `tasctl`, `termux-build`, `guidebook.py` |
 |:---:|
-| <img src=".assets/demo.gif" width="74%" alt="termux-app-store"/> | termux-app-store
+| <img src="https://github.com/djunekz/termux-app-store/blob/master/.assets/demo.gif" width="74%" alt="termux-app-store"/> | termux-app-store
 
 </div>
 
