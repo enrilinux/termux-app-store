@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-17T03:43:29.342390+00:00",
+  "generated_at": "2026-05-17T06:13:57.781212+00:00",
   "total": 88,
   "packages": [
     {
@@ -963,7 +963,7 @@
     },
     {
       "package": "merlin",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "maintainer": "@termux-app-store",
       "description": "Analyst website vulnerabillity scanner",
       "homepage": "https://github.com/djunekz/merlin",
@@ -972,7 +972,7 @@
       "installed_size": "Unknown",
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/djunekz/merlin/archive/refs/tags/${TERMUX_PKG_VERSION}.tar.gz",
-      "sha256": "01e0e64d9c774852d9b007016c3974aa081459f8ab590d525f9475057562d5ff",
+      "sha256": "aa406a27b7b7468d93dd645c82313d797680b6b14067e5ed87af437721689a07",
       "platform_independent": false
     },
     {
