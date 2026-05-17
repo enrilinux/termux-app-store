@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-17T06:13:57.781212+00:00",
+  "generated_at": "2026-05-17T06:18:28.263432+00:00",
   "total": 88,
   "packages": [
     {
@@ -844,7 +844,7 @@
     },
     {
       "package": "instareporter",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "maintainer": "@termux-app-store",
       "description": "Instagram Mass Reporting Tool",
       "homepage": "https://github.com/muneebwanee/InstaReporter",
@@ -853,7 +853,7 @@
       "installed_size": "Unknown",
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/muneebwanee/InstaReporter/archive/refs/heads/main.tar.gz",
-      "sha256": "4bc7fdce74559f3148fc5620b9990639cad7ff08984fa09152c4843b4587a888",
+      "sha256": "7dbfe627db9b30f6e5a0522b846e9ee4e2594c618661520477b6951145440b44",
       "platform_independent": false,
       "depends": [
         "python",
