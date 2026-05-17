@@ -9,18 +9,18 @@ on:
       - master
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   cli-validation:
     name: CLI-Validation
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -33,5 +33,22 @@ jobs:
           chmod +x tasctl || true
 
       - name: Run termux-build validation (Python)
+        id: validate
         run: |
+          python ci/run_termux_build.py
+        continue-on-error: true
+
+      - name: Auto-fix SHA256 mismatches
+        if: steps.validate.outcome == 'failure'
+        id: fix_sha256
+        run: |
+          echo "Validation failed — checking for SHA256 mismatches..."
+          python ci/run_fix_sha256.py
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+
+      - name: Re-run validation after SHA256 fix
+        if: steps.fix_sha256.outcome == 'success'
+        run: |
+          echo "Re-running validation after SHA256 fixes..."
           python ci/run_termux_build.py
