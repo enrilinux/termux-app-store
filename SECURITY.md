@@ -10,6 +10,7 @@ validate Termux packages, therefore **supply-chain integrity** and
 ## Supported Versions
 
 Security fixes apply to:
+
 - The `master` branch
 - The latest stable release (if applicable)
 
@@ -24,11 +25,15 @@ Older versions may not receive security updates.
 If you discover a vulnerability, please report it responsibly.
 
 ### How to Report
-Choose one of the following:
-- GitHub Security Advisories (preferred)
-- Private contact with the project maintainer
+
+**Preferred — GitHub Security Advisories (private):**
+[Click Here](https://github.com/djunekz/termux-app-store/security/advisories/new)
+
+**Alternative — Private contact:**
+gab288.gab288@passinbox.com
 
 Provide as much detail as possible:
+
 - Description of the issue
 - Affected components
 - Steps to reproduce
@@ -40,6 +45,7 @@ Provide as much detail as possible:
 ## Response Timeline
 
 We aim to:
+
 - Acknowledge reports within **72 hours**
 - Provide an initial assessment within **7 days**
 - Release a fix as soon as reasonably possible
@@ -51,12 +57,16 @@ Timelines may vary depending on severity.
 ## Automated Security Controls
 
 This repository uses:
+
 - Automated CI validation
 - Script & build file linting
 - Coverage checks for core tooling
 - Controlled GitHub Actions workflows
+- SHA256 integrity verification for all packages
+- Official source verification (`verify_official_release`)
 
 These measures reduce the risk of:
+
 - Malicious packages
 - Hidden build behavior
 - Supply-chain attacks
@@ -66,13 +76,17 @@ These measures reduce the risk of:
 ## Scope of Security Issues
 
 ### In Scope
+
 - Malicious code submissions
 - Build script abuse
 - CI pipeline manipulation
 - Unauthorized data exfiltration
 - Dependency or toolchain vulnerabilities
+- SHA256 / integrity bypass
+- Installer or updater hijacking
 
 ### Out of Scope
+
 - Vulnerabilities in third-party software packaged by users
 - User misconfiguration
 - Unsupported forks or modified environments
@@ -90,6 +104,7 @@ These measures reduce the risk of:
 ## Zero Tolerance Policy
 
 The following will result in immediate action:
+
 - Intentional backdoors
 - Crypto miners
 - Obfuscated malicious logic
@@ -102,6 +117,7 @@ Offending contributions will be removed and access revoked.
 ## Trust Model
 
 Trust is earned through:
+
 - Transparent contributions
 - Reviewable changes
 - Automated validation
@@ -114,7 +130,6 @@ Security is everyone's responsibility.
 ## Policy Changes
 
 This security policy may be updated as the project evolves.
-
 Significant changes will be documented and communicated publicly.
 
 ---
@@ -122,6 +137,7 @@ Significant changes will be documented and communicated publicly.
 ## Final Note
 
 Security policies exist to protect:
+
 - Contributors
 - Users
 - The broader Termux ecosystem
