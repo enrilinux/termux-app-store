@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-          token: ${{ secrets.PAT_TOKEN }}
+          token: ${{ github.event_name == 'push' && secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -39,7 +39,7 @@ jobs:
         continue-on-error: true
 
       - name: Auto-fix SHA256 mismatches
-        if: steps.validate.outcome == 'failure'
+        if: steps.validate.outcome == 'failure' && github.event_name == 'push'
         id: fix_sha256
         run: |
           echo "Validation failed — checking for SHA256 mismatches..."
@@ -52,3 +52,9 @@ jobs:
         run: |
           echo "Re-running validation after SHA256 fixes..."
           python ci/run_termux_build.py
+
+      - name: Fail if validation failed on PR
+        if: steps.validate.outcome == 'failure' && github.event_name == 'pull_request'
+        run: |
+          echo "Validation failed on PR — please fix manually"
+          exit 1
