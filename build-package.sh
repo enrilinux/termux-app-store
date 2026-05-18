@@ -730,116 +730,73 @@ if [[ -n "$PREBUILT_BIN" ]]; then
 elif [[ -n "$PREBUILT_DEB" ]]; then
   _step "Mode: Prebuilt .deb"
   _progress "Extracting .deb contents..."
+
   dpkg -x "$PREBUILT_DEB" "$WORK_DIR/pkg"
+  dpkg -e "$PREBUILT_DEB" "$WORK_DIR/pkg/DEBIAN"
 
-  BIN_FILE="$(find "$WORK_DIR/pkg" -type f -name "$PACKAGE*" -executable | head -n1 || true)"
+  _ORIG_BIN=$(find "$WORK_DIR/pkg" -type f -path "*/bin/$PACKAGE" ! -path "*/DEBIAN/*" | head -n1 || true)
 
-  [[ -z "$BIN_FILE" ]] &&     BIN_FILE="$(find "$WORK_DIR/pkg" -type f -path "*/bin/$PACKAGE" | head -n1 || true)"
+  if [[ -n "$_ORIG_BIN" ]]; then
+    chmod +x "$_ORIG_BIN"
+    _ok "Binary staged into .deb"
+    _detail "Bin:" "$PREFIX/bin/$PACKAGE"
+  else
+    BIN_FILE="$(find "$WORK_DIR/pkg" -type f -name "$PACKAGE" -executable ! -path "*/DEBIAN/*" | head -n1 || true)"
+    [[ -z "$BIN_FILE" ]] && BIN_FILE="$(find "$WORK_DIR/pkg" -type f -path "*/bin/*" ! -path "*/DEBIAN/*" | head -n1 || true)"
+    [[ -z "$BIN_FILE" ]] && BIN_FILE="$(find "$WORK_DIR/pkg" -type f \( -name "*.py" -o -name "*.sh" \) ! -path "*/DEBIAN/*" | head -n1 || true)"
+    [[ -z "$BIN_FILE" ]] && BIN_FILE="$(find "$WORK_DIR/pkg" -type f ! -path "*/DEBIAN/*" | head -n1 || true)"
 
-  [[ -z "$BIN_FILE" ]] &&     BIN_FILE="$(find "$WORK_DIR/pkg" -type f -path "*/bin/*" | head -n1 || true)"
+    if [[ -n "$BIN_FILE" ]]; then
+      mkdir -p "$WORK_DIR/pkg$PREFIX/bin" "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE"
+      _BIN_EXT="${BIN_FILE##*.}"
+      _IS_SCRIPT=0
+      _SCRIPT_INTERPRETER=""
 
-  [[ -z "$BIN_FILE" ]] &&     BIN_FILE="$(find "$WORK_DIR/pkg" -type f \( -name "*.py" -o -name "*.sh" \) | head -n1 || true)"
-
-  [[ -z "$BIN_FILE" ]] &&     BIN_FILE="$(find "$WORK_DIR/pkg" -type f -not -path "*/DEBIAN/*" | head -n1 || true)"
-
-  if [[ -n "$BIN_FILE" ]]; then
-    mkdir -p "$PREFIX/lib/$PACKAGE"
-
-    _BIN_EXT="${BIN_FILE##*.}"
-    _IS_SCRIPT=0
-    _SCRIPT_INTERPRETER=""
-
-    if [[ "$_BIN_EXT" == "py" ]]; then
-      _IS_SCRIPT=1
-      _SCRIPT_INTERPRETER="python3"
-    elif [[ "$_BIN_EXT" == "sh" ]]; then
-      _IS_SCRIPT=1
-      _SCRIPT_INTERPRETER="bash"
-    else
-      _SHEBANG=$(head -c 512 "$BIN_FILE" 2>/dev/null | head -n1 || true)
-      if echo "$_SHEBANG" | grep -q "python"; then
-        _IS_SCRIPT=1
-        _SCRIPT_INTERPRETER="python3"
-      elif echo "$_SHEBANG" | grep -q "bash\|sh"; then
-        _IS_SCRIPT=1
-        _SCRIPT_INTERPRETER="bash"
+      if [[ "$_BIN_EXT" == "py" ]]; then
+        _IS_SCRIPT=1; _SCRIPT_INTERPRETER="python3"
+      elif [[ "$_BIN_EXT" == "sh" ]]; then
+        _IS_SCRIPT=1; _SCRIPT_INTERPRETER="bash"
+      else
+        _SHEBANG=$(head -c 512 "$BIN_FILE" 2>/dev/null | tr -d '\0' | head -n1 || true)
+        if echo "$_SHEBANG" | grep -q "python"; then
+          _IS_SCRIPT=1; _SCRIPT_INTERPRETER="python3"
+        elif echo "$_SHEBANG" | grep -q "bash\|sh"; then
+          _IS_SCRIPT=1; _SCRIPT_INTERPRETER="bash"
+        fi
       fi
-    fi
 
-    if [[ "$_IS_SCRIPT" -eq 1 ]]; then
-      mkdir -p "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE" "$WORK_DIR/pkg$PREFIX/bin"
-      cp "$BIN_FILE" "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)"
-      chmod 644 "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)"
-      if echo "$_SCRIPT_INTERPRETER" | grep -q "python"; then
-        cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
+      cp "$BIN_FILE" "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$(basename "$BIN_FILE")"
+
+      if [[ "$_IS_SCRIPT" -eq 1 ]]; then
+        chmod 644 "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$(basename "$BIN_FILE")"
+        if echo "$_SCRIPT_INTERPRETER" | grep -q "python"; then
+          cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 export PYTHONPATH="$PREFIX/lib/$PACKAGE\${PYTHONPATH:+:\$PYTHONPATH}"
 exec $_SCRIPT_INTERPRETER "$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)" "\$@"
 EOF
-      else
-        cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
+        else
+          cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 exec $_SCRIPT_INTERPRETER "$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)" "\$@"
 EOF
+        fi
+        _ok "Script staged into .deb"
+        _detail "Script:" "$PREFIX/lib/$PACKAGE/$(basename "$BIN_FILE")"
+        _detail "Interpreter:" "$_SCRIPT_INTERPRETER"
+      else
+        chmod +x "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$PACKAGE"
+        cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
+#!/data/data/com.termux/files/usr/bin/bash
+exec "$PREFIX/lib/$PACKAGE/$PACKAGE" "\$@"
+EOF
+        _ok "Binary staged into .deb"
       fi
+
       chmod +x "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
-      _ok "Script staged into .deb"
-      _detail "Script:" "$PREFIX/lib/$PACKAGE/$(basename $BIN_FILE)"
-      _detail "Interpreter:" "$_SCRIPT_INTERPRETER"
       _detail "Bin:" "$PREFIX/bin/$PACKAGE"
     else
-      mkdir -p "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE" "$WORK_DIR/pkg$PREFIX/bin"
-      mv "$BIN_FILE" "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$PACKAGE"
-      chmod +x "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$PACKAGE"
-
-    _LINKED_PYTHON=""
-    if command -v readelf &>/dev/null; then
-      _LINKED_PYTHON=$(readelf -d "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$PACKAGE" 2>/dev/null \
-        | grep -oP "libpython[0-9]+\.[0-9]+[^]]*" | head -n1 || true)
-    elif command -v objdump &>/dev/null; then
-      _LINKED_PYTHON=$(objdump -p "$WORK_DIR/pkg$PREFIX/lib/$PACKAGE/$PACKAGE" 2>/dev/null \
-        | grep -oP "libpython[0-9]+\.[0-9]+[^[:space:]]*" | head -n1 || true)
-    fi
-
-    if [[ -n "$_LINKED_PYTHON" ]]; then
-      _PY_VER=$(echo "$_LINKED_PYTHON" | grep -oP "[0-9]+\.[0-9]+" | head -n1 || true)
-      _LIB_NEEDED="$PREFIX/lib/libpython${_PY_VER}.so.1.0"
-      _LIB_EXISTS=0
-      find "$PREFIX/lib" -name "libpython${_PY_VER}*.so*" 2>/dev/null | grep -q . && _LIB_EXISTS=1
-
-      if [[ "$_LIB_EXISTS" -eq 0 && -n "$_PY_VER" ]]; then
-        _INSTALLED_LIBPY=$(find "$PREFIX/lib" -maxdepth 1 -name "libpython*.so.1.0" \
-          2>/dev/null | head -n1 || true)
-        if [[ -n "$_INSTALLED_LIBPY" ]]; then
-          ln -sf "$_INSTALLED_LIBPY" "$_LIB_NEEDED" 2>/dev/null && {
-            _ok "Symlinked: libpython${_PY_VER}.so.1.0 → $(basename $_INSTALLED_LIBPY)"
-          } || {
-            _warn "Could not create libpython symlink"
-          }
-        else
-          _warn "No installed libpython found to symlink from"
-        fi
-      else
-        [[ "$_LIB_EXISTS" -eq 1 ]] && _ok "libpython${_PY_VER} already present"
-      fi
-
-      cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
-#!/data/data/com.termux/files/usr/bin/bash
-export LD_LIBRARY_PATH="$PREFIX/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
-exec "$PREFIX/lib/$PACKAGE/$PACKAGE" "\$@"
-EOF
-      _detail "Linked Python:" "$_LINKED_PYTHON"
-      _detail "LD_LIB path  :" "$PREFIX/lib"
-    else
-      cat > "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE" <<EOF
-#!/data/data/com.termux/files/usr/bin/bash
-exec "$PREFIX/lib/$PACKAGE/$PACKAGE" "\$@"
-EOF
-    fi
-
-    chmod +x "$WORK_DIR/pkg$PREFIX/bin/$PACKAGE"
-    _ok "Binary staged into .deb"
-    _detail "Bin:" "$PREFIX/bin/$PACKAGE"
+      _warn "No binary found inside prebuilt .deb — package files preserved as-is"
     fi
   fi
 
