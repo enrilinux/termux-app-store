@@ -10,7 +10,7 @@ TERMUX_PKG_BUILD_IN_SRC=true
 
 termux_step_make_install() {
     cd "$TERMUX_PKG_SRCDIR"
-    npm install
+    npm install --production
     mkdir -p "$TERMUX_PREFIX/lib/aura"
     cp -r "$TERMUX_PKG_SRCDIR"/. "$TERMUX_PREFIX/lib/aura/"
     mkdir -p "$TERMUX_PREFIX/bin"
