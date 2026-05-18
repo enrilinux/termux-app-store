@@ -816,7 +816,7 @@ elif declare -f termux_step_make_install > /dev/null 2>&1; then
 
   _spin_chars='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
   _spin_i=0
-  ( export PATH="$PREFIX/bin:$PATH"; termux_step_make_install ) > "$_INSTALL_LOG" 2>&1 &
+  ( cd "$_install_dir"; export PATH="$PREFIX/bin:$PATH"; termux_step_make_install ) > "$_INSTALL_LOG" 2>&1 &
   _INSTALL_PID=$!
   while kill -0 "$_INSTALL_PID" 2>/dev/null; do
     _sc="${_spin_chars:$(( _spin_i % ${#_spin_chars} )):1}"
