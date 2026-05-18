@@ -1,8 +1,8 @@
 ![[Termux App Store — Package Manager TUI untuk Termux](.assets/00.jpeg)](https://github.com/djunekz/termux-app-store/raw/master/.assets/00.jpeg)
 
-# [Termux App Store — Package Manager TUI & CLI untuk Termux](https://djunekz.github.io/termux-app-store/)
+# [Termux App Store — Cara Install Tool di Termux Tanpa Ribet](https://djunekz.github.io/termux-app-store/)
 
-**Package manager TUI pertama yang offline-first dan binary-safe, dibangun khusus untuk Termux di Android.**
+**Package manager TUI pertama yang offline-first dan binary-safe, dibangun khusus untuk Termux di Android. Seperti AUR, tapi untuk Termux.**
 
 [![CI](https://github.com/djunekz/termux-app-store/actions/workflows/build.yml/badge.svg)](https://github.com/djunekz/termux-app-store/actions)
 [![Codecov](https://codecov.io/github/djunekz/termux-app-store/branch/master/graph/badge.svg?token=357W4EP8G0)](https://codecov.io/github/djunekz/termux-app-store)
@@ -20,6 +20,19 @@
 > Install dan kelola package Termux — binary pre-built atau build dari source — tanpa root, tanpa akun, tanpa telemetri.
 
 > Baca dengan bahasa lain: 🇬🇧 **[English](README.md)** | 🇹🇭 **[ภาษาไทย](README.th.md)** | 🇯🇵 **[日本語](README.jp.md)** | 🇨🇳 **[中文](README.ch.md)** | 🇻🇳 **[Tiếng Việt](README.vi.md)** | 🇮🇳 **[हिन्दी](README.in.md)**
+
+---
+
+## Masalah yang sering kamu hadapi di Termux
+
+Kalau kamu pengguna Termux, pasti pernah mengalami ini:
+
+- Mau install tool dari GitHub, tapi harus `git clone`, `chmod +x`, `bash install.sh` satu per satu
+- Tidak tahu tool apa saja yang tersedia untuk Termux selain yang ada di `pkg`
+- Sudah install banyak tool, tapi susah melacak mana yang perlu diupdate
+- Internet tidak stabil, tapi butuh install tool secara offline
+
+**Termux App Store hadir untuk menyelesaikan semua itu.**
 
 ---
 
@@ -439,7 +452,7 @@ Jika Termux App Store bermanfaat untukmu:
 
 > Proyek ini dikembangkan secara independen dan **tidak berafiliasi** dengan proyek resmi [Termux](https://github.com/termux/termux-app).
 
-**Kata kunci:** termux app store · package manager termux · alternatif termux-packages · alternatif TUR termux · cara install tools termux · cara distribusi package termux · cara share tool di termux · bikin paket termux sendiri · termux tui android · termux cli android · termux install binary · termux deb installer · termux tools tanpa root · termux package manager Indonesia · install aplikasi di termux · termux community packages · termux build dari source · termux offline · custom repo termux · termux-app-store djunekz · perintah tas termux
+**Kata kunci:** cara install tool di termux · cara install aplikasi di termux · termux install tools tanpa root · package manager termux android · termux install tools dari github · termux package manager alternatif · AUR untuk termux · termux community tools · cara distribusi tool termux · bikin paket termux sendiri · termux tui android · termux cli android · termux install binary · termux deb installer · termux tools tanpa root · termux package manager Indonesia · install aplikasi di termux · termux community packages · termux build dari source · termux offline · custom repo termux · termux-app-store · termux-app-store djunekz · alternatif termux-packages · alternatif TUR termux · termux package browser · cara share tool termux · termux tool list indonesia · termux fast install · termux offline installer · termux app store github
 
 ---
 
