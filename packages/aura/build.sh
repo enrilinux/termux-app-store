@@ -9,11 +9,10 @@ TERMUX_PKG_DEPENDS="nodejs"
 TERMUX_PKG_BUILD_IN_SRC=true
 
 termux_step_make_install() {
-    npm install --prefix "$TERMUX_PKG_SRCDIR"
-
+    cd "$TERMUX_PKG_SRCDIR"
+    npm install
     mkdir -p "$TERMUX_PREFIX/lib/aura"
     cp -r "$TERMUX_PKG_SRCDIR"/. "$TERMUX_PREFIX/lib/aura/"
-
     mkdir -p "$TERMUX_PREFIX/bin"
     cat > "$TERMUX_PREFIX/bin/aura" <<'WRAPPER'
 #!/data/data/com.termux/files/usr/bin/bash
