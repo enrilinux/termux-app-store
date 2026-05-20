@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-20T03:52:48.629138+00:00",
+  "generated_at": "2026-05-20T14:05:31.896715+00:00",
   "total": 88,
   "packages": [
     {
@@ -1201,14 +1201,17 @@
       "version": "2.0.0",
       "maintainer": "@djunekz",
       "description": "Simple tool for change color, command prompt, and cursor termux",
-      "homepage": "https://gtihub.com/djunekz/termstyle",
+      "homepage": "https://github.com/djunekz/termstyle",
       "license": "GPL-3.0",
       "download_size": "Unknown",
       "installed_size": "Unknown",
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/djunekz/termstyle/releases/download/${TERMUX_PKG_VERSION}/termstyle_${TERMUX_PKG_VERSION}_all.deb",
       "sha256": "d747df182b4e3a899ae95ac5bef0e834f61783cc9bf12c26d9166ba84957963f",
-      "platform_independent": false
+      "platform_independent": false,
+      "depends": [
+        "python"
+      ]
     },
     {
       "package": "termux-ai",
