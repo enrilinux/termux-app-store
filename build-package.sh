@@ -750,6 +750,72 @@ if [[ -n "$PREBUILT_BIN" ]]; then
   _detail "Bin:" "$PREFIX/bin/$PACKAGE"
 
 elif [[ -n "$PREBUILT_DEB" ]]; then
+  if declare -f termux_step_make_install > /dev/null 2>&1; then
+    _step "Mode: Prebuilt .deb + Custom termux_step_make_install()"
+    _progress "Extracting .deb contents to SRC_ROOT for custom install..."
+    mkdir -p "$SRC_ROOT"
+    dpkg-deb -x "$PREBUILT_DEB" "$SRC_ROOT"
+    export TERMUX_PREFIX="$PREFIX"
+    export TERMUX_PKG_SRCDIR="$SRC_ROOT"
+    _ok "Extracted .deb to SRC_ROOT"
+    _detail "Install dir:" "$SRC_ROOT"
+
+    _INSTALL_LOG=$(mktemp)
+    _INSTALL_EXIT=0
+    _spin_chars='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    _spin_i=0
+    ( cd "$SRC_ROOT"; export PATH="$PREFIX/bin:$PATH"; termux_step_make_install ) > "$_INSTALL_LOG" 2>&1 &
+    _INSTALL_PID=$!
+    while kill -0 "$_INSTALL_PID" 2>/dev/null; do
+      _sc="${_spin_chars:$(( _spin_i % ${#_spin_chars} )):1}"
+      printf "
+ ${BGREEN}[${BCYAN} %s ${BGREEN}]${R} Running custom install...%-20s" "$_sc" " "
+      sleep 0.15
+      (( _spin_i++ )) || true
+    done
+    wait "$_INSTALL_PID" || _INSTALL_EXIT=$?
+    printf "
+%*s
+" "$(tput cols 2>/dev/null || echo 80)" ""
+    _INSTALL_OUTPUT=$(cat "$_INSTALL_LOG")
+    rm -f "$_INSTALL_LOG"
+
+    if [[ $_INSTALL_EXIT -ne 0 ]]; then
+      _fatal "termux_step_make_install() failed (exit $_INSTALL_EXIT)"
+      echo "$_INSTALL_OUTPUT" | tail -10 | while IFS= read -r line; do
+        printf "  ${BRED}│${R}  %s
+" "$line"
+      done
+      exit 1
+    else
+      [[ -n "$_INSTALL_OUTPUT" ]] && echo "$_INSTALL_OUTPUT"
+      _ok "Custom install completed"
+    fi
+
+    _progress "Staging installed files..."
+    _staged=0
+    for _src_path in "$PREFIX/bin/$PACKAGE" "$PREFIX/lib/$PACKAGE"; do
+      if [[ -e "$_src_path" ]]; then
+        _dst="$WORK_DIR/pkg$_src_path"
+        mkdir -p "$(dirname "$_dst")"
+        cp -r "$_src_path" "$_dst"
+        _staged=$(( _staged + 1 ))
+        _detail "Staged:" "$_src_path"
+      fi
+    done
+    find "$PREFIX/bin" -name "$PACKAGE" -type f 2>/dev/null | while read -r _f; do
+      _dst="$WORK_DIR/pkg$_f"
+      mkdir -p "$(dirname "$_dst")"
+      cp "$_f" "$_dst" 2>/dev/null || true
+    done
+    find "$PREFIX/lib/$PACKAGE" -type f 2>/dev/null | while read -r _f; do
+      _dst="$WORK_DIR/pkg$_f"
+      mkdir -p "$(dirname "$_dst")"
+      cp "$_f" "$_dst" 2>/dev/null || true
+    done
+    _detail "Files staged:" "$_staged"
+    _ok "Custom install completed"
+  else
   _step "Mode: Prebuilt .deb"
   _progress "Extracting .deb contents..."
 
@@ -820,6 +886,8 @@ EOF
     else
       _warn "No binary found inside prebuilt .deb — package files preserved as-is"
     fi
+  fi
+
   fi
 
 elif declare -f termux_step_make_install > /dev/null 2>&1; then
