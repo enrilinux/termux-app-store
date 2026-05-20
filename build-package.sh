@@ -841,6 +841,36 @@ elif declare -f termux_step_make_install > /dev/null 2>&1; then
     [[ -f "$PREFIX/bin/$PACKAGE" ]] && _PIP_OK=true
     command -v "$PACKAGE" &>/dev/null && _PIP_OK=true
 
+    if [[ "$_PIP_OK" == "false" ]] && echo "$_INSTALL_OUTPUT" | grep -q "npm"; then
+      _NODE_PKG_JSON=$(find "$SRC_ROOT" -maxdepth 3 -name "package.json" ! -path "*/node_modules/*" | head -n1 || true)
+      if [[ -n "$_NODE_PKG_JSON" ]]; then
+        _NODE_SRC="$(dirname "$_NODE_PKG_JSON")"
+        _NODE_MOD="$_NODE_SRC/node_modules"
+        if [[ -d "$_NODE_MOD" ]]; then
+          _warn "npm failed but node_modules found — using local node_modules"
+          mkdir -p "$PREFIX/lib/node_modules/$PACKAGE"
+          cp -r "$_NODE_SRC"/. "$PREFIX/lib/node_modules/$PACKAGE/"
+          _MAIN_JS=$(find "$_NODE_SRC" -maxdepth 1 -name "*.js" | grep -E "index|main|app|$PACKAGE" | head -n1 || true)
+          [[ -z "$_MAIN_JS" ]] && _MAIN_JS=$(find "$_NODE_SRC" -maxdepth 1 -name "*.js" | head -n1 || true)
+          if [[ -n "$_MAIN_JS" ]]; then
+            _MAIN_JS_REL="${_MAIN_JS#$_NODE_SRC/}"
+            mkdir -p "$PREFIX/bin"
+            printf "#!/data/data/com.termux/files/usr/bin/bash\nexec node \"$PREFIX/lib/node_modules/$PACKAGE/$_MAIN_JS_REL\" \"\$@\"\n" > "$PREFIX/bin/$PACKAGE"
+            chmod +x "$PREFIX/bin/$PACKAGE"
+            _PIP_OK=true
+            _INSTALL_EXIT=0
+            _ok "Installed via local node_modules fallback"
+          fi
+        else
+          _warn "npm failed — retrying with --prefer-offline..."
+          ( cd "$_NODE_SRC" && npm install --prefer-offline --no-audit --no-fund 2>&1 ) && {
+            _PIP_OK=true; _INSTALL_EXIT=0
+            _ok "npm --prefer-offline succeeded"
+          } || true
+        fi
+      fi
+    fi
+
     if [[ "$_PIP_OK" == "true" ]]; then
       _warn "termux_step_make_install() exited $_INSTALL_EXIT but package appears installed — continuing"
       _INSTALL_EXIT=0
@@ -852,7 +882,7 @@ elif declare -f termux_step_make_install > /dev/null 2>&1; then
     _fatal "termux_step_make_install() failed (exit $_INSTALL_EXIT)"
     echo ""
 
-    if echo "$_INSTALL_OUTPUT" | grep -q "ENOENT.*package.json"; then
+    if echo "$_INSTALL_OUTPUT" | grep -q "Could not read package.json\|ENOENT.*package\.json.*no such file\|npm.*package\.json.*not found"; then
       printf "  ${BRED}╭─ Error: package.json not found${R}\n"
       printf "  ${BRED}│${R}\n"
       printf "  ${BRED}│${R}  ${WHITE}npm could not find package.json in source dir${R}\n"
