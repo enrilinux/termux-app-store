@@ -119,7 +119,7 @@ jobs:
 
           PKG="${{ matrix.package }}"
 
-          cat > "$WORK_DIR/run-build.sh" << 'INNEREOF'
+          cat > "$WORK_DIR/run-build.sh" <<-'INNEREOF'
 #!/bin/bash
 set -euo pipefail
 export HOME=/root
@@ -210,7 +210,7 @@ done
 
 echo "=== Done ==="
 ls output/ 2>/dev/null || echo "no output"
-INNEREOF
+        INNEREOF
 
           chmod +x "$WORK_DIR/run-build.sh"
 
