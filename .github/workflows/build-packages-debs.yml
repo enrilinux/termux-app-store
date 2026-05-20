@@ -176,13 +176,13 @@ jobs:
                                "$TMPFIX/data/data/com.termux/files/usr/libexec" \
                                "$TMPFIX/data/data/com.termux/files/usr/lib"; do
                   if [[ -d "$bindir" ]]; then
-                    find "$bindir" -type f | while read f; do
+                    while IFS= read -r f; do
                       cur=$(stat -c "%a" "$f")
-                      if [[ "$cur" != "755" && "$cur" != "755" ]]; then
+                      if [[ "$cur" != "755" ]]; then
                         chmod 755 "$f"
                         FIXED=true
                       fi
-                    done
+                    done < <(find "$bindir" -type f)
                   fi
                 done
 
