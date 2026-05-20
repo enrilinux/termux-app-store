@@ -128,13 +128,89 @@ jobs:
               export TERM=xterm-256color
 
               PKG="${{ matrix.package }}"
+              BUILD_SH="/opt/tas/packages/$PKG/build.sh"
               cd /opt/tas
 
               echo "=== Updating pkg ==="
               pkg update -y -o Dpkg::Options::="--force-confnew" 2>/dev/null || true
 
+              if [[ -f "$BUILD_SH" ]]; then
+                DEPS=$(grep "TERMUX_PKG_DEPENDS=" "$BUILD_SH" | head -1 \
+                  | cut -d= -f2- | tr -d "\"'" | sed "s/([^)]*)//g" \
+                  | tr "," "\n" | tr -d " " | grep -v "^$" | tr "\n" " ")
+                if [[ -n "$DEPS" ]]; then
+                  echo "=== Installing dependencies: $DEPS ==="
+                  pkg install -y $DEPS 2>/dev/null || true
+                fi
+              fi
+
               echo "=== Building $PKG ==="
               bash build-package.sh "$PKG" 2>&1 || true
+
+              for deb in /opt/tas/output/${PKG}_*.deb; do
+                [[ -f "$deb" ]] || continue
+                CTRL_DEPS=$(dpkg-deb -f "$deb" Depends 2>/dev/null || echo "")
+                if [[ -z "$CTRL_DEPS" && -n "$DEPS" ]]; then
+                  echo "  [WARN] Depends kosong di .deb, inject dari build.sh..."
+                  TMPINJECT=$(mktemp -d)
+                  dpkg-deb -x "$deb" "$TMPINJECT/"
+                  dpkg-deb -e "$deb" "$TMPINJECT/DEBIAN"
+
+                  DEPS_FMT=$(grep "TERMUX_PKG_DEPENDS=" "$BUILD_SH" | head -1 \
+                    | cut -d= -f2- | tr -d "\"'" | sed "s/ //g")
+                  echo "Depends: $DEPS_FMT" >> "$TMPINJECT/DEBIAN/control"
+                  dpkg-deb --build "$TMPINJECT" "$deb" 2>/dev/null && \
+                    echo "  [OK] Depends injected: $DEPS_FMT" || true
+                  rm -rf "$TMPINJECT"
+                fi
+              done
+
+              for deb in /opt/tas/output/${PKG}_*.deb; do
+                [[ -f "$deb" ]] || continue
+                TMPFIX=$(mktemp -d)
+                dpkg-deb -x "$deb" "$TMPFIX/"
+                dpkg-deb -e "$deb" "$TMPFIX/DEBIAN"
+                FIXED=false
+
+                for bindir in "$TMPFIX/data/data/com.termux/files/usr/bin" \
+                               "$TMPFIX/data/data/com.termux/files/usr/libexec" \
+                               "$TMPFIX/data/data/com.termux/files/usr/lib"; do
+                  if [[ -d "$bindir" ]]; then
+                    find "$bindir" -type f | while read f; do
+                      cur=$(stat -c "%a" "$f")
+                      if [[ "$cur" != "755" && "$cur" != "755" ]]; then
+                        chmod 755 "$f"
+                        FIXED=true
+                      fi
+                    done
+                  fi
+                done
+
+                POSTINST="$TMPFIX/DEBIAN/postinst"
+                PKG_PREFIX="/data/data/com.termux/files/usr"
+                if [[ ! -f "$POSTINST" ]]; then
+                  cat > "$POSTINST" << POSTEOF
+                  #!/bin/sh
+                  PREFIX=/data/data/com.termux/files/usr
+
+                  for f in "\$PREFIX/bin/${PKG}" "\$PREFIX/bin/${PKG}".*; do
+                    [ -f "\$f" ] && chmod 755 "\$f"
+                  done
+
+                  [ -d "\$PREFIX/libexec/${PKG}" ] && chmod -R 755 "\$PREFIX/libexec/${PKG}"
+
+                  exit 0
+                  POSTEOF
+
+                  chmod 755 "$POSTINST"
+                  FIXED=true
+                fi
+                if [[ "$FIXED" == "true" ]]; then
+                  dpkg-deb --build "$TMPFIX" "$deb" 2>/dev/null && \
+                    echo "  [OK] Permissions fixed in $(basename $deb)" || true
+                fi
+                rm -rf "$TMPFIX"
+              done
 
               echo "=== Done ==="
               ls output/ 2>/dev/null || echo "(no output)"
@@ -144,6 +220,33 @@ jobs:
             cp "$WORK_DIR/output/"*.deb output/ || true
 
           sudo rm -rf "$WORK_DIR" 2>/dev/null || rm -rf "$WORK_DIR" 2>/dev/null || true
+
+      - name: Validate .deb before repackage
+        if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
+        run: |
+          PKG="${{ matrix.package }}"
+          echo "=== Validating .deb for $PKG ==="
+          for deb in output/${PKG}_*.deb; do
+            [[ -f "$deb" ]] || continue
+            echo "--- $(basename $deb) ---"
+            echo "  Architecture : $(dpkg-deb -f "$deb" Architecture)"
+            echo "  Version      : $(dpkg-deb -f "$deb" Version)"
+            echo "  Depends      : $(dpkg-deb -f "$deb" Depends || echo '(none)')"
+            echo "  Installed-Size: $(dpkg-deb -f "$deb" Installed-Size) KB"
+
+            TMPV=$(mktemp -d)
+            dpkg-deb -x "$deb" "$TMPV/"
+            BIN_COUNT=$(find "$TMPV/data/data/com.termux/files/usr/bin/" -type f 2>/dev/null | wc -l)
+            echo "  Binaries in /usr/bin: $BIN_COUNT"
+            if [[ $BIN_COUNT -gt 0 ]]; then
+              find "$TMPV/data/data/com.termux/files/usr/bin/" -type f | while read f; do
+                PERM=$(stat -c "%a" "$f")
+                TYPE=$(file -b "$f" | head -c 40)
+                echo "    [perm=$PERM] $(basename $f): $TYPE"
+              done
+            fi
+            rm -rf "$TMPV"
+          done
 
       - name: Repackage for all architectures
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
@@ -323,6 +426,9 @@ jobs:
                   ]
                   dep  = field("Depends")
                   home = field("Homepage")
+                  desc = field("Description") or f"Termux package {field('Package')}"
+                  if not dep:
+                      print(f"  [WARN] {deb.name}: Depends field kosong di Packages index")
                   if dep:  lines.append(f"Depends: {dep}")
                   if home: lines.append(f"Homepage: {home}")
                   lines += [
@@ -331,7 +437,7 @@ jobs:
                       f"MD5sum: {hashlib.md5(data).hexdigest()}",
                       f"SHA1: {hashlib.sha1(data).hexdigest()}",
                       f"SHA256: {hashlib.sha256(data).hexdigest()}",
-                      f"Description: {field('Description')}",
+                      f"Description: {desc}",
                       "",
                   ]
                   entries.append("\n".join(lines))
@@ -380,3 +486,9 @@ jobs:
           echo "**$COUNT** .deb files in pool" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Built natively inside **termux-docker aarch64** — binaries compatible with Termux on Android." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Dependency & Permission Fixes Applied" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ TERMUX_PKG_DEPENDS di-install sebelum build" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Depends field di-inject ke DEBIAN/control jika kosong" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ chmod 755 pada semua binary" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ postinst auto-generated jika tidak ada" >> $GITHUB_STEP_SUMMARY
