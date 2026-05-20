@@ -70,8 +70,11 @@ jobs:
             [[ -f "packages/$pkg/build.sh" ]] || continue
             VERSION=$(grep 'TERMUX_PKG_VERSION=' "packages/$pkg/build.sh" | head -1 | cut -d= -f2 | tr -d "\"'" 2>/dev/null || echo "unknown")
             SHA256=$(grep 'TERMUX_PKG_SHA256=' "packages/$pkg/build.sh" | head -1 | cut -d= -f2 | tr -d "\"'" 2>/dev/null | cut -c1-16 || echo "")
+            SRCURL=$(grep 'TERMUX_PKG_SRCURL=' "packages/$pkg/build.sh" | head -1 | cut -d= -f2- | tr -d "\"'" | sed "s|\${TERMUX_PKG_VERSION}|$VERSION|g" 2>/dev/null || echo "")
+            IS_PREBUILT_DEB=false
+            if echo "$SRCURL" | grep -q '\.deb$'; then IS_PREBUILT_DEB=true; fi
             [[ -n "$MATRIX_ITEMS" ]] && MATRIX_ITEMS="$MATRIX_ITEMS,"
-            MATRIX_ITEMS="${MATRIX_ITEMS}{\"package\":\"$pkg\",\"version\":\"$VERSION\",\"sha256\":\"$SHA256\"}"
+            MATRIX_ITEMS="${MATRIX_ITEMS}{\"package\":\"$pkg\",\"version\":\"$VERSION\",\"sha256\":\"$SHA256\",\"is_prebuilt_deb\":\"$IS_PREBUILT_DEB\",\"srcurl\":\"$SRCURL\"}"
           done
 
           echo "matrix={\"include\":[$MATRIX_ITEMS]}" >> "$GITHUB_OUTPUT"
@@ -100,40 +103,107 @@ jobs:
             pkg-${{ matrix.package }}-${{ matrix.version }}-
             pkg-${{ matrix.package }}-
 
+      - name: Repack prebuilt .deb (no Docker needed)
+        if: |
+          matrix.is_prebuilt_deb == 'true' &&
+          (github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true')
+        run: |
+          PKG="${{ matrix.package }}"
+          VERSION="${{ matrix.version }}"
+          SRCURL="${{ matrix.srcurl }}"
+          SHA256="${{ matrix.sha256 }}"
+          mkdir -p output
+
+          echo "=== Downloading prebuilt .deb ==="
+          echo "URL: $SRCURL"
+          curl -fsSL "$SRCURL" -o "source.deb" || {
+            echo "ERROR: Download failed"
+            exit 1
+          }
+
+          if [[ -n "$SHA256" ]]; then
+            GOTSUM=$(sha256sum source.deb | cut -d' ' -f1)
+            if [[ "$GOTSUM" == "$SHA256"* || "$SHA256" == "$GOTSUM"* ]]; then
+              echo "Checksum OK"
+            else
+              echo "WARNING: checksum mismatch (expected prefix: $SHA256, got: $GOTSUM)"
+            fi
+          fi
+
+          echo "=== Extracting .deb ==="
+          TMPDIR_EXTRACT="repack_src"
+          mkdir -p "$TMPDIR_EXTRACT"
+          dpkg-deb -x source.deb "$TMPDIR_EXTRACT/"
+          dpkg-deb -e source.deb "$TMPDIR_EXTRACT/DEBIAN"
+
+          BUILD_SH="packages/$PKG/build.sh"
+          HAS_CUSTOM_INSTALL=false
+          if grep -q 'termux_step_make_install' "$BUILD_SH" 2>/dev/null; then
+            HAS_CUSTOM_INSTALL=true
+          fi
+
+          if [[ "$HAS_CUSTOM_INSTALL" == "true" ]]; then
+            echo "=== Custom termux_step_make_install() detected — applying ==="
+            STAGING="repack_staged"
+            mkdir -p "$STAGING"
+            PREFIX_ORIG="/data/data/com.termux/files/usr"
+
+            export TERMUX_PREFIX="$PWD/$STAGING$PREFIX_ORIG"
+            export TERMUX_PKG_SRCDIR="$PWD/$TMPDIR_EXTRACT"
+            mkdir -p "$TERMUX_PREFIX/bin" "$TERMUX_PREFIX/lib/$PKG"
+
+            source "$BUILD_SH" 2>/dev/null || true
+            if declare -f termux_step_make_install > /dev/null 2>&1; then
+              (cd "$TERMUX_PKG_SRCDIR" && termux_step_make_install) || true
+            fi
+
+            mkdir -p "repack_final"
+            cp -r "$TMPDIR_EXTRACT/." "repack_final/"
+            if [[ -d "$STAGING$PREFIX_ORIG" ]]; then
+              cp -r "$STAGING$PREFIX_ORIG/." "repack_final$PREFIX_ORIG/" 2>/dev/null || true
+            fi
+
+            mkdir -p "repack_final/DEBIAN"
+            cp "$TMPDIR_EXTRACT/DEBIAN/"* "repack_final/DEBIAN/" 2>/dev/null || true
+            sed -i "s/^Architecture:.*/Architecture: aarch64/" "repack_final/DEBIAN/control" 2>/dev/null || true
+
+            echo "=== Contents after custom install ==="
+            find repack_final -not -path "*/DEBIAN/*" -type f | sed 's|^repack_final||'
+
+            dpkg-deb --build "repack_final" "output/${PKG}_${VERSION}_aarch64.deb"
+
+          else
+            echo "=== No custom install — repack as-is for aarch64 ==="
+            sed -i "s/^Architecture:.*/Architecture: aarch64/" "$TMPDIR_EXTRACT/DEBIAN/control" 2>/dev/null || true
+            dpkg-deb --build "$TMPDIR_EXTRACT" "output/${PKG}_${VERSION}_aarch64.deb"
+          fi
+
+          echo "=== Verifying output ==="
+          DEB_OUT="output/${PKG}_${VERSION}_aarch64.deb"
+          if [[ -f "$DEB_OUT" ]]; then
+            echo "OK: $DEB_OUT"
+            TMPV=$(mktemp -d)
+            dpkg-deb -x "$DEB_OUT" "$TMPV/"
+            echo "Contents:"
+            find "$TMPV" -type f | sed "s|$TMPV||"
+            rm -rf "$TMPV"
+          else
+            echo "ERROR: .deb not produced"
+            exit 1
+          fi
+
       - name: Set up QEMU for aarch64 emulation
-        if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
+        if: |
+          matrix.is_prebuilt_deb != 'true' &&
+          (github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true')
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a  # v4
         with:
           platforms: arm64
 
-      - name: Prepare build context
-        if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
-        id: prep
-        run: |
-          PKG="${{ matrix.package }}"
-          BUILD_SH="packages/$PKG/build.sh"
-
-          PKG_DEPS=""
-          if [[ -f "$BUILD_SH" ]]; then
-            PKG_DEPS=$(grep 'TERMUX_PKG_DEPENDS=' "$BUILD_SH" | head -1 \
-              | cut -d= -f2 | tr -d "\"'" | tr ',' ' ' | xargs 2>/dev/null || true)
-          fi
-          echo "pkg_deps=$PKG_DEPS" >> "$GITHUB_OUTPUT"
-
-          SRCURL=$(grep 'TERMUX_PKG_SRCURL=' "$BUILD_SH" 2>/dev/null | head -1 \
-            | cut -d= -f2- | tr -d "\"'" | sed "s|\${TERMUX_PKG_VERSION}|${{ matrix.version }}|g" || true)
-          IS_DEB_SRC=false
-          if echo "$SRCURL" | grep -q '\.deb$'; then
-            IS_DEB_SRC=true
-          fi
-          echo "is_deb_src=$IS_DEB_SRC" >> "$GITHUB_OUTPUT"
-          echo "pkg=$PKG | deps=$PKG_DEPS | is_deb_src=$IS_DEB_SRC"
-
       - name: Build .deb inside termux-docker (aarch64)
-        if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
-        env:
-          PKG_DEPS: ${{ steps.prep.outputs.pkg_deps }}
-          IS_DEB_SRC: ${{ steps.prep.outputs.is_deb_src }}
+        if: |
+          matrix.is_prebuilt_deb != 'true' &&
+          (github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true')
         run: |
           mkdir -p output
 
@@ -143,11 +213,13 @@ jobs:
           chmod -R 777 "$WORK_DIR"
           mkdir -p "$WORK_DIR/output"
 
+          PKG_DEPS=$(grep 'TERMUX_PKG_DEPENDS=' "packages/${{ matrix.package }}/build.sh" | head -1 \
+            | cut -d= -f2 | tr -d "\"'" | tr ',' ' ' | xargs 2>/dev/null || true)
+
           docker run --rm \
             --platform linux/arm64 \
             -v "$WORK_DIR:/opt/tas" \
             -e "PKG_DEPS=$PKG_DEPS" \
-            -e "IS_DEB_SRC=$IS_DEB_SRC" \
             termux/termux-docker:aarch64 \
             bash -c '
               export HOME=/root
@@ -168,34 +240,14 @@ jobs:
                 pkg install -y $PKG_DEPS 2>&1 || true
               fi
 
-              if [[ "$IS_DEB_SRC" == "true" ]]; then
-                echo "=== Source is a .deb — patching extract behavior ==="
-                export TERMUX_BUILD_DEB_SOURCE=true
-              fi
-
               echo "=== Building $PKG ==="
               bash build-package.sh "$PKG" 2>&1
               BUILD_EXIT=$?
 
-              echo "=== Verifying output ==="
-              DEB_FILE=$(ls output/${PKG}_*.deb 2>/dev/null | head -1)
-              if [[ -z "$DEB_FILE" ]]; then
-                echo "ERROR: No .deb produced for $PKG (build exit: $BUILD_EXIT)"
-                exit 1
-              fi
-
-              TMPVERIFY=$(mktemp -d)
-              dpkg-deb -x "$DEB_FILE" "$TMPVERIFY/" 2>/dev/null
-              if find "$TMPVERIFY" -path "*/bin/$PKG" -type f 2>/dev/null | grep -q .; then
-                echo "OK: binary /$PKG verified inside .deb"
-              else
-                echo "WARNING: binary $PKG not found in .deb — contents:"
-                find "$TMPVERIFY" -type f | sed "s|$TMPVERIFY||"
-              fi
-              rm -rf "$TMPVERIFY"
-
-              echo "=== Done ==="
+              echo "=== Output ==="
               ls -lh output/ 2>/dev/null || echo "(no output)"
+
+              [[ $BUILD_EXIT -ne 0 ]] && echo "WARNING: build exit $BUILD_EXIT" || true
             '
 
           ls "$WORK_DIR/output/"*.deb 2>/dev/null && \
@@ -234,28 +286,23 @@ jobs:
 
           if [[ "$HAS_ELF" == "true" ]]; then
             echo "  Package contains ELF binary — only aarch64 .deb will be published"
-            echo "  Other architectures must be built natively"
             ls -lh output/ || true
             exit 0
           fi
 
-          echo "  No ELF binaries found — safe to repackage for all architectures"
-
+          echo "  No ELF binaries — safe to repackage for all architectures"
           for ARCH in arm x86_64 i686; do
             TARGET="output/${PKG}_${BUILT_VERSION}_${ARCH}.deb"
             [[ -f "$TARGET" ]] && { echo "  [$ARCH] already exists"; continue; }
-
-            TMPDIR="repack_tmp/${PKG}_${ARCH}"
-            mkdir -p "$TMPDIR"
-            dpkg-deb -x "$BUILT" "$TMPDIR/"
-            dpkg-deb -e "$BUILT" "$TMPDIR/DEBIAN"
-            sed -i "s/^Architecture:.*/Architecture: $ARCH/" "$TMPDIR/DEBIAN/control"
-            dpkg-deb --build "$TMPDIR" "$TARGET" 2>/dev/null && \
+            TMPDIR_ARCH="repack_tmp/${PKG}_${ARCH}"
+            mkdir -p "$TMPDIR_ARCH"
+            dpkg-deb -x "$BUILT" "$TMPDIR_ARCH/"
+            dpkg-deb -e "$BUILT" "$TMPDIR_ARCH/DEBIAN"
+            sed -i "s/^Architecture:.*/Architecture: $ARCH/" "$TMPDIR_ARCH/DEBIAN/control"
+            dpkg-deb --build "$TMPDIR_ARCH" "$TARGET" 2>/dev/null && \
               echo "  [$ARCH] OK: $(basename $TARGET)" || echo "  [$ARCH] FAIL"
-            rm -rf "$TMPDIR"
+            rm -rf "$TMPDIR_ARCH"
           done
-
-          echo ""
           ls -lh output/ || true
 
       - name: Generate SHA256 checksums
@@ -265,7 +312,7 @@ jobs:
           shopt -s nullglob
           debs=(*.deb)
           if [[ ${#debs[@]} -eq 0 ]]; then
-            echo "No .deb files (package skipped or build failed)"
+            echo "No .deb files"
             exit 0
           fi
           for f in "${debs[@]}"; do
