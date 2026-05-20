@@ -106,8 +106,34 @@ jobs:
         with:
           platforms: arm64
 
+      - name: Prepare build context
+        if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
+        id: prep
+        run: |
+          PKG="${{ matrix.package }}"
+          BUILD_SH="packages/$PKG/build.sh"
+
+          PKG_DEPS=""
+          if [[ -f "$BUILD_SH" ]]; then
+            PKG_DEPS=$(grep 'TERMUX_PKG_DEPENDS=' "$BUILD_SH" | head -1 \
+              | cut -d= -f2 | tr -d "\"'" | tr ',' ' ' | xargs 2>/dev/null || true)
+          fi
+          echo "pkg_deps=$PKG_DEPS" >> "$GITHUB_OUTPUT"
+
+          SRCURL=$(grep 'TERMUX_PKG_SRCURL=' "$BUILD_SH" 2>/dev/null | head -1 \
+            | cut -d= -f2- | tr -d "\"'" | sed "s|\${TERMUX_PKG_VERSION}|${{ matrix.version }}|g" || true)
+          IS_DEB_SRC=false
+          if echo "$SRCURL" | grep -q '\.deb$'; then
+            IS_DEB_SRC=true
+          fi
+          echo "is_deb_src=$IS_DEB_SRC" >> "$GITHUB_OUTPUT"
+          echo "pkg=$PKG | deps=$PKG_DEPS | is_deb_src=$IS_DEB_SRC"
+
       - name: Build .deb inside termux-docker (aarch64)
         if: github.event.inputs.force == 'true' || steps.cache.outputs.cache-hit != 'true'
+        env:
+          PKG_DEPS: ${{ steps.prep.outputs.pkg_deps }}
+          IS_DEB_SRC: ${{ steps.prep.outputs.is_deb_src }}
         run: |
           mkdir -p output
 
@@ -120,12 +146,16 @@ jobs:
           docker run --rm \
             --platform linux/arm64 \
             -v "$WORK_DIR:/opt/tas" \
+            -e "PKG_DEPS=$PKG_DEPS" \
+            -e "IS_DEB_SRC=$IS_DEB_SRC" \
             termux/termux-docker:aarch64 \
             bash -c '
               export HOME=/root
               export PREFIX=/data/data/com.termux/files/usr
               export PATH="$PREFIX/bin:$PATH"
               export TERM=xterm-256color
+              mkdir -p "$PREFIX/tmp"
+              export TMPDIR="$PREFIX/tmp"
 
               PKG="${{ matrix.package }}"
               cd /opt/tas
@@ -133,11 +163,39 @@ jobs:
               echo "=== Updating pkg ==="
               pkg update -y -o Dpkg::Options::="--force-confnew" 2>/dev/null || true
 
+              if [[ -n "$PKG_DEPS" ]]; then
+                echo "=== Pre-installing dependencies: $PKG_DEPS ==="
+                pkg install -y $PKG_DEPS 2>&1 || true
+              fi
+
+              if [[ "$IS_DEB_SRC" == "true" ]]; then
+                echo "=== Source is a .deb — patching extract behavior ==="
+                export TERMUX_BUILD_DEB_SOURCE=true
+              fi
+
               echo "=== Building $PKG ==="
-              bash build-package.sh "$PKG" 2>&1 || true
+              bash build-package.sh "$PKG" 2>&1
+              BUILD_EXIT=$?
+
+              echo "=== Verifying output ==="
+              DEB_FILE=$(ls output/${PKG}_*.deb 2>/dev/null | head -1)
+              if [[ -z "$DEB_FILE" ]]; then
+                echo "ERROR: No .deb produced for $PKG (build exit: $BUILD_EXIT)"
+                exit 1
+              fi
+
+              TMPVERIFY=$(mktemp -d)
+              dpkg-deb -x "$DEB_FILE" "$TMPVERIFY/" 2>/dev/null
+              if find "$TMPVERIFY" -path "*/bin/$PKG" -type f 2>/dev/null | grep -q .; then
+                echo "OK: binary /$PKG verified inside .deb"
+              else
+                echo "WARNING: binary $PKG not found in .deb — contents:"
+                find "$TMPVERIFY" -type f | sed "s|$TMPVERIFY||"
+              fi
+              rm -rf "$TMPVERIFY"
 
               echo "=== Done ==="
-              ls output/ 2>/dev/null || echo "(no output)"
+              ls -lh output/ 2>/dev/null || echo "(no output)"
             '
 
           ls "$WORK_DIR/output/"*.deb 2>/dev/null && \

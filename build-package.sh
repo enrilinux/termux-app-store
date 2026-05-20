@@ -562,8 +562,27 @@ if [[ -n "${TERMUX_PKG_SRCURL:-}" ]]; then
       _ok "Binary marked executable"
       ;;
     deb)
-      _skip "Prebuilt .deb detected — skipping extraction"
-      PREBUILT_DEB="$SRC_FILE"
+      if declare -f termux_step_make_install > /dev/null 2>&1; then
+        _progress "Source is .deb with custom install — extracting contents with dpkg-deb..."
+        mkdir -p "$SRC_ROOT"
+        if dpkg-deb -x "$SRC_FILE" "$SRC_ROOT" 2>/dev/null; then
+          _ok "Extracted .deb contents to SRC_ROOT"
+          _detail "Source root:" "$SRC_ROOT"
+          _SUBDIRS=$(find "$SRC_ROOT" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+          _TOPFILES=$(find "$SRC_ROOT" -mindepth 1 -maxdepth 1 -type f 2>/dev/null | wc -l)
+          if [[ "$_SUBDIRS" -eq 1 && "$_TOPFILES" -eq 0 ]]; then
+            SUBDIR="$(find "$SRC_ROOT" -mindepth 1 -maxdepth 1 -type d | head -n1)"
+            SRC_ROOT="$SUBDIR"
+            _info "Source root flattened to: $(basename "$SUBDIR")"
+          fi
+        else
+          _warn "dpkg-deb -x failed — falling back to prebuilt .deb mode"
+          PREBUILT_DEB="$SRC_FILE"
+        fi
+      else
+        _skip "Prebuilt .deb detected — skipping extraction"
+        PREBUILT_DEB="$SRC_FILE"
+      fi
       ;;
     *)
       case "$FILETYPE" in
