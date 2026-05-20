@@ -93,6 +93,9 @@ BUILD_DIR="$PACKAGES_DIR/$PACKAGE"
 WORK_DIR="$ROOT_DIR/build/$PACKAGE"
 DEB_DIR="$ROOT_DIR/output"
 
+mkdir -p "$PREFIX/tmp"
+export TMPDIR="$PREFIX/tmp"
+
 _banner
 
 if [[ -z "$PACKAGE" ]]; then
