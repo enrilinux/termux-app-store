@@ -12,6 +12,9 @@ and this project adheres to semantic versioning.
 - Package `merlin` v1.0.0 → v1.1.0
 - Package `instareporter` v1.0.0 → v1.0.1
 
+### Changed
+- Package `termstyle` v2.0.0 - Updated metadata
+
 ---
 
 ## [v0.4.1] - 2026-05-16
