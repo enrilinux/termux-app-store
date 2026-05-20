@@ -136,7 +136,7 @@ jobs:
 
               if [[ -f "$BUILD_SH" ]]; then
                 DEPS=$(grep "TERMUX_PKG_DEPENDS=" "$BUILD_SH" | head -1 \
-                  | cut -d= -f2- | tr -d "\"'" | sed "s/([^)]*)//g" \
+                  | cut -d= -f2- | tr -d '"' | tr -d "'" | sed "s/([^)]*)//g" \
                   | tr "," "\n" | tr -d " " | grep -v "^$" | tr "\n" " ")
                 if [[ -n "$DEPS" ]]; then
                   echo "=== Installing dependencies: $DEPS ==="
@@ -157,7 +157,7 @@ jobs:
                   dpkg-deb -e "$deb" "$TMPINJECT/DEBIAN"
 
                   DEPS_FMT=$(grep "TERMUX_PKG_DEPENDS=" "$BUILD_SH" | head -1 \
-                    | cut -d= -f2- | tr -d "\"'" | sed "s/ //g")
+                    | cut -d= -f2- | tr -d '"' | tr -d "'" | sed "s/ //g")
                   echo "Depends: $DEPS_FMT" >> "$TMPINJECT/DEBIAN/control"
                   dpkg-deb --build "$TMPINJECT" "$deb" 2>/dev/null && \
                     echo "  [OK] Depends injected: $DEPS_FMT" || true
