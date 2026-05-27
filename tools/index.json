@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-05-27T04:06:11.656948+00:00",
+  "generated_at": "2026-05-27T05:54:09.090734+00:00",
   "total": 88,
   "packages": [
     {
@@ -1159,7 +1159,7 @@
     },
     {
       "package": "tdoc",
-      "version": "2.2.0",
+      "version": "2.2.2",
       "maintainer": "@djunekz",
       "description": "TDOC - Diagnostic and repair utility for Termux environment",
       "homepage": "https://github.com/djunekz/tdoc",
@@ -1168,7 +1168,7 @@
       "installed_size": "Unknown",
       "source": "https://github.com/djunekz/termux-app-store",
       "srcurl": "https://github.com/djunekz/tdoc/archive/refs/tags/v${TERMUX_PKG_VERSION}.tar.gz",
-      "sha256": "edac3256cdb51cba67b7bacb5d6e32d41390cc7bfc28a0db97a73dedeb7fa543",
+      "sha256": "bc34308bf8f819d82c71a5f9d99e8184d97053948c0f6065b1902ea67304feac",
       "platform_independent": true,
       "depends": [
         "bash",
