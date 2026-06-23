@@ -2,9 +2,9 @@ TERMUX_PKG_HOMEPAGE=https://github.com/opsonusdh/Termux-TUI
 TERMUX_PKG_DESCRIPTION="A futuristic Jarvis-style terminal dashboard for Termux"
 TERMUX_PKG_LICENSE="MIT"
 TERMUX_PKG_MAINTAINER="@opsonusdh"
-TERMUX_PKG_VERSION=2.7.3
+TERMUX_PKG_VERSION=2.9.5
 TERMUX_PKG_SRCURL=https://github.com/opsonusdh/Termux-TUI/archive/refs/tags/v${TERMUX_PKG_VERSION}.zip
-TERMUX_PKG_SHA256=c089d05c2ee44342472a8acca4ae39393c16bef82ab7e20e8b4e16bbb54ff4a9
+TERMUX_PKG_SHA256=ae189b47863f724ccddf8ea77de7707a1840a94d613658d5c90b988c13b4adba
 
 TERMUX_PKG_DEPENDS="python, python-pip, python-setuptools, python-yt-dlp"
 TERMUX_PKG_BUILD_IN_SRC=true
