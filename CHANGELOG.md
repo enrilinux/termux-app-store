@@ -11,6 +11,7 @@ and this project adheres to semantic versioning.
 - Package `tdoc` v2.1.1 → v2.2.0
 - Package `merlin` v1.0.0 → v1.1.0
 - Package `instareporter` v1.0.0 → v1.0.1
+- Package `termux-tui` v2.7.3 → v2.9.5
 
 ### Changed
 - Package `termstyle` v2.0.0 - Updated metadata
