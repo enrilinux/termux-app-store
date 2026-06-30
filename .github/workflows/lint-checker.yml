@@ -1,4 +1,4 @@
-name: Lint PR Checker & Auto-Label
+name: Lint PR Checker
 
 on:
   pull_request:
@@ -11,8 +11,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 jobs:
   lint:
@@ -290,76 +288,20 @@ jobs:
           echo "overall_status=$OVERALL_STATUS" >> "$GITHUB_OUTPUT"
           echo "Overall status: $OVERALL_STATUS (0=pass, 1=fail)"
 
-      - name: Remove old labels
-        continue-on-error: true
-        uses: actions-ecosystem/action-remove-labels@2ce5d41b4b6aa8503e285553f75ed56e0a40bae0 # v1.3.0
+      - name: Save PR metadata
+        run: |
+          mkdir -p /tmp/pr-report
+          echo "${{ github.event.pull_request.number }}" > /tmp/pr-report/pr_number.txt
+          echo "${{ steps.status.outputs.overall_status }}" > /tmp/pr-report/overall_status.txt
+          printf '%s' "${{ steps.lint.outputs.lint_details }}" > /tmp/pr-report/lint_details.txt
+          printf '%s' "${{ steps.validate.outputs.validation_details }}" > /tmp/pr-report/validation_details.txt
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v5.0.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          labels: checker-approved, checker-failed
-
-      - name: Add review-approved label
-        if: steps.status.outputs.overall_status == '0'
-        uses: actions-ecosystem/action-add-labels@18f1af5e3544586314bbe15c0273249c770b2daf # v1.1.3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          labels: checker-approved, needs-review
-
-      - name: Add review-failed label
-        if: steps.status.outputs.overall_status == '1'
-        uses: actions-ecosystem/action-add-labels@18f1af5e3544586314bbe15c0273249c770b2daf # v1.1.3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          labels: checker-failed
-
-      - name: Comment - Validation Failed
-        if: steps.status.outputs.overall_status == '1'
-        uses: marocchino/sticky-pull-request-comment@0ea0beb66eb9baf113663a64ec522f60e49231c0 # v3.0.4
-        with:
-          header: lint-validation
-          message: |
-            # ❌ Build Script Validation Failed
-
-            Your `build.sh` file(s) failed automated validation checks.
-
-            ${{ steps.lint.outputs.lint_details }}
-
-            ${{ steps.validate.outputs.validation_details }}
-
-            ## 🔧 How to Fix
-            1. **Check syntax errors** - Ensure all bash syntax is valid
-            2. **Verify SRCURL** - Ensure the URL is correct and accessible
-            3. **Update SHA256** - Download the file and compute the correct hash:
-               ```bash
-               curl -L "YOUR_SRCURL" -o file.tar.gz
-               sha256sum file.tar.gz
-               ```
-            4. **Add required fields**:
-               - `TERMUX_PKG_VERSION` (required)
-               - `TERMUX_PKG_SRCURL` (required)
-               - `TERMUX_PKG_SHA256` (required)
-               - `TERMUX_PKG_LICENSE` (recommended)
-               - `TERMUX_PKG_HOMEPAGE` (recommended)
-
-            Push new commits to automatically re-run validation.
-
-      - name: Comment - Validation Passed
-        if: steps.status.outputs.overall_status == '0'
-        uses: marocchino/sticky-pull-request-comment@0ea0beb66eb9baf113663a64ec522f60e49231c0 # v3.0.4
-        with:
-          header: lint-validation
-          message: |
-            # ✅ Build Script Validation Passed
-
-            Your `build.sh` file(s) have passed all automated checks:
-
-            - ✅ Bash syntax is correct
-            - ✅ All required TERMUX_PKG_* variables are defined
-            - ✅ SRCURL is valid and reachable
-            - ✅ SHA256 checksum verified successfully
-
-            **Label `checker-approved` has been added automatically.**
-
-            Thank you for your contribution! 🎉
+          name: pr-report
+          path: /tmp/pr-report
+          retention-days: 1
 
       - name: Fail workflow if validation failed
         if: steps.status.outputs.overall_status == '1'
