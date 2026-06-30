@@ -9,5 +9,5 @@ TERMUX_PKG_PLATFORM_INDEPENDENT=true
 TERMUX_PKG_BUILD_IN_SRC=true
 
 termux_step_make_install() {
-    install -Dm755 "./padrelivio" "$TERMUX_PREFIX/bin/padrelivio"
+    install -Dm755 "padrelivio" "$PREFIX/bin/padrelivio"
 }
