@@ -1,3 +1,630 @@
+Package: ani-cli
+Version: 4.13
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/ani-cli_4.13_aarch64.deb
+Size: 9296
+MD5sum: 262fe1071472f3b86dedbd496d38f6b0
+SHA1: 6a12b83ca4b28db9ad873754f79edc8085ea0382
+SHA256: 874a2a8f00066031cac97941905b918bebd07666d631958ff1863d6abb49f857
+Description: A cli tool to browse and play anime
+
+Package: aura
+Version: 0.10.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/aura_0.10.0_aarch64.deb
+Size: 94636
+MD5sum: 75df9825492c822fb2f932c01dd6c3fd
+SHA1: 6cb014c63fb4ff903f5ac99890ecc0ad69521691
+SHA256: c2e006822c250cd87b27c0ee30c16e64073907bcdb0dfa5b2003a8a1103e963e
+Description: Adaptive Unified Runtime Assistant
+
+Package: auxscan
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/auxscan_1.0.0_aarch64.deb
+Size: 4308
+MD5sum: de6c58c0112f0db5e20acf2252ac2417
+SHA1: 37ac9ed35a4a6cd5b7c3481dbde624ec8809e0ed
+SHA256: ace7adb3edf0e6a810faa007482643aa66aa12fed53b87ad12d66b6e404f8848
+Description: Vulnerability Scanner to automate certain tasks
+
+Package: bashxt
+Version: 3.0
+Architecture: aarch64
+Maintainer: djunekz
+Installed-Size: 231 kB
+Homepage: https://github.com/djunekz/bashxt
+Filename: pool/main/bashxt_3.0_aarch64.deb
+Size: 4938
+MD5sum: c0941bed8ceb6e09d934a048fc7e55c3
+SHA1: c2736169b3b13602cb8680364971ae070529b17c
+SHA256: 888fdf650c7cae3e542d90a4e172bfa3566e0a5eba6e10afaa333bdcbde78337
+Description: Simple tool information command basic for beginner
+
+Package: basic
+Version: 1.2.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Depends: python
+Filename: pool/main/basic_1.2.0_aarch64.deb
+Size: 31928
+MD5sum: 8208d01456c4ab60c4dcce0694027dc0
+SHA1: 09e7c296c2b7612024a2cd3f18b24f27028278bd
+SHA256: cc5cc9c637d6dc2e982855f573f31195f707c148c1d24515506891b1267d27aa
+Description: Simulator Terminal learning basic command for beginner
+
+Package: baxter
+Version: 1.2.4
+Architecture: aarch64
+Maintainer: @djunekz
+Installed-Size: 
+Filename: pool/main/baxter_1.2.4_aarch64.deb
+Size: 2576
+MD5sum: 077f8b8ca1eda4d18ec0ff67964ed471
+SHA1: dd2cde56c2aea8d2865813fe43bccc340c6e74d9
+SHA256: 23dbcb1f450da2cadad8cd18dc4bfa4b0d2de74ce36ef79ad4e14c8e07f1bde7
+Description: Encrypt and decrypt files termux
+
+Package: bing-ip2hosts
+Version: 1.0.5
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/bing-ip2hosts_1.0.5_aarch64.deb
+Size: 5304
+MD5sum: b705d86db45991e3e2ff758a4b62ec00
+SHA1: 3f1c87dd74e60fdd97abe77e982206a45d70899d
+SHA256: cd7dc5a93dd19d1bea604b9e85e8b96ac5142f6377a8ec72beceee9e12b14f06
+Description: bingip2hosts is a Bing.com web scraper that discovers websites by IP address
+
+Package: bower
+Version: 1.8.12
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/bower_1.8.12_aarch64.deb
+Size: 205876
+MD5sum: d2fa9fe80b3bdb00b15221e4a2fec4e1
+SHA1: 1c3f6c3ec702c8935f66113dd8688890a04185a7
+SHA256: 8026c57dea61f3cdfdbf70812df3216c55864e8a9f1ccf29cf62a116f4410af5
+Description: A package manager for the web
+
+Package: clickjacking-tester
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/clickjacking-tester_1.0.0_aarch64.deb
+Size: 18368
+MD5sum: 1faad3fbc3147cbeb30b142c2c46d395
+SHA1: 98cee50aab123516964086b140d8f1bb5266905f
+SHA256: d6778d7b40c7dc4a855188e2119e84a0fa7406d514658cd8e0816267d4f121c6
+Description: A python script designed to check if the website if vulnerable of clickjacking and create a poc
+
+Package: cloudflair
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/cloudflair_1.0.0_aarch64.deb
+Size: 7992
+MD5sum: c8f9df6d22191bb0bb425481b5130f21
+SHA1: d45b6b0490a86a77cfa154fa43321f13d7873958
+SHA256: fbca16cb61598d692b6513428c8c265bcf66f2a40bedaa7bcd4a075f1474bb2e
+Description: 🔎 Find origin servers of websites behind CloudFlare by using Internet-wide scan data from Censys.
+
+Package: cmseek
+Version: 1.1.3
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/cmseek_1.1.3_aarch64.deb
+Size: 96576
+MD5sum: dccd503aa38ec51f208aa537e532d6c0
+SHA1: a9a9653aacb510f40aa105baced75d3f0cca3d91
+SHA256: 2093db2b5d4ea09ef8e10a648415be63954d22e5d8fedecc93d3db7133e25acf
+Description: CMS Detection and Exploitation suite - Scan WordPress, Joomla, Drupal and over 180 other CMSs
+
+Package: cmsmap
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/cmsmap_1.0.0_aarch64.deb
+Size: 383164
+MD5sum: d7e2e285b1a7d176f30013ea7717c269
+SHA1: d711d869931268ebfb83bb54bfa8c112af68533d
+SHA256: 2c49782331096db906e72aee639493915c0d65dbcdfb592e588969ba388e2b49
+Description: CMSmap is a python open source CMS scanner that automates the process of detecting security flaws of the most popular CMSs.
+
+Package: commix
+Version: 4.1
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/commix_4.1_aarch64.deb
+Size: 172968
+MD5sum: 4faa5e1763de2f2378f415f1023acfc6
+SHA1: ec4abe168c8395a193d01ca0f4c7a4a825f61159
+SHA256: 3e34627c3b917ab17d0360d22c451034cdfcdfffc505bb5a376a42cbd9950ec1
+Description: Automated All-in-One OS Command Injection Exploitation Tool
+
+Package: crowbar
+Version: 4.2
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/crowbar_4.2_aarch64.deb
+Size: 344452
+MD5sum: ee934f44bd1720be86ad27fe8b1883c2
+SHA1: 3577a2e041edf1e9cc096c585cb00bad59606566
+SHA256: d5e21411dc75e20222f3fd93a2ba8a725cb062b0e49622141e30ff96695999a9
+Description: Crowbar is brute forcing tool that can be used during penetration tests. It is developed to support protocols that are not currently supported by thc-hydra and other popular brute forcing tools.
+
+Package: cupp
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/cupp_1.0.0_aarch64.deb
+Size: 2103540
+MD5sum: 5534efef176525d816ab2c100afbebac
+SHA1: 51e461954d22672916214c094ecd456721a97cd3
+SHA256: dfe8e44c65e78157b9698f4f01edb6ea319631023a7fcf61a26973eda20235d7
+Description: cupp — auto-packaged by termux-build-init
+
+Package: cybertuz
+Version: 1.0.2-1
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/cybertuz_1.0.2-1_aarch64.deb
+Size: 112352
+MD5sum: 162a1c1cf174fccbc334f8fecf4c75c9
+SHA1: ff47fd89b1c27217f553a87eebef1631b26bca5d
+SHA256: 855c9670154bbd8f5e44f87e255bcbc2236611a913aa597e3cd43694faa69582
+Description: Comprehensive Educational Learning Platform for Termux
+
+Package: djangohunter
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/djangohunter_1.0.0_aarch64.deb
+Size: 5028
+MD5sum: 7451f3136a04c340034a07daab3efdaa
+SHA1: f21b1122766428538fde7a893f186f9fabbec20d
+SHA256: e4e3c059b5884d4006fd5306159caa864c444282a42138995b00cd440359f7cb
+Description: djangohunter — auto-packaged by termux-build-init
+
+Package: dnsrecon
+Version: 1.6.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/dnsrecon_1.6.0_aarch64.deb
+Size: 534508
+MD5sum: bb8b66bc4a671406ce2db266fca87472
+SHA1: 1b8832e2f022b2b19461fbecdc47609963ff8d96
+SHA256: 6537f6f737a7dc77e678f0a9bb86bef3a7368bd7b0184f89af046552a300fd58
+Description: DNS Enumeration Script
+
+Package: doona
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/doona_1.0.0_aarch64.deb
+Size: 23896
+MD5sum: c4024105c56327b53a04ea3aa9b3b267
+SHA1: e9f6177ec884ac23f14f66774824ca0ef15e62fe
+SHA256: f3deb36ee22d919b664674ecc504b07d8e22cd21adc7ad9985f3f099e6d929e8
+Description: Network based protocol fuzzer
+
+Package: dumpzilla
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/dumpzilla_1.0.0_aarch64.deb
+Size: 24156
+MD5sum: e8e9a73d566d8f4aa06cf70b6a07c156
+SHA1: 6237fdeb3d91c119dd8f2c6ad463e64b3093a89e
+SHA256: 8050c5cfc695b88d2ef744be37971d445cfc2d5829773cdd8e54765fba0a6518
+Description: dumpzilla packaging for Kali Linux
+
+Package: elpscrk
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/elpscrk_1.0.0_aarch64.deb
+Size: 150280
+MD5sum: b432f32bf2726c02073c9def8d5d0296
+SHA1: 50c48f21df5ec6d851bd01029b36c9690ad288bb
+SHA256: b0107f457a4e307351ce16ab6ab9393c2ec5d381f48903be1b13868c0340c3a6
+Description: An Intelligent wordlist generator based on user profiling, permutations, and statistics. (Named after the same tool in Mr.Robot series S01E01)
+
+Package: eternal-scanner
+Version: 2.2
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/eternal-scanner_2.2_aarch64.deb
+Size: 20792
+MD5sum: 7d28a36e0c1c1bed2572b5a1e611d88f
+SHA1: cc75c47d35fddccb767089ba6aac2a37ec13a1c2
+SHA256: c5ffee326b756ebe2414a0621d723753df308fea2f2c2e177a397e2792a0d4cc
+Description: An internet scanner for exploit CVE-2017-0144 (Eternal Blue) & CVE-2017-0145 (Eternal Romance)
+
+Package: fbvid
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/fbvid_1.0.0_aarch64.deb
+Size: 1896
+MD5sum: 71e63af5439b5f5c6c04dd8ccf05aa5f
+SHA1: 0125648bf8c2721e23226c73baf853620f7188ed
+SHA256: 40e9aa4993f622bed340f7867f82b691e3b381289575289f626c2567fdbb8d17
+Description: Facebook Video Downloader (CLI) For Linux Systems Coded in PHP
+
+Package: fd
+Version: 10.4.2
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/fd_10.4.2_aarch64.deb
+Size: 1132164
+MD5sum: c233101e8e06b6f70874cb2418968a68
+SHA1: cc4eaa9805bcb02bd8267210defe138a26176db7
+SHA256: ab8387e026cff61ca5ab04328c6c840ae4ab6b174616b3f90d4022a5f5e3bc53
+Description: A simple, fast and user-friendly alternative to 'find'
+
+Package: fuckshitup
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/fuckshitup_1.0.0_aarch64.deb
+Size: 9104
+MD5sum: 562ca8000cbf798e03dcf7efa57af898
+SHA1: 25464930233c3ef2cd9cc8a269c52eab6d2f1cb1
+SHA256: 2dce6f9f9577ab147bb9727f92cf09445087d1ff12a171a84ebcc9c1587c8ed4
+Description: php-cli vulnerability scanner
+
+Package: gemail-hack
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/gemail-hack_1.0.0_aarch64.deb
+Size: 2376
+MD5sum: 2e6fcafcb646416efa62f4f98b8bb01d
+SHA1: c90527c8b022daaff3bc642186502a2b0b8fba10
+SHA256: 5134fff1c2db500479f28c4bc43aa714ab42f79ef680de561ac2b8a1304d25e1
+Description: python script for Hack gmail account brute force
+
+Package: get
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/get_1.0.0_aarch64.deb
+Size: 1672
+MD5sum: 281b1939000bfc1c51b843331381ca01
+SHA1: eef412c7192aa44c9a91372bc5cce4bb6276d575
+SHA256: 46b6abdfbe5a93b87881fdcca679e2bcef0fb3f0602ca78a6e0c72a16ea75a96
+Description: Get is a simple script to retrieve an ip from hostname or vice-versa .
+
+Package: ghosttrack
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/ghosttrack_1.0.0_aarch64.deb
+Size: 235800
+MD5sum: 6bf1f144b9238b3e3e6f37e7cf8654c8
+SHA1: a736edd80ed5bcea139b1edcf10671fe7cf8f1b9
+SHA256: 4838de66b2415ddec03888945e502b1da762496e4528e0f40cac43cfe0f3ef2a
+Description: Useful tool to track location or mobile number
+
+Package: goblinwordgenerator
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/goblinwordgenerator_1.0.0_aarch64.deb
+Size: 2104388
+MD5sum: 17bba9e41690ee00da2cf02d773f2ad1
+SHA1: f05b342eeff333960fc9c71ec4ac7d11c4f2c011
+SHA256: 737088b668a625f2e33d26e22fd94a383c3c236dd74a9ce990e7655945ea11cf
+Description: Python wordlist generator
+
+Package: hammer
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/hammer_1.0.0_aarch64.deb
+Size: 104556
+MD5sum: 211cf608f49808484eca42bdc9572c87
+SHA1: cb6cb459fa784c4fd41340aa3e67f4faef696e3a
+SHA256: 0168063614d513e0c051c5c8a12c53adfc680f39a694ec8180ae0629d2dc46ec
+Description: Ddos attack tool for termux
+
+Package: holehe
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/holehe_1.0.0_aarch64.deb
+Size: 48540
+MD5sum: 9acdbffbaee994ff93d78d40c395a7bb
+SHA1: cdb29f0857798885e289d341b5b187ad93e7e694
+SHA256: 01dd5ccf5ad0a9d438baf6a2c545ae728cf2aaa9c3c38f7fbf7199fd2d535d8a
+Description: holehe allows you to check if the mail is used on different sites like twitter, instagram and will retrieve information on sites with the forgotten password function.
+
+Package: ht-wps-breaker
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/ht-wps-breaker_1.0.0_aarch64.deb
+Size: 18360
+MD5sum: 12d43a71616e0130c070919d6542b02a
+SHA1: 6e28b61bda29c897d624c042851954b276a4dceb
+SHA256: c22b3a54f9a0a565d8283d1eddf4346bc82deeca6b402a13f665334aad5fee8a
+Description: HT-WPS Breaker (High Touch WPS Breaker)
+
+Package: hunner
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/hunner_1.0.0_aarch64.deb
+Size: 7652
+MD5sum: b43e2a4dc50e66f002442019198de8bb
+SHA1: 1ec90413d3f10e754252213ef9d2c067efd7861e
+SHA256: d06b1001c463adad6a3bea32cc6a95274c5ce721198ddd2f00984f6be67b1d72
+Description: Hacking framework
+
+Package: impulse
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/impulse_1.0.0_aarch64.deb
+Size: 291816
+MD5sum: ae1ce2289e5b66a141bbfcb276b8c99e
+SHA1: 5b9a333bff366ae799c70ae07f560fdd9f69386a
+SHA256: 405bbaf89f28fb6cf7d6184f8377cd70605f860ab2a5a008f32a80169cfcbd1c
+Description: Denial-of-Service ToolKit with multiple attack methods
+
+Package: instareporter
+Version: 1.0.1
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/instareporter_1.0.1_aarch64.deb
+Size: 27840
+MD5sum: 666c9036d80ab92789b50ebe692de542
+SHA1: 6678a0a853af9b0c4a1ef8334e1e5755d24082f2
+SHA256: 8e755a9606b7a4560775037e9d4713cade5cdefce07e0a61c2f8665d45786c7f
+Description: Instagram Mass Reporting Tool
+
+Package: ip-tracker
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/ip-tracker_1.0.0_aarch64.deb
+Size: 10204
+MD5sum: a6d066056737a6911c9521995ba15ec3
+SHA1: cc692f0da6d29fef10ee8d6720f7a1112b8c5d36
+SHA256: 2bab2c174d6f9d238d24490c274a094507ad004423a14d308b66ebacb565ae00
+Description: Track anyone's IP just opening a link!
+
+Package: ipgeolocation
+Version: 2.0.4
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/ipgeolocation_2.0.4_aarch64.deb
+Size: 19956
+MD5sum: 8f941c0d818328879d6ad1b9db5ee174
+SHA1: 0b1081d49cc77b1c3578b8ea3130cce435116f79
+SHA256: 2f5cf1d3a243650c7fc33ce047d5f3cedcdee39916873c6ba2a524163edeab5c
+Description: Retrieve IP Geolocation information
+
+Package: killchain
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/killchain_1.0.0_aarch64.deb
+Size: 4296
+MD5sum: c530b7178957960b92d7a673cdcef5ab
+SHA1: 3b20cf212fca19044b79e55e8e496f3eb642ca67
+SHA256: 26a5467d459384c65138a9afa4b5fb45dc7fc49ade9711708adf06a16abb3323
+Description: killchain — auto-packaged by termux-build-init
+
+Package: lalin
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/lalin_1.0.0_aarch64.deb
+Size: 18228
+MD5sum: 2b29904ee54dcb60c18f1bddc4e5ba14
+SHA1: 7b875b1e81b84ee9a085fd8c349c16ace9b96c34
+SHA256: 53fafc57485d6780705eded1394d52fd74c8fa172252855956c4c92ee1f24cb7
+Description: this script automatically install any package for pentest with uptodate tools , and lazy command for run the tools like lazynmap , install another and update to new #actually for lazy people hahaha #and Lalin is remake the lazykali with fixed bugs , added new features and uptodate tools . It's compatible with the latest release of Kali (Rolling)
+
+Package: lazymux
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/lazymux_1.0.0_aarch64.deb
+Size: 198380
+MD5sum: 6a696bada2f4b1c55db69310f1fb3acf
+SHA1: d0f37c59c3d138d3890e8cc2ba091332c8cdbdd6
+SHA256: 960a25dcb7904b59ff84cde0385767520631e6b7bcb4e04792acd1e02ed8e5bb
+Description: termux tool installer
+
+Package: lux
+Version: 0.24.1
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/lux_0.24.1_aarch64.deb
+Size: 5143284
+MD5sum: 03445d099095b0dabd547dae227e9860
+SHA1: 19daa75f38015f57f880ea3bb92542494cd6fc2c
+SHA256: e5355f23d7533538ce3871fa24979fb5ec7db4d08984f52687cc89940e7459e6
+Description: Fast and simple video download library and CLI tool written in Go
+
+Package: merlin
+Version: 1.1.2
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/merlin_1.1.2_aarch64.deb
+Size: 65232
+MD5sum: 055a4c59912c1c1be115ed26fd6a002e
+SHA1: be9ac86b4a3a703abdb9277049a1888c580ff334
+SHA256: 9f3b4559148d5a69ed1e71878d1d937c100e5f7fb1280d648a59fcb2415e5210
+Description: Analyst website vulnerabillity scanner
+
+Package: myserver
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/myserver_1.0.0_aarch64.deb
+Size: 99852
+MD5sum: 0647fe6cbd8b9607169fae3a2b1eb835
+SHA1: 539c87239bca006aa1f6310ed1c2292fda9af85d
+SHA256: 1a34a03f7d991dbb7f8de8f3c2a49cedb8417f164202f8b3251c864773051dcc
+Description: myserver — auto-packaged by termux-build-init
+
+Package: orchat
+Version: 1.4.6
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/orchat_1.4.6_aarch64.deb
+Size: 1588716
+MD5sum: 3b464029f857d229da00953ec11309a8
+SHA1: f7cb0a94970e4a42e011b003b2c4357c045e17ec
+SHA256: d45f3778ede9baa4917a8fcbceb75b21c08afe5f9db99a6118fe4ea928048649
+Description: A powerful, feature-rich command-line interface for interacting with AI models through OpenRouter.
+
+Package: parsero
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/parsero_1.0.0_aarch64.deb
+Size: 11752
+MD5sum: 175d8f97ed3c0e92612ed3b4df28502a
+SHA1: ee332506d7dd0343aee60d281c1a321a41be0f84
+SHA256: ff5ca60238a4780138ded7f2b22fdfea36983be23d2ac1fe8c13c91a3896142a
+Description: Parsero | Robots.txt audit tool
+
+Package: photon
+Version: 1.3.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/photon_1.3.0_aarch64.deb
+Size: 25008
+MD5sum: 5380c7db0f7a610cd53020dec2a462e5
+SHA1: 172d2bbc9e00abdf696b3d5cda57ec7aebed7a27
+SHA256: 1437d39add0b8ecc88c71d8ef334a235c3460a3af1e27331b087135ff1465854
+Description: Incredibly fast crawler designed for OSINT.
+
+Package: pymaker
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/pymaker_1.0.0_aarch64.deb
+Size: 2540
+MD5sum: f51836c92afec42dde74da95b0e3fc3a
+SHA1: 1dbef2e8a77055e31a2bbf970db4acd59c9b51e6
+SHA256: 066be479bffdedd0e112db8d99a15bd3fb8699aa315e68a6c396b3b2228d2488
+Description: Simple tool for create python script
+
+Package: red-hawk
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/red-hawk_1.0.0_aarch64.deb
+Size: 22104
+MD5sum: a972a50a9057efcf87750cbac3cd6312
+SHA1: 09f53664a13d96bae3c6467afbf93a7aa611df3d
+SHA256: 076c99958d633c9debdc4f4e06c9d6540fd99b9853aab72c6f1e83cf2622a3c0
+Description: All in one tool for Information Gathering, Vulnerability Scanning and Crawling. A must have tool for all penetration testers
+
+Package: ssrfmap
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/ssrfmap_1.0.0_aarch64.deb
+Size: 4497816
+MD5sum: cb2572125e2f2496d21d82c54643306e
+SHA1: 2fccf27c3da33c0c298f270cd1f1ed3a03dab18b
+SHA256: 47701a70d6a4daecd35a2ce4ad59d5497529d325edef0605482ff47d2036ceaf
+Description: Automatic SSRF fuzzer and exploitation tool
+
+Package: tdoc
+Version: 2.2.4
+Architecture: aarch64
+Maintainer: @djunekz
+Installed-Size: 
+Filename: pool/main/tdoc_2.2.4_aarch64.deb
+Size: 49680
+MD5sum: 3f9fcf95c927ac068387966e2308ff79
+SHA1: 1d9843b99d23a2b4ae59fe7a82955ba796913f35
+SHA256: 9bd1558280b6604754b00c8f61a3463ff15b1ecd97f15efb9181d1a696a8d35d
+Description: TDOC - Diagnostic and repair utility for Termux environment
+
+Package: termstyle
+Version: 2.0.0
+Architecture: aarch64
+Maintainer: djunekz
+Installed-Size: 
+Homepage: https://github.com/djunekz/termstyle
+Filename: pool/main/termstyle_2.0.0_aarch64.deb
+Size: 4781878
+MD5sum: 87f5dcb8ed4e372879f7f3d0ed6d472d
+SHA1: 1f5b17e31f934ced453f9f6899713c61b38804e3
+SHA256: 2ce18afe67d8f1d09d26cc223b01ce195827d9e69d7a109da7b686ceb45331b0
+Description: Simple tool for change color, command prompt, and cursor (Termux only)
+
+Package: termux-ai
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/termux-ai_1.0.0_aarch64.deb
+Size: 5900
+MD5sum: 5996f53d23d2c0aaed25b95daf4c5420
+SHA1: 2a4da4478f6b6f7feff3957c7e31dfea62a7c6c0
+SHA256: 8a539e08f8341f2f01cb1ea7d76a9582c2aedbbe045cae7ea8835b210376a27b
+Description: Interactive AI tool for Termux with 10+ providers and 50+ image models ✨
+
 Package: termux-app-store
 Version: 0.4.1
 Architecture: aarch64
@@ -12,3 +639,182 @@ SHA1: b6d6c0760e2f9e251a903692e0d258dabe0f5489
 SHA256: 0f10bd5a3aa89f2f7774382d23e93847b91fab67ac470b617a761a1a47f2cd86
 Description: The first offline-first, source-based TUI package manager for Termux
 
+Package: termux-sync
+Version: 1.1.1
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/termux-sync_1.1.1_aarch64.deb
+Size: 33644
+MD5sum: c7d543bfaf8f31fa55e958499a9d7d3c
+SHA1: f8f9c31be8382adcdd457790b6ff86af5c9aeb79
+SHA256: 88b2ed6b7ff3971faf54c7e00975cdf0ca6e9eb6f6de08f2d32d25ea5f65ac1b
+Description: OpenSource Backup and restore your entire Termux environment across devices.
+
+Package: termux-tui
+Version: 2.9.5
+Architecture: aarch64
+Maintainer: @opsonusdh
+Installed-Size: 
+Filename: pool/main/termux-tui_2.9.5_aarch64.deb
+Size: 3480400
+MD5sum: 8c5cb63c131b3caeb9f7c03559c9b9d9
+SHA1: 5378dc9ba70898699727154d407584c3d56432e3
+SHA256: f202e951ce58eddd1e29bf22b535c9c1404dd815965eef718498e48240b5e157
+Description: A futuristic Jarvis-style terminal dashboard for Termux
+
+Package: termuxalpine
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/termuxalpine_1.0.0_aarch64.deb
+Size: 3196
+MD5sum: c70b5d755524448e2468cfdd3799b7ed
+SHA1: 671941ec82607f111959cc074b5dd01e45ceb57c
+SHA256: 0b6190701bf7929d2b018bca424ad0881408cce6f1ef87949bcba0e9f171fbb3
+Description: Use TermuxAlpine.sh calling to install Alpine Linux in Termux on Android. This setup script will attempt to set Alpine Linux up in your Termux environment.
+
+Package: tuifimanager
+Version: 5.2.6
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/tuifimanager_5.2.6_aarch64.deb
+Size: 120944
+MD5sum: 98b8b1a4b17e6eb2fcbf7e3d3bc86afa
+SHA1: 11f1da026268754610c1f426e22c18b989df2b5f
+SHA256: 455d1ea39676dafdd060b75374c745bf6da77fb8ff0a41128901927314a5b418
+Description: A terminal-based TUI file manager
+
+Package: tx
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/tx_1.0.0_aarch64.deb
+Size: 4948660
+MD5sum: 15e1ff628ba31d37325d163ee32fa1b2
+SHA1: d20dd4128677c389134785c31cb7998e71498d05
+SHA256: 05041b284f1f3b7b3bf55f9d16659986c96d75efe2b62648cab0bd44d932bce0
+Description: Advance Terminal Editor Ultimate
+
+Package: userfinder
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/userfinder_1.0.0_aarch64.deb
+Size: 4220
+MD5sum: 088b20a20b13b4cc015e3c322447f9cc
+SHA1: a6b4a3717acc7e1783631681896509f0e7fcb907
+SHA256: c0606118326da41b01f5a1703973931c9a4078397e7f3b3ce2765d15b73de218
+Description: userfinder — auto-packaged by termux-build-init
+
+Package: uv
+Version: 0.11.7
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/uv_0.11.7_aarch64.deb
+Size: 13927240
+MD5sum: 256590e5468cc4f15a988f94de649a87
+SHA1: c9309ebadd2142d07273fe93df615661add2c126
+SHA256: 509421a4bd1c2ac155f7c1ade0b422c6dd366e131832269a35837fdb115a45e1
+Description: An extremely fast Python package and project manager, written in Rust.
+
+Package: webshake
+Version: 1.0.2
+Architecture: aarch64
+Maintainer: Djunekz
+Installed-Size: 
+Filename: pool/main/webshake_1.0.2_aarch64.deb
+Size: 3848
+MD5sum: 0e249eb06a14bf15e52558e0252ec389
+SHA1: a9084b51b623430ec22b0920eaf12190d23cbbf8
+SHA256: abc107bfb81f4220fa63246aa09813f195df9f849842f93691f7df3fc859e51b
+Description: Scan vulnerabilities and analyze websites
+
+Package: xeuledoc
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/xeuledoc_1.0.0_aarch64.deb
+Size: 14424
+MD5sum: f350fe645e52871a6b37d9a3748a15ae
+SHA1: 5a41cdbf9b1527b80c53c4b6566ffcf56c1bc6c4
+SHA256: 7d9de3220a56a0fa4f492fa60c642365b4b7cb43b350b6c75572b8789d57322d
+Description: Fetch information about a public Google document.
+
+Package: xsstrike
+Version: 3.1.6
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/xsstrike_3.1.6_aarch64.deb
+Size: 45904
+MD5sum: 60f18aee161dc9753857c782c9adb37d
+SHA1: dd9b80a6109103b86708a7eb1e485e0bfd057efd
+SHA256: 3310b8753b7a57bbb93e89ebe32a34b9b3470f74030a3a873eb4f7abe94923dc
+Description: Most advanced XSS scanner.
+
+Package: ytfzf
+Version: 2.6.2
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/ytfzf_2.6.2_aarch64.deb
+Size: 31724
+MD5sum: d222c5ebc51d5f5054cf97b5b44260d1
+SHA1: e2d6421ffc0696c173ba841048b4833cccff9505
+SHA256: cfff8c9b3aa0b464c6a6457927a845b8b360ae7355afc6f533e4a1895f124c51
+Description: A posix script to find and watch youtube videos from the terminal. (Without API)
+
+Package: zerodoor
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/zerodoor_1.0.0_aarch64.deb
+Size: 6252
+MD5sum: f855e0a15aaf576f573d9deb4cd2fb1b
+SHA1: fe758433b634c36cc50c24c8e770648e7b09a4da
+SHA256: f9cf67e5402e148301e50e873f02c2ed865a11ad778cd16d37f8fdd89c6b945f
+Description: A script written lazily for generating cross-platform  backdoors on the go :)
+
+Package: zora
+Version: 2.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/zora_2.0.0_aarch64.deb
+Size: 5101808
+MD5sum: ad07a49d06e91d1d1cf77d78ab8571b1
+SHA1: 55976e84009c9fdebd23dc3d8c2833bb4d952e43
+SHA256: 85e77ae597ca8394e50cc2bed0cbf9224a0cb929ae43debdb0f186f2f4fe0697
+Description: The ultimate OSINT framework
+
+Package: zorabuilder
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/zorabuilder_1.0.0_aarch64.deb
+Size: 4826584
+MD5sum: cf799241f079b4b178d297b3c7454dde
+SHA1: 0f41bf09a570d6b90e4625d6a04d860382400fb1
+SHA256: a68264bf258624f196b19fd15b371d41abe804525f1bb08c1981272094c902bb
+Description: Builder python standalone ELF
+
+Package: zoracrypter
+Version: 1.0.0
+Architecture: aarch64
+Maintainer: @termux-app-store
+Installed-Size: 
+Filename: pool/main/zoracrypter_1.0.0_aarch64.deb
+Size: 4749544
+MD5sum: f2bcc0ac7325c1659ed06c80f5225eb9
+SHA1: fac893deeb651371b19e2f0680050576c4240eda
+SHA256: 0e2c986fe227e9fe5546fbab6d85e09fbf385ef786f902bfb4e9bd131841f14b
+Description: Encrypter Stealth Binary Builder
