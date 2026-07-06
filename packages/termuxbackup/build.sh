@@ -4,7 +4,7 @@ TERMUX_PKG_LICENSE="MIT"
 TERMUX_PKG_MAINTAINER="@termux-app-store"
 TERMUX_PKG_VERSION=1.0.0
 TERMUX_PKG_SRCURL=https://github.com/enrilinux/termuxbackup/archive/refs/heads/main.tar.gz
-TERMUX_PKG_SHA256=81584982c34d97d24027484d31e7086504f69e6247773989ec734e8ce7f52c9c
+TERMUX_PKG_SHA256=21aa17ded7ca663cf6249b3b6ef63e6194601ddaba5882a3632b0e1952ec7608
 TERMUX_PKG_DEPENDS="ncurses, coreutils, findutils, grep, sed, gawk, tar, gzip, pigz"
 
 termux_step_make() {
