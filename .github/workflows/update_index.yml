@@ -85,7 +85,7 @@ jobs:
           git config --local user.name "Termux App Store"
           git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/djunekz/termux-app-store.git
           git add tools/index.json
-          git commit -m "chore: update index.json [skip ci]"
+          git commit -m "chore: update index.json"
 
           MAX_RETRIES=3
           RETRY=0
