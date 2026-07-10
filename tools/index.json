@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-07-07T03:40:21.799692+00:00",
-  "total": 89,
+  "generated_at": "2026-07-10T03:35:29.944036+00:00",
+  "total": 90,
   "packages": [
     {
       "package": "aichat",
@@ -1294,6 +1294,31 @@
       "srcurl": "https://github.com/Hax4us/TermuxAlpine/archive/refs/heads/master.tar.gz",
       "sha256": "2dae317bcce989a909f171c1843db9479012bcbbb23cc8f729cc73ce4d8af6fa",
       "platform_independent": false
+    },
+    {
+      "package": "termuxbackup",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "Termux TUI backup tool",
+      "homepage": "https://github.com/enrilinux/termuxbackup",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/enrilinux/termuxbackup/archive/refs/heads/main.tar.gz",
+      "sha256": "21aa17ded7ca663cf6249b3b6ef63e6194601ddaba5882a3632b0e1952ec7608",
+      "platform_independent": false,
+      "depends": [
+        "ncurses",
+        "coreutils",
+        "findutils",
+        "grep",
+        "sed",
+        "gawk",
+        "tar",
+        "gzip",
+        "pigz"
+      ]
     },
     {
       "package": "the-eye",
