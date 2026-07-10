@@ -9,9 +9,6 @@ TERMUX_PKG_PLATFORM_INDEPENDENT=true
 TERMUX_PKG_BUILD_IN_SRC=true
 
 termux_step_make_install() {
-<<<<<<< HEAD
     install -Dm755 "padrelivio" "$PREFIX/bin/padrelivio"
-=======
     install -Dm755 "padrelivio" "$TERMUX_PREFIX/bin/padrelivio"
->>>>>>> d0aa9fa (fix(padrelivio): use tagged release v1.0.0 for stable SHA256)
 }
