@@ -331,27 +331,56 @@ def fetch_github_meta(repo_url):
     if result["license"] in ("NOASSERTION", "null", ""):
         result["license"] = "UNKNOWN"
 
+    default_branch = data.get("default_branch", "main")
+
     rel_body = _http_get(f"{api}/releases/latest")
     if rel_body:
         try:
             rel = json.loads(rel_body)
             tag = rel.get("tag_name", "")
             if tag:
-                ver = tag.lstrip("v")
-                result["version"] = ver
+                result["version"] = tag.lstrip("v")
                 result["srcurl"]  = f"{repo_url}/archive/refs/tags/{tag}.tar.gz"
                 ok(f"Latest release: {tag}")
-            else:
-                raise ValueError("no tag")
+                return result
         except Exception:
-            branch = data.get("default_branch", "main")
-            result["version"] = "1.0.0"
-            result["srcurl"]  = f"{repo_url}/archive/refs/heads/{branch}.tar.gz"
-            warn(f"No release found, using branch {branch}")
-    else:
-        branch = data.get("default_branch", "main")
-        result["version"] = "1.0.0"
-        result["srcurl"]  = f"{repo_url}/archive/refs/heads/{branch}.tar.gz"
+            pass
+
+    tags_body = _http_get(f"{api}/tags")
+    if tags_body:
+        try:
+            tags = json.loads(tags_body)
+            if isinstance(tags, list) and tags:
+                tag = tags[0].get("name", "")
+                if tag:
+                    result["version"] = tag.lstrip("v")
+                    result["srcurl"]  = f"{repo_url}/archive/refs/tags/{tag}.tar.gz"
+                    ok(f"No release found, using latest tag: {tag}")
+                    return result
+        except Exception:
+            pass
+
+    warn(f"No release or tag found — pinning to current commit on {default_branch}")
+    commit_body = _http_get(f"{api}/commits/{default_branch}")
+    if commit_body:
+        try:
+            commit = json.loads(commit_body)
+            sha = commit.get("sha", "")
+            commit_date = (commit.get("commit", {}) or {}).get("author", {}).get("date", "")
+            if sha:
+                date_tag = commit_date[:10].replace("-", "") if commit_date else "unknown"
+                result["version"] = f"0.0.0+{sha[:7]}"
+                result["srcurl"]  = f"{repo_url}/archive/{sha}.tar.gz"
+                info(f"Pinned to commit {sha[:7]} ({date_tag})")
+                return result
+        except Exception:
+            pass
+
+    result["version"] = "0.0.0"
+    result["srcurl"]  = f"{repo_url}/archive/refs/heads/{default_branch}.tar.gz"
+    warn(f"Could not resolve a release, tag, or commit SHA — "
+         f"falling back to floating branch '{default_branch}'.")
+    warn("This package will need manual re-pinning before it's safe to trust long-term.")
 
     return result
 
