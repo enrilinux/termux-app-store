@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-07-11T02:50:52.841048+00:00",
-  "total": 90,
+  "generated_at": "2026-07-12T03:15:02.995177+00:00",
+  "total": 91,
   "packages": [
     {
       "package": "aichat",
@@ -1240,6 +1240,26 @@
       "srcurl": "https://github.com/Anon4You/Termux-Ai/archive/refs/heads/main.tar.gz",
       "sha256": "ca5e517ef81e8ef94bc9433514cae4ab305d79f76bc1d7682b2d5f85d41bf8b6",
       "platform_independent": false
+    },
+    {
+      "package": "termux-fm",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "TUI file manager root for Termux",
+      "homepage": "https://github.com/enrilinux/termux-fm",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/enrilinux/termux-fm/archive/refs/tags/1.0.0.tar.gz",
+      "sha256": "bd273c29f85cf3361f64714afa370cc361041e16dd088187e0d7cbc67c04b92e",
+      "platform_independent": false,
+      "depends": [
+        "ncurses",
+        "libselinux",
+        "clang",
+        "make"
+      ]
     },
     {
       "package": "termux-sync",
