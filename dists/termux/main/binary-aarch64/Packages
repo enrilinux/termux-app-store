@@ -640,15 +640,15 @@ SHA256: a92dae78cf2b1e91b8be19ab463597d9f413c98aded53a53947764982f3676e7
 Description: The first offline-first, source-based TUI package manager for Termux
 
 Package: termux-sync
-Version: 1.1.1
+Version: 1.2.3
 Architecture: aarch64
 Maintainer: @termux-app-store
 Installed-Size: 
-Filename: pool/main/termux-sync_1.1.1_aarch64.deb
-Size: 33644
-MD5sum: c7d543bfaf8f31fa55e958499a9d7d3c
-SHA1: f8f9c31be8382adcdd457790b6ff86af5c9aeb79
-SHA256: 88b2ed6b7ff3971faf54c7e00975cdf0ca6e9eb6f6de08f2d32d25ea5f65ac1b
+Filename: pool/main/termux-sync_1.2.3_aarch64.deb
+Size: 42324
+MD5sum: 69c9caa0d2e9375f22ef9297d7fca937
+SHA1: 6757c287bb6d1a8797c3fe9b156c7a4be73a7bf2
+SHA256: be8429eee4b4a22b83a25fc345eea6521b4920642fc26d7a25cca77857904a07
 Description: OpenSource Backup and restore your entire Termux environment across devices.
 
 Package: termux-tui
@@ -818,4 +818,3 @@ MD5sum: f2bcc0ac7325c1659ed06c80f5225eb9
 SHA1: fac893deeb651371b19e2f0680050576c4240eda
 SHA256: 0e2c986fe227e9fe5546fbab6d85e09fbf385ef786f902bfb4e9bd131841f14b
 Description: Encrypter Stealth Binary Builder
-
