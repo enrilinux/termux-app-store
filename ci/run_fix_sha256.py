@@ -1,21 +1,31 @@
 #!/usr/bin/env python3
 """
 ci/fix_sha256.py
-Auto-fix TERMUX_PKG_SHA256 in packages/*/build.sh
-when validate-build.sh reports a mismatch.
+Auto-fix TERMUX_PKG_SHA256 in packages/*/build.sh when validate-build.sh
+reports a mismatch.
 
-Example:
+Unlike the old version, this script never pushes directly to the default
+branch. It only touches packages whose TERMUX_PKG_SRCURL is pinned to an
+immutable ref (a Git tag or a full commit SHA) — for those, it opens a PR
+and auto-merges it, since the fix is mechanical and low-risk. Packages that
+are still pinned to a floating branch (archive/refs/heads/...) are left
+alone: their source can change silently upstream, so a SHA256 mismatch
+there needs a human to re-pin the package to a tag/commit first, not a bot
+quietly accepting whatever is currently on that branch.
+
 Usage:
-  python ci/run_fix_sha256.py                  # scan all packages
-  python ci/run_fix_sha256.py neovim aichat    # scan specific packages
+  python ci/run_fix_sha256.py                   # scan all packages
+  python ci/run_fix_sha256.py neovim aichat     # scan specific packages
 """
 
 import hashlib
+import json
 import os
 import re
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -29,6 +39,11 @@ GREEN  = "\033[92m"
 YELLOW = "\033[93m"
 CYAN   = "\033[96m"
 RED    = "\033[91m"
+
+FLOATING_BRANCH_RE = re.compile(r"/archive/refs/heads/")
+
+GITHUB_API = "https://api.github.com"
+
 
 def ok(msg):    print(f"  {GREEN}✓{R}  {msg}")
 def info(msg):  print(f"  {CYAN}→{R}  {msg}")
@@ -48,8 +63,6 @@ def parse_var(build_sh: Path, var: str) -> str:
 
 
 def resolve_srcurl(build_sh: Path) -> str:
-    content = build_sh.read_text(encoding="utf-8")
-
     version = parse_var(build_sh, "TERMUX_PKG_VERSION")
     srcurl_raw = parse_var(build_sh, "TERMUX_PKG_SRCURL")
 
@@ -61,6 +74,10 @@ def resolve_srcurl(build_sh: Path) -> str:
     url = url.replace("$TERMUX_PKG_VERSION", version)
 
     return url
+
+
+def is_floating_source(srcurl: str) -> bool:
+    return bool(FLOATING_BRANCH_RE.search(srcurl))
 
 
 def compute_sha256(url: str) -> tuple[str, int]:
@@ -116,7 +133,7 @@ def update_sha256_in_build_sh(build_sh: Path, new_sha256: str) -> bool:
     new_content = pattern.sub(new_line, content, count=1)
     build_sh.write_text(new_content, encoding="utf-8")
 
-    info(f"Updated SHA256:")
+    info("Updated SHA256:")
     print(f"    {DIM}Old: {old_sha}{R}")
     print(f"    {GREEN}New: {new_sha256}{R}")
     return True
@@ -139,9 +156,7 @@ def check_sha256_mismatch(build_sh: Path) -> tuple[bool, str, str]:
         got_match      = re.search(r'Got\s*:\s*([a-f0-9]{64})', output)
 
         if expected_match and got_match:
-            expected = expected_match.group(1)
-            actual   = got_match.group(1)
-            return True, expected, actual
+            return True, expected_match.group(1), got_match.group(1)
 
         if "SHA256 mismatch" in output or "mismatch" in output.lower():
             return True, "", ""
@@ -183,6 +198,13 @@ def process_package(pkg_name: str) -> str:
     info(f"URL: {DIM}{srcurl}{R}")
     info(f"Declared SHA256: {DIM}{declared_sha[:32]}...{R}")
 
+    if is_floating_source(srcurl):
+        warn(f"{pkg_name}: SRCURL is a floating branch tarball ({srcurl})")
+        warn(f"{pkg_name}: refusing to auto-fix — upstream content may have "
+             f"genuinely changed. Re-pin this package to a tag or commit SHA "
+             f"(e.g. via pkg-scaffold.py) and review the diff manually.")
+        return "floating_needs_review"
+
     try:
         actual_sha, file_size = compute_sha256(srcurl)
     except RuntimeError as e:
@@ -193,7 +215,7 @@ def process_package(pkg_name: str) -> str:
         ok(f"{pkg_name}: SHA256 OK ({file_size:,} bytes)")
         return "ok"
 
-    warn(f"{pkg_name}: SHA256 mismatch!")
+    warn(f"{pkg_name}: SHA256 mismatch on a pinned (tag/commit) source!")
     print(f"    {DIM}Declared: {declared_sha}{R}")
     print(f"    {YELLOW}Actual  : {actual_sha}{R}")
     print(f"    {DIM}Size    : {file_size:,} bytes{R}")
@@ -205,47 +227,91 @@ def process_package(pkg_name: str) -> str:
     return "ok"
 
 
-def git_commit_and_push(fixed_packages: list[str]) -> None:
+def run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, check=True, capture_output=True, text=True, **kwargs)
+
+
+def github_api(method: str, path: str, token: str, body: dict | None = None) -> dict:
+    url = f"{GITHUB_API}{path}"
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(url, data=data, method=method)
+    req.add_header("Authorization", f"Bearer {token}")
+    req.add_header("Accept", "application/vnd.github+json")
+    req.add_header("X-GitHub-Api-Version", "2022-11-28")
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode())
+
+
+def open_and_automerge_pr(fixed_packages: list[str]) -> None:
     if not fixed_packages:
         return
 
-    files_to_add = [
-        f"packages/{pkg}/build.sh" for pkg in fixed_packages
-    ]
+    token = os.environ.get("PAT_TOKEN")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    base_branch = os.environ.get("GITHUB_BASE_REF") or os.environ.get("GITHUB_REF_NAME", "master")
 
-    print(f"\n{CYAN}{B}Committing fixes...{R}")
+    if not token or not repo:
+        err("PAT_TOKEN or GITHUB_REPOSITORY not set — cannot open PR. "
+            "build.sh files were updated locally but not pushed.")
+        return
+
+    branch = f"ci/sha256-fix-{int(time.time())}"
+    files_to_add = [f"packages/{pkg}/build.sh" for pkg in fixed_packages]
+
+    print(f"\n{CYAN}{B}Opening PR for SHA256 fixes...{R}")
 
     try:
-        subprocess.run(
-            ["git", "config", "user.email", "258516621+termux-app-store@users.noreply.github.com"],
-            check=True, capture_output=True,
-        )
-        subprocess.run(
-            ["git", "config", "user.name", "Termux App Store"],
-            check=True, capture_output=True,
-        )
+        run(["git", "config", "user.email",
+             "258516621+termux-app-store@users.noreply.github.com"])
+        run(["git", "config", "user.name", "Termux App Store"])
+        run(["git", "checkout", "-b", branch])
+        run(["git", "add"] + files_to_add)
 
-        subprocess.run(["git", "add"] + files_to_add, check=True)
-
-        staged = subprocess.run(
-            ["git", "diff", "--staged", "--name-only"],
-            capture_output=True, text=True,
-        )
+        staged = run(["git", "diff", "--staged", "--name-only"])
         if not staged.stdout.strip():
             info("Nothing to commit (files unchanged after update)")
             return
 
         pkg_list = ", ".join(fixed_packages)
-        commit_msg = f"fix(sha256): auto-update SHA256 for {pkg_list} [skip ci]"
-        subprocess.run(["git", "commit", "-m", commit_msg], check=True)
-
-        branch = os.environ.get("GITHUB_REF_NAME", "master")
-        subprocess.run(["git", "push", "origin", branch], check=True)
-
-        ok(f"Pushed: {commit_msg}")
+        commit_msg = f"fix(sha256): auto-update SHA256 for {pkg_list}"
+        run(["git", "commit", "-m", commit_msg])
+        run(["git", "remote", "set-url", "origin",
+             f"https://x-access-token:{token}@github.com/{repo}.git"])
+        run(["git", "push", "-u", "origin", branch])
+        ok(f"Pushed branch: {branch}")
 
     except subprocess.CalledProcessError as e:
-        err(f"Git operation failed: {e}")
+        err(f"Git operation failed: {e.stderr or e}")
+        return
+
+    try:
+        pr = github_api("POST", f"/repos/{repo}/pulls", token, {
+            "title": f"fix(sha256): auto-update SHA256 for {len(fixed_packages)} package(s)",
+            "head": branch,
+            "base": base_branch,
+            "body": (
+                "Automated SHA256 fix for the following tag/commit-pinned "
+                "packages, opened by `ci/run_fix_sha256.py`:\n\n"
+                + "\n".join(f"- `{p}`" for p in fixed_packages)
+                + "\n\nThese sources are pinned to an immutable tag or commit, "
+                  "so this PR is auto-merged. Floating-branch sources are "
+                  "never auto-fixed and are reported separately for manual review."
+            ),
+        })
+        pr_number = pr["number"]
+        ok(f"Opened PR #{pr_number}")
+    except Exception as e:
+        err(f"Failed to open PR: {e}")
+        return
+
+    try:
+        github_api("PUT", f"/repos/{repo}/pulls/{pr_number}/merge", token, {
+            "merge_method": "squash",
+        })
+        ok(f"PR #{pr_number} auto-merged")
+    except Exception as e:
+        warn(f"Could not auto-merge PR #{pr_number}: {e}")
+        warn("The PR is open and waiting for manual merge.")
 
 
 def main():
@@ -253,7 +319,7 @@ def main():
         pkg_names = sys.argv[1:]
     else:
         if not PACKAGES_DIR.is_dir():
-            err(f"packages/ directory not found")
+            err("packages/ directory not found")
             sys.exit(1)
         pkg_names = sorted(
             d for d in os.listdir(PACKAGES_DIR)
@@ -264,11 +330,12 @@ def main():
     print(f"{DIM}Checking {len(pkg_names)} package(s)...{R}\n")
 
     results = {
-        "ok":      [],
-        "fixed":   [],
+        "ok": [],
+        "fixed": [],
         "skipped": [],
-        "error":   [],
-        "no_sh":   [],
+        "error": [],
+        "no_sh": [],
+        "floating_needs_review": [],
     }
 
     for pkg in pkg_names:
@@ -285,13 +352,24 @@ def main():
         for p in results["fixed"]:
             print(f"      {DIM}• {p}{R}")
     print(f"  {DIM}○  Skipped : {len(results['skipped'])}{R}")
+    print(f"  {YELLOW}!  Needs manual re-pin (floating source): "
+          f"{len(results['floating_needs_review'])}{R}")
+    if results["floating_needs_review"]:
+        for p in results["floating_needs_review"]:
+            print(f"      {DIM}• {p}{R}")
     print(f"  {RED}✗  Error   : {len(results['error'])}{R}")
     if results["error"]:
         for p in results["error"]:
             print(f"      {DIM}• {p}{R}")
 
     if results["fixed"]:
-        git_commit_and_push(results["fixed"])
+        open_and_automerge_pr(results["fixed"])
+
+    if results["floating_needs_review"]:
+        print(f"\n{YELLOW}{len(results['floating_needs_review'])} package(s) have a "
+              f"SHA256 mismatch on a floating source and were NOT auto-fixed.{R}")
+        print(f"{YELLOW}Re-pin them to a tag or commit SHA and review the "
+              f"content change before updating SHA256.{R}\n")
 
     if results["error"]:
         print(f"\n{RED}Some packages had download errors — check URLs{R}\n")
