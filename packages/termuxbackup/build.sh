@@ -3,8 +3,8 @@ TERMUX_PKG_DESCRIPTION="Termux TUI backup tool"
 TERMUX_PKG_LICENSE="MIT"
 TERMUX_PKG_MAINTAINER="@termux-app-store"
 TERMUX_PKG_VERSION=1.0.0
-TERMUX_PKG_SRCURL=https://github.com/enrilinux/termuxbackup/archive/refs/heads/main.tar.gz
-TERMUX_PKG_SHA256=21aa17ded7ca663cf6249b3b6ef63e6194601ddaba5882a3632b0e1952ec7608
+TERMUX_PKG_SRCURL=https://github.com/enrilinux/termuxbackup/archive/refs/tags/1.0.0.tar.gz
+TERMUX_PKG_SHA256=805508cf783deab6931a06ae71d0c8094be931c03ff035485f8755ed8e654a8d
 TERMUX_PKG_DEPENDS="ncurses, coreutils, findutils, grep, sed, gawk, tar, gzip, pigz"
 
 termux_step_make() {
