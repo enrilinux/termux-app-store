@@ -596,10 +596,10 @@ Installed-Size: 272
 Depends: python, python-pip
 Homepage: https://github.com/djunekz/termux-app-store
 Filename: pool/main/termux-app-store_0.4.1_arm.deb
-Size: 34444
-MD5sum: 51152b6c3f87ddb9166604eeabce62cc
-SHA1: 2de86272ed78d1b089e74dd7fc4d2e5ce230092a
-SHA256: abb2385cb2c4c3a0b5cebcb59449fcfef4a5d4c2a98cab3000c0612ca979d0f7
+Size: 34458
+MD5sum: 8dccda27417001f97254dca01fd84f1d
+SHA1: d9b36cbd4ead2466572ed0ca25ff697280a90ced
+SHA256: 1a346d346fe7f1c051ffe24bfbfbac3ed4ccc1bf4a9898aeca6264f85544e624
 Description: The first offline-first, source-based TUI package manager for Termux
 
 Package: termux-sync
@@ -721,3 +721,4 @@ MD5sum: dc9788629ae83c195635509c05e8bb68
 SHA1: 495fd153e116d1b05db514ecfb8e89d2db68b8d4
 SHA256: 8e80c4c79f309455044c03bd0ca2e14500f6fb4c5fa59c3f85c6103f16b151e2
 Description: A script written lazily for generating cross-platform  backdoors on the go :)
+
