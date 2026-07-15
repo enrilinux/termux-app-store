@@ -13,9 +13,45 @@ and this project adheres to semantic versioning.
 - Package `instareporter` v1.0.0 → v1.0.1
 - Package `termux-tui` v2.7.3 → v2.9.5
 - Package `termux-sync` v1.1.1 → v1.2.3
+- Package `auxscan` v1.0.0 → v0.0.0+4551c2f
+- Package `clickjacking-tester` v1.0.0 → v0.0.0+d75d5fc
+- Package `cloudflair` v1.0.0 → v0.0.0+13e3d80
+- Package `cmsmap` v1.0.0 → v0.0.0+59dd0e2
+- Package `cupp` v1.0.0 → v0.0.0+616a7b0
+- Package `dbd` v1.0.0 → v1.50
+- Package `djangohunter` v1.0.0 → v0.0.0+a5a715e
+- Package `dnsmap` v1.0.0 → v0.0.0+d2f89e0
+- Package `doona` v1.0.0 → v0.0.0+7a4796c
+- Package `elpscrk` v1.0.0 → v0.0.0+53caddb
+- Package `fbvid` v1.0.0 → v0.0.0+3786551
+- Package `fuckshitup` v1.0.0 → v0.0.0+91e555c
+- Package `gemail-hack` v1.0.0 → v0.0.0+34d9ba2
+- Package `get` v1.0.0 → v0.0.0+14b0bc3
+- Package `ghosttrack` v1.0.0 → v0.0.0+a5cb8ad
+- Package `goblinwordgenerator` v1.0.0 → v0.0.0+6afad56
+- Package `hammer` v1.0.0 → v0.0.0+e63fbd7
+- Package `hash-buster` v1.0.0 → v3.0
+- Package `holehe` v1.0.0 → v0.0.0+14da70f
+- Package `ht-wps-breaker` v1.0.0 → v0.0.0+e218bdf
+- Package `hunner` v1.0.0 → v0.0.0+5e46a45
+- Package `ip-tracker` v1.0.0 → v0.0.0+728535e
+- Package `killchain` v1.0.0 → v0.0.0+fef616f
+- Package `lalin` v1.0.0 → v0.0.0+ab55979
+- Package `lazymux` v1.0.0 → v0.0.0+3b4e747
+- Package `myserver` v1.0.0 → v1.0
+- Package `parsero` v1.0.0 → v0.0.0+e5b585a
+- Package `red-hawk` v1.0.0 → v0.0.0+fa54e23
+- Package `ssrfmap` v1.0.0 → v0.0.0+69103b2
+- Package `termux-ai` v1.0.0 → v0.0.0+7e1b8ff
+- Package `termuxalpine` v1.0.0 → v0.0.0+6c5d10c
+- Package `the-eye` v1.0.0 → v0.0.0+51cfb45
+- Package `userfinder` v1.0.0 → v0.0.0+a08a9a6
+- Package `xeuledoc` v1.0.0 → v0.0.0+8a500d1
+- Package `zerodoor` v1.0.0 → v0.0.0+e287b64
 
 ### Changed
 - Package `termstyle` v2.0.0 - Updated metadata
+- Package `termuxbackup` v1.0.0 - Updated metadata
 
 ### Added
 - Package `padrelivio` v1.0.0 - ASCII art of Padre Livio Fanzaga

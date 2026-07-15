@@ -40,7 +40,7 @@ for pkg in sorted(os.listdir(PACKAGES_DIR)):
                 f"TERMUX_PKG_NAME mismatch (expected '{pkg}', got '{declared_name}')"
             )
 
-        subprocess.run(
+        result = subprocess.run(
             ["./termux-build", "lint", pkg],
             check=True,
             stdout=subprocess.PIPE,
@@ -49,6 +49,13 @@ for pkg in sorted(os.listdir(PACKAGES_DIR)):
         )
 
         print(f"✅ {pkg} OK (v{version})")
+
+    except subprocess.CalledProcessError as e:
+        FAILED = True
+        print(f"❌ {pkg} failed (exit code {e.returncode}):")
+        output = (e.stdout or "") + (e.stderr or "")
+        for line in output.strip().splitlines():
+            print(f"    {line}")
 
     except Exception as e:
         FAILED = True
