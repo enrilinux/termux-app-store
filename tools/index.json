@@ -1,8 +1,8 @@
 {
   "version": "1.0",
   "repository": "https://github.com/djunekz/termux-app-store",
-  "generated_at": "2026-07-17T02:50:38.294064+00:00",
-  "total": 91,
+  "generated_at": "2026-07-18T02:42:33.190956+00:00",
+  "total": 92,
   "packages": [
     {
       "package": "aichat",
@@ -1373,6 +1373,20 @@
       "depends": [
         "rust"
       ]
+    },
+    {
+      "package": "tui-info",
+      "version": "1.0.0",
+      "maintainer": "@termux-app-store",
+      "description": "A TUI system information tool for Android/Termux",
+      "homepage": "https://github.com/enrilinux/tui-info",
+      "license": "MIT",
+      "download_size": "Unknown",
+      "installed_size": "Unknown",
+      "source": "https://github.com/djunekz/termux-app-store",
+      "srcurl": "https://github.com/enrilinux/tui-info/archive/refs/tags/1.0.0.tar.gz",
+      "sha256": "093866eb613a800427995ba02cb8637a9df3f2a5aff256236f38a8664e0c2a1d",
+      "platform_independent": false
     },
     {
       "package": "tuifimanager",
