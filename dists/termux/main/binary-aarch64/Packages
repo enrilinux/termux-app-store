@@ -505,15 +505,15 @@ SHA256: 9f3b4559148d5a69ed1e71878d1d937c100e5f7fb1280d648a59fcb2415e5210
 Description: Analyst website vulnerabillity scanner
 
 Package: myserver
-Version: 1.0.0
+Version: 1.0
 Architecture: aarch64
 Maintainer: @termux-app-store
 Installed-Size: 
-Filename: pool/main/myserver_1.0.0_aarch64.deb
-Size: 99852
-MD5sum: 0647fe6cbd8b9607169fae3a2b1eb835
-SHA1: 539c87239bca006aa1f6310ed1c2292fda9af85d
-SHA256: 1a34a03f7d991dbb7f8de8f3c2a49cedb8417f164202f8b3251c864773051dcc
+Filename: pool/main/myserver_1.0_aarch64.deb
+Size: 100228
+MD5sum: 2e4f4bfe68755b1783298b9fd91acde7
+SHA1: 473527b0535e1cf3f2c1b753a4793d56aa1d8b0d
+SHA256: c55605ae1b8b51b7a13c480826dbfd015cbae20ab36091571b2b84e63aeb60d6
 Description: myserver — auto-packaged by termux-build-init
 
 Package: orchat
@@ -818,4 +818,3 @@ MD5sum: f2bcc0ac7325c1659ed06c80f5225eb9
 SHA1: fac893deeb651371b19e2f0680050576c4240eda
 SHA256: 0e2c986fe227e9fe5546fbab6d85e09fbf385ef786f902bfb4e9bd131841f14b
 Description: Encrypter Stealth Binary Builder
-

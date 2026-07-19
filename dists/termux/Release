@@ -5,22 +5,22 @@ Codename: termux
 Components: main
 Architectures: aarch64 arm x86_64 i686
 Description: Official Termux repository by @djunekz
-Date: Sat, 18 Jul 2026 18:45:35 UTC
+Date: Sun, 19 Jul 2026 05:23:55 UTC
 MD5Sum:
- 5a670df8a2be10fd882a454ca6e1cc26 27378 main/binary-aarch64/Packages
- a20f7e0f6ff889912f079bcdb9f6b414 10315 main/binary-aarch64/Packages.gz
- 8aed5dd02124a5f44ba0272f98b496f1 23803 main/binary-arm/Packages
- 59b97c6e2e8b784127fb4ae0aed4f262 9138 main/binary-arm/Packages.gz
- 68e5200032ed166caa8721d0dbb84f97 24163 main/binary-x86_64/Packages
- 25f71d316e43de731271fcb48042d757 9164 main/binary-x86_64/Packages.gz
- 1c9d10e1cdcb01312609023425c28204 23923 main/binary-i686/Packages
- 2116a00136b525c7ade2d087097506ed 9129 main/binary-i686/Packages.gz
+ a34dffe34c366b6a84ae175cb0bcf67e 27374 main/binary-aarch64/Packages
+ 6586bd9e2a0567ac09c9ca5c7325f061 10318 main/binary-aarch64/Packages.gz
+ e5b2cf5bad3a59c30118ae838dad0fd5 23802 main/binary-arm/Packages
+ 76b9acdb47c5ed071aa5b418ebacd75c 9138 main/binary-arm/Packages.gz
+ 25fb3d1c1daa364c708c2a00277a7f75 37335 main/binary-x86_64/Packages
+ f4ecd82897ffd714aebc369b3c274911 12834 main/binary-x86_64/Packages.gz
+ a59ed82a262a9b2110782fa428975be3 23922 main/binary-i686/Packages
+ 82aab21b3f9d0d82ccc8f77f4756400a 9129 main/binary-i686/Packages.gz
 SHA256:
- 376cabb9f4545b8a342b1e919333189762e99761c3f7af8404248f7795606201 27378 main/binary-aarch64/Packages
- 4014911d9491720c9e915509ba9992003f2f2c81c0180c9cf29f70d144375fdf 10315 main/binary-aarch64/Packages.gz
- bbaeb4c57db8135629384112fca9b5087eaf539aa13467820ab509451434db8f 23803 main/binary-arm/Packages
- 53762f132478ddc91eabc37c9df7c2640fcdf91822b80f5e7add9de8397898ce 9138 main/binary-arm/Packages.gz
- b23d2802908a8009cdd9bf5c787ae579f23862da07d36af4397abf56dbff75f2 24163 main/binary-x86_64/Packages
- 70f7617b4cef25bcea9c4f0cbbf87f1f406f850e6337a15b1a7095674f140386 9164 main/binary-x86_64/Packages.gz
- d5f7675a894f59d9fe8ea34297de32d50022f9b95613d204313bdabd69758cd3 23923 main/binary-i686/Packages
- 80fedd856fdde9e370ed75292621c367feee9cc87edece27054c115ce6967e6f 9129 main/binary-i686/Packages.gz
+ e0a5c24b28c2c447992573f15cf793c6a96f6924ba6495d072df5cac9531198a 27374 main/binary-aarch64/Packages
+ d0873f71f6e1835581418d5ac5aea7b68dc21624529a485b3d3601a1bbe6f84c 10318 main/binary-aarch64/Packages.gz
+ 74f47317dba9b0d27b1832a9a8836ffbb23f46dcc0eca80ee5240558422e23b1 23802 main/binary-arm/Packages
+ 4798522e20c47c1b3334ffc113f0cd9b59dca8750989c1c438ee70720466a1f9 9138 main/binary-arm/Packages.gz
+ d67f1b8e1b562ce22636990354a099f665d05a006df4f578682438e5493af3dd 37335 main/binary-x86_64/Packages
+ 1a63786d0e7a3341309705a5099ffcca93b3e9ab49341c0f13c1936096010a52 12834 main/binary-x86_64/Packages.gz
+ 3d5c68f88e27db57c2c1d56481b527d2d7a2e24f59fa209b804e62905a79728b 23922 main/binary-i686/Packages
+ 09497efa0062bb8863d2ae799c1b07cf4c7bd32b1651196bd2f3722d2f5d60a8 9129 main/binary-i686/Packages.gz

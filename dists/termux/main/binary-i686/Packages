@@ -721,4 +721,3 @@ MD5sum: fc6601164098c0b6bf2ffb77f7f57339
 SHA1: 8869895eb5e5357290cef5ad1214039253693c9b
 SHA256: b66fdae57f75d9b97a422d5c34c739e48d385bb47d2178630c1e1361e6ec7f24
 Description: A script written lazily for generating cross-platform  backdoors on the go :)
-
