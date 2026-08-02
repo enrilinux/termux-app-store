@@ -133,15 +133,15 @@ SHA256: f5f1a15e515e9c435bc47894feaaa4e430ce506929448a1ed53abd930c7603e3
 Description: CMS Detection and Exploitation suite - Scan WordPress, Joomla, Drupal and over 180 other CMSs
 
 Package: cmsmap
-Version: 1.0.0
+Version: 0.0.0+59dd0e2
 Architecture: aarch64
 Maintainer: @termux-app-store
 Installed-Size: 
-Filename: pool/main/cmsmap_1.0.0_aarch64.deb
-Size: 383164
-MD5sum: d7e2e285b1a7d176f30013ea7717c269
-SHA1: d711d869931268ebfb83bb54bfa8c112af68533d
-SHA256: 2c49782331096db906e72aee639493915c0d65dbcdfb592e588969ba388e2b49
+Filename: pool/main/cmsmap_0.0.0+59dd0e2_aarch64.deb
+Size: 383076
+MD5sum: ff47cafdacbd6d820ab7222de07ac60a
+SHA1: c35622410cf10c2aea3234f6abd7d1685ab99843
+SHA256: a14151eb03c03f419e446ebdc75426e7ecd53cf553a399bb6600a47e7ded917a
 Description: CMSmap is a python open source CMS scanner that automates the process of detecting security flaws of the most popular CMSs.
 
 Package: commix
@@ -676,15 +676,15 @@ SHA256: a350bd717b9641a8897dc7a9d5cda18c9f19907cda80f854e9feecb37fd93258
 Description: A futuristic Jarvis-style terminal dashboard for Termux
 
 Package: termuxalpine
-Version: 1.0.0
+Version: 0.0.0+6c5d10c
 Architecture: aarch64
 Maintainer: @termux-app-store
 Installed-Size: 
-Filename: pool/main/termuxalpine_1.0.0_aarch64.deb
-Size: 3196
-MD5sum: c70b5d755524448e2468cfdd3799b7ed
-SHA1: 671941ec82607f111959cc074b5dd01e45ceb57c
-SHA256: 0b6190701bf7929d2b018bca424ad0881408cce6f1ef87949bcba0e9f171fbb3
+Filename: pool/main/termuxalpine_0.0.0+6c5d10c_aarch64.deb
+Size: 3204
+MD5sum: 73bfc9ed965864ba520a06a509394df2
+SHA1: e5a066805ac11c1ba41eaae58964f560779cad3c
+SHA256: 8fed78910fe008b5e5a39d81befbf8a1e5590636c68a886c85c2c5b0f3e8e71c
 Description: Use TermuxAlpine.sh calling to install Alpine Linux in Termux on Android. This setup script will attempt to set Alpine Linux up in your Termux environment.
 
 Package: tuifimanager
@@ -741,10 +741,10 @@ Architecture: aarch64
 Maintainer: Djunekz
 Installed-Size: 
 Filename: pool/main/webshake_1.0.2_aarch64.deb
-Size: 3848
-MD5sum: 0e249eb06a14bf15e52558e0252ec389
-SHA1: a9084b51b623430ec22b0920eaf12190d23cbbf8
-SHA256: abc107bfb81f4220fa63246aa09813f195df9f849842f93691f7df3fc859e51b
+Size: 3852
+MD5sum: 796666b9451c8f86148b317a54501ea6
+SHA1: 05f015bbfee75160b173dc939160bc99e65c510c
+SHA256: ce556b770cf688047fddb217db7ba9ac4b0ad53c791f45cce3411a395ef7c5b6
 Description: Scan vulnerabilities and analyze websites
 
 Package: xeuledoc

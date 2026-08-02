@@ -174,10 +174,10 @@ Architecture: x86_64
 Maintainer: @termux-app-store
 Installed-Size: 
 Filename: pool/main/cmsmap_0.0.0+59dd0e2_x86_64.deb
-Size: 390072
-MD5sum: 898b3799771e356718bbb5e9e09b7289
-SHA1: 7046bfee0a5f6fd831dcdc1cd9b2d3e5fbaed110
-SHA256: 01899f42dbbf33d9147f543af65b213cdd020667a61765466a1b2fe5e1d92035
+Size: 389904
+MD5sum: 29cb7c83eb371f280ed9c093c3000bd9
+SHA1: dee95f5e2509867afce5c3778f6cdaa5ea9b514a
+SHA256: a868102d377769c4154c92887811cf845281ce48d4ba76fb90fd79a1d57ccf39
 Description: CMSmap is a python open source CMS scanner that automates the process of detecting security flaws of the most popular CMSs.
 
 Package: cmsmap
@@ -992,10 +992,10 @@ Architecture: x86_64
 Maintainer: @termux-app-store
 Installed-Size: 
 Filename: pool/main/termuxalpine_0.0.0+6c5d10c_x86_64.deb
-Size: 3046
-MD5sum: 92a181151aa58b64b3b5845828ba948b
-SHA1: 18f1fdc40fde777e2d20decdb0ed8a6dbd9f7011
-SHA256: a2870335f81bb2abfcdb8690ccaa15c0737d594ff1a6637f8efad1ed9cfd4913
+Size: 3042
+MD5sum: e6ab4933762d8b799df74e6a0dff133f
+SHA1: 5728eebfdc10a17a4bf2f24e58edfc98b83059c2
+SHA256: e49c1406eb007dcfe005c89b0226e1d37b558fc96b1b95c8fb1e7c9cb7ecebaf
 Description: Use TermuxAlpine.sh calling to install Alpine Linux in Termux on Android. This setup script will attempt to set Alpine Linux up in your Termux environment.
 
 Package: termuxalpine
@@ -1052,10 +1052,10 @@ Architecture: x86_64
 Maintainer: Djunekz
 Installed-Size: 
 Filename: pool/main/webshake_1.0.2_x86_64.deb
-Size: 3724
-MD5sum: 92589bf6c2dd0782d3558e4129eeba5b
-SHA1: 360fbfcd34cd032fc0f4dfa32f69321cb0ecd0f0
-SHA256: 594e459997793816b34fb8efccc849b183e5b9f07f8af971291c32aa6662fdad
+Size: 3722
+MD5sum: 0c38b299b5abc0840382bec17315c3fd
+SHA1: be1a18e3c17da8a060e4312a3eb6b40e379f4a77
+SHA256: fdb22158cf66802a220c2a1403c11c1ba330fe01f020a3dcdff34a5fec6dcba5
 Description: Scan vulnerabilities and analyze websites
 
 Package: xeuledoc
