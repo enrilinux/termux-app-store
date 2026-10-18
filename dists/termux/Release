@@ -5,22 +5,22 @@ Codename: termux
 Components: main
 Architectures: aarch64 arm x86_64 i686
 Description: Official Termux repository by @djunekz
-Date: Sun, 11 Oct 2026 08:37:16 UTC
+Date: Sun, 18 Oct 2026 06:56:47 UTC
 MD5Sum:
  10c77ea750a32ec2f544ef6e2e29505d 28235 main/binary-aarch64/Packages
- 58601900fec00ef312807882b3dc204d 10761 main/binary-aarch64/Packages.gz
+ b34a4184b94e6205d86f8ac749a43971 10761 main/binary-aarch64/Packages.gz
  0997f5da0e638b44866d97a99cb03cfe 24651 main/binary-arm/Packages
- 57cc44b4e798647c8e0ff34f7f58fff7 9590 main/binary-arm/Packages.gz
+ e209df9d9aee31577055973250f40eaa 9590 main/binary-arm/Packages.gz
  111bfc63c4cde9ad6dcb6c1b19c2a3a4 38494 main/binary-x86_64/Packages
- 8ac757d76a624086366d06ad85d7e6b8 13167 main/binary-x86_64/Packages.gz
+ f7143704fc911946e0e9295668372033 13167 main/binary-x86_64/Packages.gz
  65c733c4968eee211a183dcb91d8dd16 24773 main/binary-i686/Packages
- e3aef8b5f4fa1d51663e1e2f515ed95b 9591 main/binary-i686/Packages.gz
+ d71f36542c0bf5929d9bb6f521ca34f1 9591 main/binary-i686/Packages.gz
 SHA256:
  f26c0d432887212165e77a35f9ae5a91ef585be4b8773417d77f01968a32925d 28235 main/binary-aarch64/Packages
- b2808770cfe9c7f111700ada53a09a44ae4878990c40004e90ba0771650712bc 10761 main/binary-aarch64/Packages.gz
+ e3c6f51dfee1b88983e7dcd82d91f5c6e259cc75e31c6ca0ab7177f0056e7c9e 10761 main/binary-aarch64/Packages.gz
  861d790112cc67c817deb414dc6a05cf78cf9214f80a81bf901a960de6875076 24651 main/binary-arm/Packages
- 8c95ad4d7cb22b431340834e170edf572da1449b1b198a6c1042b6728b7c138f 9590 main/binary-arm/Packages.gz
+ ac41e87617802f51b300cd346325f2faf838dbefad405ed56d2656701012047b 9590 main/binary-arm/Packages.gz
  97c047efe01288eaf6ba57ae71fe6f156c913fefc804429ea1f2c9fc5bb1212c 38494 main/binary-x86_64/Packages
- 049829f308c23deec3fb37c3b51d7cb6c3d6c6e8dc3526b1db753a14aa63d071 13167 main/binary-x86_64/Packages.gz
+ 4a04366953441c93cf9d35aa7828ba3bcd52d3cf7a96ccc02c1028276a75285b 13167 main/binary-x86_64/Packages.gz
  e1833d5aa741b8dcfd17c598803fcc4772f448d12b0d1626db7f2dc950d640d0 24773 main/binary-i686/Packages
- 8cf1ca78eea2877ab48b70efb1f28756ed60d6b78c66da1806a36d7df529b309 9591 main/binary-i686/Packages.gz
+ dbf7b324c0a3968ac485c7fc6f0a32b0f66faa4abb5a6eb6587ebd84392ffce9 9591 main/binary-i686/Packages.gz
