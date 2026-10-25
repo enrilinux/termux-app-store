@@ -5,22 +5,22 @@ Codename: termux
 Components: main
 Architectures: aarch64 arm x86_64 i686
 Description: Official Termux repository by @djunekz
-Date: Sun, 18 Oct 2026 06:56:47 UTC
+Date: Sun, 25 Oct 2026 08:09:43 UTC
 MD5Sum:
- 10c77ea750a32ec2f544ef6e2e29505d 28235 main/binary-aarch64/Packages
- b34a4184b94e6205d86f8ac749a43971 10761 main/binary-aarch64/Packages.gz
- 0997f5da0e638b44866d97a99cb03cfe 24651 main/binary-arm/Packages
- e209df9d9aee31577055973250f40eaa 9590 main/binary-arm/Packages.gz
- 111bfc63c4cde9ad6dcb6c1b19c2a3a4 38494 main/binary-x86_64/Packages
- f7143704fc911946e0e9295668372033 13167 main/binary-x86_64/Packages.gz
- 65c733c4968eee211a183dcb91d8dd16 24773 main/binary-i686/Packages
- d71f36542c0bf5929d9bb6f521ca34f1 9591 main/binary-i686/Packages.gz
+ 7084ae0c7752c92aadb70e3f1e68ad3a 28235 main/binary-aarch64/Packages
+ 1b23eb6b0baa1ad4ee0ab2d4590fc449 10757 main/binary-aarch64/Packages.gz
+ e83cd1276ef3de50d284c38905b5dedf 24651 main/binary-arm/Packages
+ fdab26b6e6731dc3a0cf1d11210b296c 9593 main/binary-arm/Packages.gz
+ 493b63cd39c8a37e83e85a618129e7f2 38494 main/binary-x86_64/Packages
+ e413aaebaf7d71b70b317eca39445cee 13160 main/binary-x86_64/Packages.gz
+ d7e0b6cad6496c4b8576bf1d47d799fd 24773 main/binary-i686/Packages
+ 459230aa0ff9e716e9c69e353a50bfa7 9603 main/binary-i686/Packages.gz
 SHA256:
- f26c0d432887212165e77a35f9ae5a91ef585be4b8773417d77f01968a32925d 28235 main/binary-aarch64/Packages
- e3c6f51dfee1b88983e7dcd82d91f5c6e259cc75e31c6ca0ab7177f0056e7c9e 10761 main/binary-aarch64/Packages.gz
- 861d790112cc67c817deb414dc6a05cf78cf9214f80a81bf901a960de6875076 24651 main/binary-arm/Packages
- ac41e87617802f51b300cd346325f2faf838dbefad405ed56d2656701012047b 9590 main/binary-arm/Packages.gz
- 97c047efe01288eaf6ba57ae71fe6f156c913fefc804429ea1f2c9fc5bb1212c 38494 main/binary-x86_64/Packages
- 4a04366953441c93cf9d35aa7828ba3bcd52d3cf7a96ccc02c1028276a75285b 13167 main/binary-x86_64/Packages.gz
- e1833d5aa741b8dcfd17c598803fcc4772f448d12b0d1626db7f2dc950d640d0 24773 main/binary-i686/Packages
- dbf7b324c0a3968ac485c7fc6f0a32b0f66faa4abb5a6eb6587ebd84392ffce9 9591 main/binary-i686/Packages.gz
+ 303ad7a29e14ba18bdb3e35168b4c579d8e960ec76e2bfe3526d72a016133b14 28235 main/binary-aarch64/Packages
+ 9454282e863b45f6b1e40857ffbfa5f5edf825bf25bed4ad8a422e61928fac57 10757 main/binary-aarch64/Packages.gz
+ c5507eec985702abca04f00efbd0ef1177693701d5691b1767ad8758a04e3b8a 24651 main/binary-arm/Packages
+ 8b89cbfd696c8124aa3ac038f145245a437963325e0244f2fbac3e2d443ed7d2 9593 main/binary-arm/Packages.gz
+ 944bf2a37c8bc155f89dda45b2ecdbbce822b338ea60b0778c80e70b67c4f07e 38494 main/binary-x86_64/Packages
+ 4fb346b68d8179f176ea920a38d8f67a4d364dafb68cf586f9ccfed418b4577d 13160 main/binary-x86_64/Packages.gz
+ 89a424422cedcd7dbbb96aa297117509dbc2bb7ba709c52617e2a05c70ffbae6 24773 main/binary-i686/Packages
+ 4218778f604cf815a6523ddcb1d55da4ebfd1fab2456c198783ea9cdd871f7ba 9603 main/binary-i686/Packages.gz
